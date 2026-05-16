@@ -1,44 +1,84 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/Cairo-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cairo';
+  src: url('/fonts/Cairo-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Light Theme for Main Content */
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  /* Light Theme — matched to reference image */
+  --background: #ffffff;
+  --foreground: #0f1e37;
   --card: #ffffff;
-  --card-foreground: #0f172a;
+  --card-foreground: #0f1e37;
   --popover: #ffffff;
-  --popover-foreground: #0f172a;
-  --primary: #1e3a5f;
+  --popover-foreground: #0f1e37;
+  --primary: #c9a227;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #e2e8f0;
-  --muted-foreground: #64748b;
+  --secondary: #fdf6e8;
+  --secondary-foreground: #0f1e37;
+  --muted: #f5f0e8;
+  --muted-foreground: #6b7280;
   --accent: #c9a227;
-  --accent-foreground: #0f172a;
+  --accent-foreground: #1a1a1a;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #1e3a5f;
+  --border: #ede8df;
+  --input: #ede8df;
+  --ring: #c9a227;
   --chart-1: #c9a227;
   --chart-2: #3b82f6;
   --chart-3: #10b981;
   --chart-4: #f59e0b;
   --chart-5: #8b5cf6;
   --radius: 1rem;
-  --sidebar: #0f172a;
+  --sidebar: #1a1a1a;
   --sidebar-foreground: #ffffff;
   --sidebar-primary: #c9a227;
-  --sidebar-primary-foreground: #0f172a;
-  --sidebar-accent: #1e293b;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #2d2d2d;
   --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #334155;
+  --sidebar-border: #444444;
   --sidebar-ring: #c9a227;
-  
+
   /* Brand colors */
   --navy: #0f1e37;
   --navy-light: #1e3a5f;
@@ -48,7 +88,9 @@
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-sans: 'Vazirmatn', 'Cairo', 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-persian: 'Vazirmatn', sans-serif;
+  --font-arabic: 'Cairo', sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -97,6 +139,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
@@ -105,6 +148,15 @@
 /* RTL Support for Arabic and Persian */
 [dir="rtl"] {
   text-align: right;
+  font-family: var(--font-persian) !important;
+}
+
+[lang="ar"][dir="rtl"], [lang="ar"][dir="rtl"] * {
+  font-family: var(--font-arabic) !important;
+}
+
+[lang="fa"][dir="rtl"], [lang="fa"][dir="rtl"] * {
+  font-family: var(--font-persian) !important;
 }
 
 /* Custom scrollbar */

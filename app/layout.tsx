@@ -22,6 +22,10 @@ export const metadata: Metadata = {
     description: 'Your trusted partner for company registration, residency, and business services in UAE and Oman.',
     type: 'website',
   },
+  icons: {
+    icon: '/favicon.png',
+    apple: '/apple-icon.png',
+  },
 }
 
 export const viewport: Viewport = {

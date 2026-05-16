@@ -72,7 +72,7 @@ export default function Home() {
       <div 
         className="flex min-h-screen flex-col items-center justify-center"
         style={{ 
-          backgroundImage: 'linear-gradient(to bottom, rgba(15, 30, 55, 0.8), rgba(15, 30, 55, 0.95)), url("https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1920&q=80")',
+          backgroundImage: 'linear-gradient(to bottom, rgba(15, 30, 55, 0.85), rgba(15, 30, 55, 0.95)), url("https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1920&q=80")',
           backgroundSize: 'cover',
           backgroundPosition: 'center'
         }}
@@ -81,6 +81,7 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
+          className="rounded-3xl bg-white/10 p-6 backdrop-blur-md"
         >
           <Image
             src="/logo.png"
@@ -111,7 +112,11 @@ export default function Home() {
   }
 
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen bg-background">
+    <div 
+      dir={isRtl ? 'rtl' : 'ltr'} 
+      lang={selectedLanguage || 'en'}
+      className="min-h-screen bg-background"
+    >
       {/* Selection Modal */}
       <SelectionModal
         isOpen={showModal}
@@ -129,7 +134,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="pb-20"
+            className="pb-20 max-w-5xl mx-auto"
           >
             {/* Header */}
             <Header
@@ -162,7 +167,7 @@ export default function Home() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 }}
-                className="overflow-hidden rounded-2xl border border-border bg-card"
+                className="overflow-hidden rounded-2xl border border-border bg-card md:border-none md:bg-transparent md:overflow-visible"
               >
                 <ServiceList
                   services={currentContent.services.items}
@@ -174,9 +179,8 @@ export default function Home() {
 
             {/* Bottom Navigation */}
             <BottomNav
-              activeTab={activeTab}
               language={selectedLanguage!}
-              onTabChange={setActiveTab}
+              onChangeSettings={handleChangeSettings}
             />
           </motion.div>
         )}

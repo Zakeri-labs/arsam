@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Menu, ChevronDown } from 'lucide-react';
+import { Menu, ChevronDown, Globe } from 'lucide-react';
 import { type Language, type Country } from '@/lib/content';
 
 interface HeaderProps {
@@ -12,59 +12,8 @@ interface HeaderProps {
   onMenuClick?: () => void;
 }
 
-export function Header({ language, country, onChangeSettings, onMenuClick }: HeaderProps) {
-  return (
-    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
-      <div className="flex h-14 items-center justify-between px-4">
-        {/* Menu button */}
-        <button
-          onClick={onMenuClick}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-
-        {/* Logo */}
-        <div className="absolute left-1/2 -translate-x-1/2">
-          <Image
-            src="/logo.png"
-            alt="Shiny Horizon"
-            width={50}
-            height={60}
-            className="h-10 w-auto object-contain"
-          />
-        </div>
-
-        {/* Country selector */}
-        <button
-          onClick={onChangeSettings}
-          className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-muted"
-        >
-          <div className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-sm">
-            {country === 'uae' ? (
-              <svg viewBox="0 0 36 24" className="h-full w-auto">
-                <rect width="36" height="8" fill="#00732F" />
-                <rect y="8" width="36" height="8" fill="#FFFFFF" />
-                <rect y="16" width="36" height="8" fill="#000000" />
-                <rect width="9" height="24" fill="#FF0000" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 36 24" className="h-full w-auto">
-                <rect width="36" height="24" fill="#FFFFFF" />
-                <rect width="36" height="8" fill="#EF2B2D" />
-                <rect y="16" width="36" height="8" fill="#009E49" />
-                <rect width="9" height="24" fill="#EF2B2D" />
-              </svg>
-            )}
-          </div>
-          <span className="font-medium text-foreground">
-            {country === 'uae' ? 'UAE' : 'Oman'}
-          </span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
-        </button>
-      </div>
-    </header>
-  );
+export function Header({ language, country, onChangeSettings }: HeaderProps) {
+  return null;
 }
 
 interface HeroSectionProps {
@@ -110,17 +59,33 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="px-4 pb-6 pt-4"
+      className="px-4 pb-8 pt-6"
     >
-      <span className="text-sm font-semibold uppercase tracking-wider text-gold">
-        Shiny Horizon
-      </span>
-      <h1 className="mt-1 text-2xl font-bold leading-tight text-foreground">
-        {getFormattedTagline()}
-      </h1>
-      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-        {subtitle}
-      </p>
+      <div className="flex items-stretch gap-4">
+        {/* Logo — left side, negative top margin to extend higher, wider to make logo larger */}
+        <div className="relative self-stretch flex-shrink-0" style={{ minWidth: '115px', marginLeft: '-16px', marginRight: '-4px', marginTop: '-16px' }}>
+          <Image
+            src="/logo.png"
+            alt="Shiny Horizon"
+            fill
+            className="object-contain object-top"
+            priority
+          />
+        </div>
+
+        {/* Text block — top padding added to push text down, removed justify-end */}
+        <div className="flex flex-col pt-5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-gold">
+            Shiny Horizon
+          </span>
+          <h1 className="mt-0.5 text-2xl font-bold leading-[1.1] text-foreground">
+            {getFormattedTagline()}
+          </h1>
+          <p className="mt-1 text-sm leading-snug text-muted-foreground">
+            {subtitle}
+          </p>
+        </div>
+      </div>
     </motion.section>
   );
 }

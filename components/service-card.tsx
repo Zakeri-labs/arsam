@@ -71,10 +71,10 @@ export function ServiceCard({ service, index, language, onClick }: ServiceCardPr
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.03, duration: 0.2 }}
       onClick={onClick}
-      className="group flex w-full items-center gap-3 border-b border-border bg-card px-4 py-4 text-start transition-colors hover:bg-muted/50 active:bg-muted"
+      className="group flex w-full items-center gap-3 border-b border-border md:border md:rounded-xl md:shadow-sm bg-card px-4 py-4 text-start transition-colors hover:bg-muted/50 active:bg-muted"
     >
       {/* Icon */}
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
         {icon}
       </div>
 
@@ -124,7 +124,7 @@ interface ServiceListProps {
 
 export function ServiceList({ services, language, onServiceClick }: ServiceListProps) {
   return (
-    <div className="flex flex-col">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:gap-4">
       {services.map((service, index) => (
         <ServiceCard
           key={service.id}

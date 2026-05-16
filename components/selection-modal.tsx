@@ -14,9 +14,9 @@ interface SelectionModalProps {
 }
 
 const languageIcons: Record<Language, React.ReactNode> = {
-  en: <Globe className="h-5 w-5" />,
-  fa: <span className="text-lg font-semibold">ع</span>,
-  ar: <span className="text-lg font-semibold">ف</span>,
+  en: <span className="text-xs font-bold uppercase">En</span>,
+  fa: <span className="text-base font-semibold">ف</span>,
+  ar: <span className="text-base font-semibold">ع</span>,
 };
 
 export function SelectionModal({
@@ -37,13 +37,8 @@ export function SelectionModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex flex-col"
         >
-          {/* Background with Dubai skyline */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{ 
-              backgroundImage: 'linear-gradient(to bottom, rgba(15, 30, 55, 0.7), rgba(15, 30, 55, 0.95)), url("https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1920&q=80")'
-            }}
-          />
+          {/* Solid minimal premium background (slightly off-white) */}
+          <div className="absolute inset-0 bg-[#f4f5f6]" />
 
           {/* Content */}
           <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6 py-12 pb-8">
@@ -52,7 +47,7 @@ export function SelectionModal({
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex flex-col items-center"
+              className="flex flex-col items-center p-4"
             >
               <Image
                 src="/logo.png"
@@ -78,40 +73,32 @@ export function SelectionModal({
                     key="language"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="rounded-3xl bg-navy/90 p-6 backdrop-blur-md"
+                    className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/80 border border-border"
                   >
-                    {/* Icon */}
-                    <div className="mb-4 flex justify-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20">
-                        <Globe className="h-7 w-7 text-white" />
-                      </div>
-                    </div>
-
-                    <h2 className="mb-1 text-center text-xl font-semibold text-white">
+                    <h2 className="mb-1 text-center text-xl font-bold text-foreground">
                       Select Language
                     </h2>
-                    <p className="mb-6 text-center text-sm text-white/60">
-                      Please choose your preferred language
+                    <p className="mb-6 text-center text-sm text-muted-foreground">
+                      Choose your preferred language
                     </p>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2.5">
                       {(['en', 'fa', 'ar'] as Language[]).map((lang) => (
                         <motion.button
                           key={lang}
                           onClick={() => onLanguageSelect(lang)}
-                          className="group flex items-center justify-between rounded-xl border border-white/10 bg-navy-light/50 px-4 py-3.5 transition-all hover:border-gold/50 hover:bg-navy-light"
+                          className="group flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 transition-all hover:border-gold hover:bg-secondary shadow-sm"
                           whileTap={{ scale: 0.98 }}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-white/70">
+                            <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full shadow-sm bg-white text-primary">
                               {languageIcons[lang]}
                             </div>
-                            <span className="font-medium text-white">
-                              {lang === 'en' ? 'English' : lang === 'fa' ? 'Persian (Farsi)' : 'Arabic'}
+                            <span className="font-semibold text-sm text-foreground">
+                              {lang === 'en' ? 'English' : lang === 'fa' ? 'Farsi (Persian)' : 'Arabic'}
                             </span>
                           </div>
-                          <ChevronRight className="h-5 w-5 text-white/40 transition-transform group-hover:translate-x-0.5 group-hover:text-gold" />
+                          <ChevronRight className={`h-4.5 w-4.5 text-muted-foreground transition-transform ${isRtl ? 'rotate-180 group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'} group-hover:text-gold`} />
                         </motion.button>
                       ))}
                     </div>
@@ -119,77 +106,76 @@ export function SelectionModal({
                 ) : (
                   <motion.div
                     key="country"
-                    initial={{ opacity: 0, x: -20 }}
+                    initial={{ opacity: 0, x: isRtl ? -15 : 15 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    className="rounded-3xl bg-navy/90 p-6 backdrop-blur-md"
+                    exit={{ opacity: 0, x: isRtl ? 15 : -15 }}
+                    transition={{ duration: 0.2 }}
+                    className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/80 border border-border"
                   >
-                    {/* Icon */}
-                    <div className="mb-4 flex justify-center">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/20">
-                        <MapPin className="h-7 w-7 text-white" />
-                      </div>
-                    </div>
-
-                    <h2 className="mb-1 text-center text-xl font-semibold text-white">
-                      Select Country
-                    </h2>
-                    <p className="mb-6 text-center text-sm text-white/60">
+                    <h2 className="mb-1 text-center text-xl font-bold text-foreground">
                       {selectedLanguage === 'fa' 
-                        ? 'لطفا کشور مورد نظر را انتخاب کنید'
+                        ? 'کشور مقصد خدمات'
                         : selectedLanguage === 'ar'
-                        ? 'يرجى اختيار البلد الذي تريد العمل فيه'
-                        : 'Please choose the country you want to operate in'}
+                        ? 'بلد وجهة الخدمات'
+                        : 'Services Destination'}
+                    </h2>
+                    <p className="mb-6 text-center text-sm text-muted-foreground">
+                      {selectedLanguage === 'fa' 
+                        ? 'خدمات کدام کشور را می‌خواهید؟'
+                        : selectedLanguage === 'ar'
+                        ? 'في أي بلد تريد خدماتنا؟'
+                        : "Which country's services do you need?"}
                     </p>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-2.5">
                       {/* UAE Option */}
                       <motion.button
                         onClick={() => onCountrySelect('uae')}
-                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-navy-light/50 px-4 py-3.5 transition-all hover:border-gold/50 hover:bg-navy-light"
+                        className="group flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 transition-all hover:border-gold hover:bg-secondary shadow-sm"
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg">
-                            <svg viewBox="0 0 36 24" className="h-6 w-auto">
+                          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full shadow-sm bg-white">
+                            <svg viewBox="0 0 36 24" className="h-5.5 w-auto">
                               <rect width="36" height="8" fill="#00732F" />
                               <rect y="8" width="36" height="8" fill="#FFFFFF" />
                               <rect y="16" width="36" height="8" fill="#000000" />
                               <rect width="9" height="24" fill="#FF0000" />
                             </svg>
                           </div>
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium text-white">
+                          <div className="flex flex-col items-start leading-none">
+                            <span className="font-semibold text-sm text-foreground">
                               {selectedLanguage ? countryNames[selectedLanguage].uae : 'United Arab Emirates'}
                             </span>
-                            <span className="text-xs text-white/50">UAE</span>
+                            <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold mt-0.5">UAE</span>
                           </div>
                         </div>
-                        <ChevronRight className={`h-5 w-5 text-white/40 transition-transform group-hover:text-gold ${isRtl ? 'rotate-180 group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'}`} />
+                        <ChevronRight className={`h-4.5 w-4.5 text-muted-foreground transition-transform group-hover:text-gold ${isRtl ? 'rotate-180 group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'}`} />
                       </motion.button>
 
                       {/* Oman Option */}
                       <motion.button
                         onClick={() => onCountrySelect('oman')}
-                        className="group flex items-center justify-between rounded-xl border border-white/10 bg-navy-light/50 px-4 py-3.5 transition-all hover:border-gold/50 hover:bg-navy-light"
+                        className="group flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 transition-all hover:border-gold hover:bg-secondary shadow-sm"
                         whileTap={{ scale: 0.98 }}
                       >
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg">
-                            <svg viewBox="0 0 36 24" className="h-6 w-auto">
+                          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full shadow-sm bg-white">
+                            <svg viewBox="0 0 36 24" className="h-5.5 w-auto">
                               <rect width="36" height="24" fill="#FFFFFF" />
                               <rect width="36" height="8" fill="#EF2B2D" />
                               <rect y="16" width="36" height="8" fill="#009E49" />
                               <rect width="9" height="24" fill="#EF2B2D" />
                             </svg>
                           </div>
-                          <div className="flex flex-col items-start">
-                            <span className="font-medium text-white">
+                          <div className="flex flex-col items-start leading-none">
+                            <span className="font-semibold text-sm text-foreground">
                               {selectedLanguage ? countryNames[selectedLanguage].oman : 'Oman'}
                             </span>
+                            <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold mt-0.5">OMAN</span>
                           </div>
                         </div>
-                        <ChevronRight className={`h-5 w-5 text-white/40 transition-transform group-hover:text-gold ${isRtl ? 'rotate-180 group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'}`} />
+                        <ChevronRight className={`h-4.5 w-4.5 text-muted-foreground transition-transform group-hover:text-gold ${isRtl ? 'rotate-180 group-hover:-translate-x-0.5' : 'group-hover:translate-x-0.5'}`} />
                       </motion.button>
                     </div>
                   </motion.div>
@@ -202,22 +188,13 @@ export function SelectionModal({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="flex items-center gap-2 text-white/60"
+              className="flex items-center gap-2 text-foreground/50"
             >
-              {step === 'language' ? (
-                <>
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  <span className="text-sm">Your Business, Our Priority</span>
-                </>
-              ) : (
-                <>
-                  <Shield className="h-4 w-4" />
-                  <span className="text-sm">Secure • Reliable • Professional</span>
-                </>
-              )}
+              <div className="h-1 w-1 rounded-full bg-gold" />
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                {step === 'language' ? 'Your Business, Our Priority' : 'Secure • Reliable • Professional'}
+              </span>
+              <div className="h-1 w-1 rounded-full bg-gold" />
             </motion.div>
           </div>
         </motion.div>
