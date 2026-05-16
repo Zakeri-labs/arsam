@@ -1,107 +1,126 @@
 'use client';
 
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import type { Language, Country } from '@/lib/content';
-import { languageNames, countryNames } from '@/lib/content';
+import { Menu, ChevronDown } from 'lucide-react';
+import { type Language, type Country } from '@/lib/content';
 
 interface HeaderProps {
-  title: string;
-  subtitle: string;
-  tagline: string;
   language: Language;
   country: Country;
   onChangeSettings: () => void;
+  onMenuClick?: () => void;
 }
 
-export function Header({
-  title,
-  subtitle,
-  tagline,
-  language,
-  country,
-  onChangeSettings,
-}: HeaderProps) {
-  const isRtl = language === 'fa' || language === 'ar';
-
+export function Header({ language, country, onChangeSettings, onMenuClick }: HeaderProps) {
   return (
-    <header className="relative overflow-hidden bg-background pb-16 pt-8">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 end-0 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-20 start-0 h-60 w-60 rounded-full bg-primary/5 blur-3xl" />
-      </div>
+    <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm">
+      <div className="flex h-14 items-center justify-between px-4">
+        {/* Menu button */}
+        <button
+          onClick={onMenuClick}
+          className="flex h-10 w-10 items-center justify-center rounded-lg text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
 
-      <div className="container relative mx-auto px-4">
-        {/* Top bar */}
-        <div className="mb-12 flex items-center justify-between">
-          {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <svg
-                viewBox="0 0 100 100"
-                className="h-7 w-7 text-primary"
-                fill="currentColor"
-              >
-                <circle cx="50" cy="30" r="20" opacity="0.8" />
-                <path d="M10 80 Q50 40 90 80" stroke="currentColor" strokeWidth="8" fill="none" />
+        {/* Logo */}
+        <div className="absolute left-1/2 -translate-x-1/2">
+          <Image
+            src="/logo.png"
+            alt="Shiny Horizon"
+            width={50}
+            height={60}
+            className="h-10 w-auto object-contain"
+          />
+        </div>
+
+        {/* Country selector */}
+        <button
+          onClick={onChangeSettings}
+          className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:bg-muted"
+        >
+          <div className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-sm">
+            {country === 'uae' ? (
+              <svg viewBox="0 0 36 24" className="h-full w-auto">
+                <rect width="36" height="8" fill="#00732F" />
+                <rect y="8" width="36" height="8" fill="#FFFFFF" />
+                <rect y="16" width="36" height="8" fill="#000000" />
+                <rect width="9" height="24" fill="#FF0000" />
               </svg>
-            </div>
-            <span className="text-lg font-bold text-foreground">{title}</span>
-          </motion.div>
-
-          {/* Settings button */}
-          <motion.button
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            onClick={onChangeSettings}
-            className="flex items-center gap-2 rounded-full border border-border bg-secondary/50 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary"
-          >
-            <span className="hidden sm:inline">{languageNames[language]}</span>
-            <span className="text-muted-foreground">•</span>
-            <span>{country === 'uae' ? '🇦🇪' : '🇴🇲'}</span>
-            <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </motion.button>
-        </div>
-
-        {/* Hero content */}
-        <div className="mx-auto max-w-3xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary"
-          >
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401z" clipRule="evenodd" />
-            </svg>
-            {countryNames[language][country]}
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-6 text-balance text-3xl font-bold text-foreground sm:text-4xl lg:text-5xl"
-          >
-            {tagline}
-          </motion.h1>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mx-auto max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground"
-          >
-            {subtitle}
-          </motion.p>
-        </div>
+            ) : (
+              <svg viewBox="0 0 36 24" className="h-full w-auto">
+                <rect width="36" height="24" fill="#FFFFFF" />
+                <rect width="36" height="8" fill="#EF2B2D" />
+                <rect y="16" width="36" height="8" fill="#009E49" />
+                <rect width="9" height="24" fill="#EF2B2D" />
+              </svg>
+            )}
+          </div>
+          <span className="font-medium text-foreground">
+            {country === 'uae' ? 'UAE' : 'Oman'}
+          </span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </button>
       </div>
     </header>
+  );
+}
+
+interface HeroSectionProps {
+  subtitle: string;
+  language: Language;
+  country: Country;
+}
+
+export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
+  const cityName = language === 'en' 
+    ? (country === 'uae' ? 'Dubai' : 'Oman')
+    : language === 'fa'
+    ? (country === 'uae' ? 'دبی' : 'عمان')
+    : (country === 'uae' ? 'دبي' : 'عُمان');
+
+  const getFormattedTagline = () => {
+    if (language === 'en') {
+      return (
+        <>
+          Turn The Engine Of<br />Your Business On In{' '}
+          <span className="text-primary">{cityName}</span>
+        </>
+      );
+    } else if (language === 'fa') {
+      return (
+        <>
+          موتور کسب‌وکار خود را<br />در{' '}
+          <span className="text-primary">{cityName}</span> روشن کنید
+        </>
+      );
+    } else {
+      return (
+        <>
+          أطلق محرك أعمالك<br />في{' '}
+          <span className="text-primary">{cityName}</span>
+        </>
+      );
+    }
+  };
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="px-4 pb-6 pt-4"
+    >
+      <span className="text-sm font-semibold uppercase tracking-wider text-gold">
+        Shiny Horizon
+      </span>
+      <h1 className="mt-1 text-2xl font-bold leading-tight text-foreground">
+        {getFormattedTagline()}
+      </h1>
+      <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+        {subtitle}
+      </p>
+    </motion.section>
   );
 }

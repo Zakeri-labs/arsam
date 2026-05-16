@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { SelectionModal } from '@/components/selection-modal';
-import { Header } from '@/components/header';
-import { ServiceGrid } from '@/components/service-card';
+import { Header, HeroSection } from '@/components/header';
+import { ServiceList } from '@/components/service-card';
 import { ServiceDetailModal } from '@/components/service-detail-modal';
-import { Footer } from '@/components/footer';
+import { BottomNav } from '@/components/bottom-nav';
 import { type Language, type Country, type Service, content } from '@/lib/content';
 
 export default function Home() {
@@ -17,8 +18,8 @@ export default function Home() {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'home' | 'services' | 'about' | 'contact'>('home');
 
-  // Check for stored preferences on mount
   useEffect(() => {
     const storedLang = localStorage.getItem('preferredLanguage') as Language | null;
     const storedCountry = localStorage.getItem('preferredCountry') as Country | null;
@@ -28,11 +29,10 @@ export default function Home() {
       setSelectedCountry(storedCountry);
       setIsLoading(false);
     } else {
-      // Simulate page load then show modal
       const timer = setTimeout(() => {
         setIsLoading(false);
         setShowModal(true);
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, []);
@@ -66,33 +66,43 @@ export default function Home() {
     ? content[selectedLanguage][selectedCountry] 
     : null;
 
-  // Loading screen
+  // Loading screen with logo
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div 
+        className="flex min-h-screen flex-col items-center justify-center"
+        style={{ 
+          backgroundImage: 'linear-gradient(to bottom, rgba(15, 30, 55, 0.8), rgba(15, 30, 55, 0.95)), url("https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1920&q=80")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Image
+            src="/logo.png"
+            alt="Shiny Horizon"
+            width={200}
+            height={250}
+            className="h-auto w-40 object-contain"
+            priority
+          />
+        </motion.div>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex flex-col items-center gap-4"
+          transition={{ delay: 0.3 }}
+          className="mt-8"
         >
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <motion.svg
-              viewBox="0 0 100 100"
-              className="h-10 w-10 text-primary"
-              fill="currentColor"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-            >
-              <circle cx="50" cy="30" r="20" opacity="0.8" />
-              <path d="M10 80 Q50 40 90 80" stroke="currentColor" strokeWidth="8" fill="none" />
-            </motion.svg>
-          </div>
-          <div className="h-1 w-32 overflow-hidden rounded-full bg-muted">
+          <div className="h-1 w-24 overflow-hidden rounded-full bg-white/20">
             <motion.div
-              className="h-full bg-primary"
+              className="h-full bg-gold"
               initial={{ x: '-100%' }}
               animate={{ x: '100%' }}
-              transition={{ duration: 1, repeat: Infinity }}
+              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             />
           </div>
         </motion.div>
@@ -119,51 +129,54 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
+            className="pb-20"
           >
             {/* Header */}
             <Header
-              title={currentContent.header.title}
-              subtitle={currentContent.header.subtitle}
-              tagline={currentContent.header.tagline}
               language={selectedLanguage!}
               country={selectedCountry!}
               onChangeSettings={handleChangeSettings}
             />
 
+            {/* Hero Section */}
+            <HeroSection
+              subtitle={currentContent.header.subtitle}
+              language={selectedLanguage!}
+              country={selectedCountry!}
+            />
+
             {/* Services Section */}
-            <main className="container mx-auto px-4 pb-16">
+            <main className="px-4">
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="mb-8"
+                transition={{ delay: 0.2 }}
+                className="mb-4"
               >
-                <h2 className="mb-2 text-2xl font-bold text-foreground">
+                <h2 className="text-lg font-bold text-foreground">
                   {currentContent.services.title}
                 </h2>
-                <p className="text-muted-foreground">
-                  {selectedLanguage === 'en' 
-                    ? 'Click on any service to learn more and get started'
-                    : selectedLanguage === 'fa'
-                    ? 'برای اطلاعات بیشتر و شروع کار روی هر سرویس کلیک کنید'
-                    : 'انقر على أي خدمة لمعرفة المزيد والبدء'
-                  }
-                </p>
               </motion.div>
 
-              <ServiceGrid
-                services={currentContent.services.items}
-                language={selectedLanguage!}
-                onServiceClick={handleServiceClick}
-              />
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="overflow-hidden rounded-2xl border border-border bg-card"
+              >
+                <ServiceList
+                  services={currentContent.services.items}
+                  language={selectedLanguage!}
+                  onServiceClick={handleServiceClick}
+                />
+              </motion.div>
             </main>
 
-            {/* Footer */}
-            <Footer
-              copyright={currentContent.footer.copyright}
-              ctaTitle={currentContent.cta.title}
-              ctaButton={currentContent.cta.button}
+            {/* Bottom Navigation */}
+            <BottomNav
+              activeTab={activeTab}
               language={selectedLanguage!}
+              onTabChange={setActiveTab}
             />
           </motion.div>
         )}
