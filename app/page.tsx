@@ -29,7 +29,10 @@ export default function Home() {
         '[id*="v0-brand"]',
         '[class*="built-with-v0"]',
         '#v0-badge',
-        '.v0-badge'
+        '.v0-badge',
+        'iframe[src*="v0"]',
+        'iframe[id*="v0"]',
+        'iframe[class*="v0"]'
       ];
       
       selectors.forEach(selector => {
@@ -58,13 +61,13 @@ export default function Home() {
       removeBadge();
     });
     
-    observer.observe(document.body, {
+    observer.observe(document.documentElement, {
       childList: true,
       subtree: true
     });
     
-    const interval = setInterval(removeBadge, 150);
-    const timeout = setTimeout(() => clearInterval(interval), 4000);
+    const interval = setInterval(removeBadge, 100);
+    const timeout = setTimeout(() => clearInterval(interval), 6000);
 
     return () => {
       observer.disconnect();
