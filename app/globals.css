@@ -87,30 +87,6 @@
   --gold-dark: #a88a1f;
 }
 
-.dark {
-  --background: #080d1a;
-  --foreground: #f3f4f6;
-  --card: #0e1626;
-  --card-foreground: #f3f4f6;
-  --popover: #0e1626;
-  --popover-foreground: #f3f4f6;
-  --primary: #c9a227;
-  --primary-foreground: #080d1a;
-  --secondary: #132038;
-  --secondary-foreground: #f3f4f6;
-  --muted: #111d33;
-  --muted-foreground: #9ca3af;
-  --accent: #c9a227;
-  --accent-foreground: #080d1a;
-  --border: #1e2d4a;
-  --input: #1e2d4a;
-  --ring: #c9a227;
-
-  /* Brand color overrides for dark mode */
-  --navy: #080d1a;
-  --navy-light: #132038;
-}
-
 @theme inline {
   --font-sans: 'Vazirmatn', 'Cairo', 'Geist', 'Geist Fallback', system-ui, sans-serif;
   --font-persian: 'Vazirmatn', sans-serif;

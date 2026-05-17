@@ -20,10 +20,9 @@ interface HeroSectionProps {
   subtitle: string;
   language: Language;
   country: Country;
-  logoSrc?: string;
 }
 
-export function HeroSection({ subtitle, language, country, logoSrc = '/logo.png' }: HeroSectionProps) {
+export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
   const cityName = language === 'en' 
     ? (country === 'uae' ? 'Dubai' : 'Oman')
     : language === 'fa'
@@ -66,7 +65,7 @@ export function HeroSection({ subtitle, language, country, logoSrc = '/logo.png'
         {/* Logo — left side, negative top margin to extend higher, wider to make logo larger */}
         <div className="logo-shimmer-container relative self-stretch flex-shrink-0" style={{ minWidth: '115px', marginLeft: '-16px', marginRight: '-4px', marginTop: '-16px' }}>
           <Image
-            src={logoSrc}
+            src="/logo.png"
             alt="Shiny Horizon"
             fill
             className="object-contain object-top"

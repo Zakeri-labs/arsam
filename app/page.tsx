@@ -21,20 +21,11 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'services' | 'about' | 'contact'>('home');
 
   useEffect(() => {
-    const storedLang = localStorage.getItem('preferredLanguage') as Language | null;
-    const storedCountry = localStorage.getItem('preferredCountry') as Country | null;
-
-    if (storedLang && storedCountry) {
-      setSelectedLanguage(storedLang);
-      setSelectedCountry(storedCountry);
+    const timer = setTimeout(() => {
       setIsLoading(false);
-    } else {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-        setShowModal(true);
-      }, 800);
-      return () => clearTimeout(timer);
-    }
+      setShowModal(true);
+    }, 800);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleLanguageSelect = (lang: Language) => {
