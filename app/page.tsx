@@ -21,48 +21,77 @@ export default function Home() {
 
   useEffect(() => {
     const removeBadge = () => {
-      try {
-        // 1. Absolute Text-based search and destroy (foolproof against any URL or class changes)
-        const allElements = Array.from(document.querySelectorAll('*'));
-        allElements.forEach(el => {
-          const text = el.textContent || '';
-          if (
-            text.includes('Built with v0') || 
-            text.includes('built with v0') || 
-            text.includes('with v0') ||
-            el.innerHTML?.includes('Built with v0')
-          ) {
-            const tagName = el.tagName.toLowerCase();
-            // Delete only the small containers, never the main structure
-            if (tagName !== 'body' && tagName !== 'html' && tagName !== 'main') {
-              el.remove();
+      const traverse = (root: Node | ShadowRoot) => {
+        if (!root) return;
+
+        // 1. Query Selector scans on Element roots
+        if ('querySelectorAll' in root) {
+          const selectors = [
+            'a[href*="v0"]',
+            'a[href*="vercel"]',
+            '[class*="v0"]',
+            '[id*="v0"]',
+            '[class*="vercel"]',
+            '[id*="vercel"]',
+            '[class*="built-with"]',
+            'iframe[src*="v0"]',
+            'iframe[src*="vercel"]'
+          ];
+          selectors.forEach(sel => {
+            try {
+              const elements = (root as HTMLElement).querySelectorAll(sel);
+              elements.forEach(el => el.remove());
+            } catch (e) {}
+          });
+        }
+
+        // 2. Scan child nodes recursively
+        const children = Array.from(root.childNodes);
+        children.forEach(child => {
+          const el = child as HTMLElement;
+          
+          // Check text content inside node
+          if (el.textContent) {
+            const text = el.textContent;
+            if (
+              text.includes('Built with v0') || 
+              text.includes('built with v0') || 
+              text.includes('with v0') ||
+              (el.innerHTML && el.innerHTML.includes('Built with v0'))
+            ) {
+              const tagName = el.tagName?.toLowerCase();
+              if (tagName && tagName !== 'body' && tagName !== 'html' && tagName !== 'main') {
+                el.remove();
+                return;
+              }
             }
           }
-        });
-      } catch (e) {}
 
-      // 2. Class and Attribute-based selector removal
-      const selectors = [
-        'a[href*="v0.dev"]',
-        'a[href*="vercel.com/v0"]',
-        '[class*="v0-badge"]',
-        '[id*="v0-badge"]',
-        '[class*="v0-brand"]',
-        '[id*="v0-brand"]',
-        '[class*="built-with-v0"]',
-        '#v0-badge',
-        '.v0-badge',
-        'iframe[src*="v0"]',
-        'iframe[id*="v0"]',
-        'iframe[class*="v0"]'
-      ];
-      
-      selectors.forEach(selector => {
-        try {
-          const elements = document.querySelectorAll(selector);
-          elements.forEach(el => el.remove());
-        } catch (e) {}
-      });
+          // Deep-penetrate shadow DOM encapsulation
+          if (el.shadowRoot) {
+            const shadow = el.shadowRoot;
+            traverse(shadow);
+            
+            // If shadow root contains v0/vercel remnants, erase the entire host element
+            try {
+              const hasBadge = shadow.querySelector('a[href*="v0"]') || 
+                               shadow.querySelector('a[href*="vercel"]') ||
+                               (shadow.textContent && shadow.textContent.includes('v0'));
+              if (hasBadge) {
+                el.remove();
+                return;
+              }
+            } catch (e) {}
+          }
+
+          // Recursive call for normal children
+          traverse(child);
+        });
+      };
+
+      try {
+        traverse(document.documentElement);
+      } catch (e) {}
     };
 
     removeBadge();
@@ -76,8 +105,8 @@ export default function Home() {
       subtree: true
     });
     
-    const interval = setInterval(removeBadge, 100);
-    const timeout = setTimeout(() => clearInterval(interval), 6000);
+    const interval = setInterval(removeBadge, 80);
+    const timeout = setTimeout(() => clearInterval(interval), 7000);
 
     return () => {
       observer.disconnect();
