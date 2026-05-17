@@ -8,6 +8,7 @@ import { Header, HeroSection } from '@/components/header';
 import { ServiceList } from '@/components/service-card';
 import { ServiceDetailModal } from '@/components/service-detail-modal';
 import { BottomNav } from '@/components/bottom-nav';
+import { AboutModal } from '@/components/about-modal';
 import { type Language, type Country, type Service, content } from '@/lib/content';
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'services' | 'about' | 'contact'>('home');
 
   useEffect(() => {
@@ -239,10 +241,18 @@ export default function Home() {
             <BottomNav
               language={selectedLanguage!}
               onChangeSettings={handleChangeSettings}
+              onAboutClick={() => setShowAboutModal(true)}
             />
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* About Us Modal */}
+      <AboutModal
+        isOpen={showAboutModal}
+        onClose={() => setShowAboutModal(false)}
+        language={selectedLanguage || 'en'}
+      />
 
       {/* Service Detail Modal */}
       <ServiceDetailModal

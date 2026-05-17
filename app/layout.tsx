@@ -14,22 +14,22 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://ofogh.zakeri.dev'),
-  title: 'Ofoghe Talaei | Business Setup & Corporate Services',
+  title: 'AL UFUQ AL DAHABI | Business Setup & Corporate Services',
   description: 'Your premium partner for company formation, corporate residency, license renewal, VAT registration, and business setup services in the UAE and Oman. Professional support in English, Persian, and Arabic.',
   manifest: '/manifest.json',
   keywords: ['company registration UAE', 'business setup Dubai', 'Oman company formation', 'residency UAE', 'VAT registration', 'الافق الذهبی', 'ثبت شرکت امارات', 'ثبت شرکت عمان'],
-  authors: [{ name: 'Ofoghe Talaei' }],
+  authors: [{ name: 'AL UFUQ AL DAHABI' }],
   openGraph: {
-    title: 'Ofoghe Talaei | Business Setup & Corporate Services',
+    title: 'AL UFUQ AL DAHABI | Business Setup & Corporate Services',
     description: 'Your premium partner for company formation, corporate residency, license renewal, VAT registration, and business setup services in the UAE and Oman.',
     url: 'https://ofogh.zakeri.dev',
-    siteName: 'Ofoghe Talaei',
+    siteName: 'AL UFUQ AL DAHABI',
     images: [
       {
         url: '/logo.png',
         width: 800,
         height: 1000,
-        alt: 'Ofoghe Talaei - SHINY HORIZON Logo',
+        alt: 'AL UFUQ AL DAHABI - SHINY HORIZON Logo',
       }
     ],
     locale: 'en_US',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Ofoghe Talaei | Business Setup & Corporate Services',
+    title: 'AL UFUQ AL DAHABI | Business Setup & Corporate Services',
     description: 'Your premium partner for company formation, corporate residency, and business setup in the UAE and Oman.',
     images: ['/logo.png'],
   },
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Ofoghe Talaei',
+    title: 'AL UFUQ',
   },
   other: {
     'mobile-web-app-capable': 'yes',

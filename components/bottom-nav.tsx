@@ -1,24 +1,25 @@
 'use client';
 
-import { Globe, Phone } from 'lucide-react';
+import { Globe, Info } from 'lucide-react';
 import type { Language } from '@/lib/content';
 
 interface BottomNavProps {
   language: Language;
   onChangeSettings: () => void;
+  onAboutClick: () => void;
 }
 
-const labels: Record<Language, { language: string; whatsapp: string; call: string }> = {
-  en: { language: 'Language', whatsapp: 'WhatsApp', call: 'Call' },
-  fa: { language: 'زبان', whatsapp: 'واتساپ', call: 'تماس' },
-  ar: { language: 'اللغة', whatsapp: 'واتساب', call: 'اتصال' },
+const labels: Record<Language, { language: string; whatsapp: string; aboutUs: string }> = {
+  en: { language: 'Language', whatsapp: 'WhatsApp', aboutUs: 'About Us' },
+  fa: { language: 'زبان', whatsapp: 'واتساپ', aboutUs: 'درباره ما' },
+  ar: { language: 'اللغة', whatsapp: 'واتساب', aboutUs: 'من نحن' },
 };
 
-export function BottomNav({ language, onChangeSettings }: BottomNavProps) {
+export function BottomNav({ language, onChangeSettings, onAboutClick }: BottomNavProps) {
   const t = labels[language];
 
-  const handleCall = () => {
-    window.location.href = 'tel:+971552554688';
+  const handleAboutUs = () => {
+    onAboutClick();
   };
 
   const handleWhatsApp = () => {
@@ -54,13 +55,13 @@ export function BottomNav({ language, onChangeSettings }: BottomNavProps) {
         {/* Divider */}
         <div className="h-5 w-px bg-white/10" />
 
-        {/* Call Button */}
+        {/* About Us Button */}
         <button
-          onClick={handleCall}
+          onClick={handleAboutUs}
           className="flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 text-xs font-medium text-white transition-colors hover:bg-white/10 active:bg-white/20"
         >
-          <Phone className="h-4 w-4" />
-          <span>{t.call}</span>
+          <Info className="h-4 w-4" />
+          <span>{t.aboutUs}</span>
         </button>
       </div>
     </nav>
