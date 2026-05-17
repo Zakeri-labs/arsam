@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'AL UFUQ AL DAHABI | Business Services in UAE & Oman',
   description: 'Your trusted partner for company registration, residency, license renewal, VAT registration, and business services in UAE and Oman. Professional support in English, Persian, and Arabic.',
+  manifest: '/manifest.json',
   keywords: ['company registration UAE', 'business setup Dubai', 'Oman company formation', 'residency UAE', 'VAT registration', 'الافق الذهبی', 'ثبت شرکت امارات', 'ثبت شرکت عمان'],
   authors: [{ name: 'AL UFUQ AL DAHABI' }],
   openGraph: {
@@ -26,6 +27,14 @@ export const metadata: Metadata = {
     icon: '/favicon.png',
     apple: '/apple-icon.png',
   },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'AL UFUQ',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  }
 }
 
 export const viewport: Viewport = {
