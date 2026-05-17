@@ -48,7 +48,7 @@ export const content: Record<Language, Record<Country, Content>> = {
   en: {
     uae: {
       header: {
-        title: 'AL UFUQ AL DAHABI',
+        title: 'Ofoghe Talaei',
         subtitle: 'Your Trusted Partner for Starting, Managing, and Growing Your Business in UAE',
         tagline: 'Turn the Engine of Your Business On in Dubai',
       },
@@ -81,12 +81,12 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'Contact Us Today',
       },
       footer: {
-        copyright: '© 2024 AL UFUQ AL DAHABI. All rights reserved.',
+        copyright: '© 2024 Ofoghe Talaei. All rights reserved.',
       },
     },
     oman: {
       header: {
-        title: 'AL UFUQ AL DAHABI',
+        title: 'Ofoghe Talaei',
         subtitle: 'Your Trusted Partner for Starting, Managing, and Growing Your Business in Oman',
         tagline: 'Build Your Success in the Sultanate of Oman',
       },
@@ -130,7 +130,7 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'Contact Us Today',
       },
       footer: {
-        copyright: '© 2024 AL UFUQ AL DAHABI. All rights reserved.',
+        copyright: '© 2024 Ofoghe Talaei. All rights reserved.',
       },
     },
   },
