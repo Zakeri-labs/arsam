@@ -11,6 +11,7 @@ interface SelectionModalProps {
   selectedLanguage: Language | null;
   onLanguageSelect: (lang: Language) => void;
   onCountrySelect: (country: Country) => void;
+  logoSrc?: string;
 }
 
 const languageIcons: Record<Language, React.ReactNode> = {
@@ -25,6 +26,7 @@ export function SelectionModal({
   selectedLanguage,
   onLanguageSelect,
   onCountrySelect,
+  logoSrc = '/logo.png',
 }: SelectionModalProps) {
   const isRtl = selectedLanguage === 'fa' || selectedLanguage === 'ar';
 
@@ -37,8 +39,8 @@ export function SelectionModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-50 flex flex-col"
         >
-          {/* Solid minimal premium background (slightly off-white) */}
-          <div className="absolute inset-0 bg-[#f4f5f6]" />
+          {/* Solid minimal premium background (slightly off-white in light, dark navy in dark) */}
+          <div className="absolute inset-0 bg-[#f4f5f6] dark:bg-[#080d1a]" />
 
           {/* Content */}
           <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6 py-12 pb-8">
@@ -51,7 +53,7 @@ export function SelectionModal({
             >
               <div className="logo-shimmer-container">
                 <Image
-                  src="/logo.png"
+                  src={logoSrc}
                   alt="Shiny Horizon"
                   width={160}
                   height={200}
