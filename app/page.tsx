@@ -83,14 +83,16 @@ export default function Home() {
           transition={{ duration: 0.5 }}
           className="rounded-3xl bg-white/10 p-6 backdrop-blur-md"
         >
-          <Image
-            src="/logo.png"
-            alt="Shiny Horizon"
-            width={200}
-            height={250}
-            className="h-auto w-40 object-contain"
-            priority
-          />
+          <div className="logo-shimmer-container">
+            <Image
+              src="/logo.png"
+              alt="Shiny Horizon"
+              width={200}
+              height={250}
+              className="h-auto w-40 object-contain"
+              priority
+            />
+          </div>
         </motion.div>
         <motion.div
           initial={{ opacity: 0 }}

@@ -49,14 +49,16 @@ export function SelectionModal({
               transition={{ delay: 0.2 }}
               className="flex flex-col items-center p-4"
             >
-              <Image
-                src="/logo.png"
-                alt="Shiny Horizon"
-                width={160}
-                height={200}
-                className="h-auto w-32 object-contain"
-                priority
-              />
+              <div className="logo-shimmer-container">
+                <Image
+                  src="/logo.png"
+                  alt="Shiny Horizon"
+                  width={160}
+                  height={200}
+                  className="h-auto w-32 object-contain"
+                  priority
+                />
+              </div>
             </motion.div>
 
             {/* Selection Card */}
