@@ -20,6 +20,31 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'home' | 'services' | 'about' | 'contact'>('home');
 
   useEffect(() => {
+    // 1. Dynamic Runtime Style Sheet Injection (prevents Next.js build-time CSS purger from stripping our blocker styles)
+    try {
+      const style = document.createElement('style');
+      style.innerHTML = `
+        a[href*="v0.dev"],
+        a[href*="vercel.com"],
+        [class*="v0-badge"],
+        [id*="v0-badge"],
+        #v0-badge,
+        .v0-badge,
+        [class*="v0-brand"],
+        [id*="v0-brand"],
+        [class*="built-with-v0"] {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          overflow: hidden !important;
+        }
+      `;
+      document.head.appendChild(style);
+    } catch (e) {}
+
     const removeBadge = () => {
       const traverse = (root: Node | ShadowRoot) => {
         if (!root) return;
