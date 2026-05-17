@@ -213,3 +213,20 @@
   pointer-events: none;
   z-index: 20; /* Places the shine layer explicitly on top of Next.js Image component */
 }
+
+/* Hide Vercel v0 Badge Watermark */
+a[href*="v0.dev"],
+[class*="v0-badge"], 
+[id*="v0-badge"],
+[class*="v0-brand"],
+[id*="v0-brand"],
+[class*="built-with-v0"],
+[id*="built-with-v0"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
