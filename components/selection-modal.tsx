@@ -75,7 +75,7 @@ export function SelectionModal({
                     key="language"
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/80 border border-border"
+                    className="px-4 py-2 w-full"
                   >
                     <h2 className="mb-1 text-center text-xl font-bold text-foreground">
                       Select Language
@@ -112,7 +112,7 @@ export function SelectionModal({
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: isRtl ? 15 : -15 }}
                     transition={{ duration: 0.2 }}
-                    className="rounded-3xl bg-white p-6 shadow-xl shadow-slate-200/80 border border-border"
+                    className="px-4 py-2 w-full"
                   >
                     <h2 className="mb-1 text-center text-xl font-bold text-foreground">
                       {selectedLanguage === 'fa' 
