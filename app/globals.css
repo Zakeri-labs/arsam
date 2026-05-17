@@ -177,7 +177,7 @@
   background: var(--muted-foreground);
 }
 
-/* Premium Masked Logo Shimmer Effect */
+/* Premium Logo Shimmer Effect */
 @keyframes logo-shimmer {
   0% {
     transform: translateX(-150%) skewX(-25deg);
@@ -191,15 +191,7 @@
   position: relative;
   display: inline-flex;
   overflow: hidden;
-  /* Mask by the logo image so the shine only appears on the logo pixels */
-  mask-image: url('/logo.png');
-  -webkit-mask-image: url('/logo.png');
-  mask-size: contain;
-  -webkit-mask-size: contain;
-  mask-repeat: no-repeat;
-  -webkit-mask-repeat: no-repeat;
-  mask-position: center;
-  -webkit-mask-position: center;
+  border-radius: 8px;
 }
 
 .logo-shimmer-container::after {
@@ -212,11 +204,12 @@
   background: linear-gradient(
     to right,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.4) 40%,
-    rgba(255, 255, 255, 0.85) 50%,
-    rgba(255, 255, 255, 0.4) 60%,
+    rgba(255, 255, 255, 0.45) 30%,
+    rgba(255, 255, 255, 0.9) 50%,
+    rgba(255, 255, 255, 0.45) 70%,
     rgba(255, 255, 255, 0) 100%
   );
   animation: logo-shimmer 4.8s infinite ease-in-out;
   pointer-events: none;
+  z-index: 20; /* Places the shine layer explicitly on top of Next.js Image component */
 }
