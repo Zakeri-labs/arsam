@@ -62,7 +62,7 @@ export function SelectionModal({
           <div className="absolute inset-0 bg-[#f4f5f6]" />
 
           {/* Content */}
-          <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6 pt-6 pb-16 min-h-[100dvh]">
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6 pt-14 pb-14 min-h-[100dvh]">
             {/* Logo at top */}
             <motion.div
               initial={{ opacity: 0, y: -20 }}
