@@ -21,8 +21,30 @@ export default function Home() {
 
   useEffect(() => {
     const removeBadge = () => {
+      try {
+        // 1. Absolute Text-based search and destroy (foolproof against any URL or class changes)
+        const allElements = Array.from(document.querySelectorAll('*'));
+        allElements.forEach(el => {
+          const text = el.textContent || '';
+          if (
+            text.includes('Built with v0') || 
+            text.includes('built with v0') || 
+            text.includes('with v0') ||
+            el.innerHTML?.includes('Built with v0')
+          ) {
+            const tagName = el.tagName.toLowerCase();
+            // Delete only the small containers, never the main structure
+            if (tagName !== 'body' && tagName !== 'html' && tagName !== 'main') {
+              el.remove();
+            }
+          }
+        });
+      } catch (e) {}
+
+      // 2. Class and Attribute-based selector removal
       const selectors = [
         'a[href*="v0.dev"]',
+        'a[href*="vercel.com/v0"]',
         '[class*="v0-badge"]',
         '[id*="v0-badge"]',
         '[class*="v0-brand"]',
@@ -41,18 +63,6 @@ export default function Home() {
           elements.forEach(el => el.remove());
         } catch (e) {}
       });
-      
-      try {
-        const customElements = document.querySelectorAll('*');
-        customElements.forEach(el => {
-          if (el.tagName.toLowerCase().includes('v0') || el.shadowRoot) {
-            if (el.shadowRoot) {
-              const badge = el.shadowRoot.querySelector('a[href*="v0.dev"]');
-              if (badge) el.remove();
-            }
-          }
-        });
-      } catch (e) {}
     };
 
     removeBadge();
