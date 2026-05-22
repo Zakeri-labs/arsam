@@ -63,24 +63,7 @@ export function SelectionModal({
 
           {/* Content */}
           <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6 pt-14 pb-14 min-h-[100dvh]">
-            {/* Logo at top */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-col items-center p-4"
-            >
-              <div className="logo-shimmer-container">
-                <Image
-                  src="/logo.png"
-                  alt="Shiny Horizon"
-                  width={160}
-                  height={200}
-                  className="h-auto w-32 object-contain"
-                  priority
-                />
-              </div>
-            </motion.div>
+
 
             {/* Selection Card */}
             <motion.div
