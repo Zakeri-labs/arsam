@@ -137,22 +137,21 @@ export default function Home() {
     const timeout = setTimeout(() => clearInterval(interval), 7000);
 
     // Splash screen logic
-    const savedLang = localStorage.getItem('preferredLanguage') as Language;
-    const savedCountry = localStorage.getItem('preferredCountry') as Country;
+    // const savedLang = localStorage.getItem('preferredLanguage') as Language;
+    // const savedCountry = localStorage.getItem('preferredCountry') as Country;
     
     let splashTimer: NodeJS.Timeout;
-    if (savedLang && savedCountry) {
-      setSelectedLanguage(savedLang);
-      setSelectedCountry(savedCountry);
-      setHasShownSplash(true);
-    } else {
-      splashTimer = setTimeout(() => {
-        if (!hasShownSplash) {
-          setShowModal(true);
-          setHasShownSplash(true);
-        }
-      }, 3000);
-    }
+    
+    // Always show splash after 3 seconds for demonstration
+    splashTimer = setTimeout(() => {
+      if (!hasShownSplash) {
+        setShowModal(true);
+        setHasShownSplash(true);
+      }
+    }, 3000);
+
+    // If we want to restore localStorage check, we can uncomment:
+    // if (savedLang && savedCountry) { ... }
 
     return () => {
       observer.disconnect();
