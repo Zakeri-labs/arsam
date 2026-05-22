@@ -58,8 +58,8 @@ export function SelectionModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 h-[100dvh] w-screen z-50 flex flex-col overflow-y-auto"
         >
-          {/* Solid minimal premium background (slightly off-white) */}
-          <div className="absolute inset-0 bg-[#f4f5f6]" />
+          {/* Dark overlay background with opacity */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" />
 
           {/* Content */}
           <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6 pt-14 pb-14 min-h-[100dvh]">
@@ -70,13 +70,13 @@ export function SelectionModal({
               transition={{ delay: 0.2 }}
               className="flex flex-col items-center p-4"
             >
-              <div className="logo-shimmer-container">
+              <div className="logo-shimmer-container bg-white/95 p-5 rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                 <Image
                   src="/black-lion.png"
                   alt="Shiny Horizon"
                   width={240}
                   height={240}
-                  className="h-auto w-48 object-contain mix-blend-multiply drop-shadow-md"
+                  className="h-auto w-40 object-contain drop-shadow-sm"
                   priority
                 />
               </div>
@@ -98,10 +98,10 @@ export function SelectionModal({
                     animate={{ opacity: 1, x: 0 }}
                     className="px-4 py-2 w-full"
                   >
-                    <h2 className="mb-1 text-center text-xl font-bold text-foreground">
+                    <h2 className="mb-1 text-center text-xl font-bold text-white">
                       Select Language
                     </h2>
-                    <p className="mb-6 text-center text-sm text-muted-foreground">
+                    <p className="mb-6 text-center text-sm text-white/80">
                       Choose your preferred language
                     </p>
 
@@ -135,14 +135,14 @@ export function SelectionModal({
                     transition={{ duration: 0.2 }}
                     className="px-4 py-2 w-full"
                   >
-                    <h2 className="mb-1 text-center text-xl font-bold text-foreground">
+                    <h2 className="mb-1 text-center text-xl font-bold text-white">
                       {selectedLanguage === 'fa' 
                         ? 'کشور مقصد خدمات'
                         : selectedLanguage === 'ar'
                         ? 'بلد وجهة الخدمات'
                         : 'Services Destination'}
                     </h2>
-                    <p className="mb-6 text-center text-sm text-muted-foreground">
+                    <p className="mb-6 text-center text-sm text-white/80">
                       {selectedLanguage === 'fa' 
                         ? 'خدمات کدام کشور را می‌خواهید؟'
                         : selectedLanguage === 'ar'
@@ -211,7 +211,7 @@ export function SelectionModal({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="flex items-center gap-2 text-foreground/50"
+              className="flex items-center gap-2 text-white/60"
             >
               <div className="h-1 w-1 rounded-full bg-gold" />
               <span className="text-[10px] font-bold uppercase tracking-widest">

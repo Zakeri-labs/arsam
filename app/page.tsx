@@ -14,7 +14,7 @@ import { type Language, type Country, type Service, content } from '@/lib/conten
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
   const [modalStep, setModalStep] = useState<'language' | 'country'>('language');
-  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>('fa');
+  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>('en');
   const [selectedCountry, setSelectedCountry] = useState<Country | null>('uae');
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
