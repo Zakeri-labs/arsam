@@ -59,7 +59,9 @@ export function SelectionModal({
 
           {/* Content */}
           <div className="relative z-10 flex flex-1 flex-col items-center justify-between px-6 pt-14 pb-14 min-h-[100dvh]">
-
+            
+            {/* Top spacer for vertical centering */}
+            <div className="flex-none" />
 
             {/* Selection Card */}
             <motion.div
