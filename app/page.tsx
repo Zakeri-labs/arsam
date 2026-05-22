@@ -235,11 +235,11 @@ export default function Home() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-6 mb-8"
+                  className="mt-2 mb-4"
                 >
-                  <div className="bg-gradient-to-br from-[#f8f9fa] to-white p-6 rounded-3xl border border-border shadow-sm mb-10 relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-[#f8f9fa] to-white p-4 rounded-[1.25rem] border border-border shadow-sm mb-5 relative overflow-hidden">
                     <div className={`absolute top-0 ${isRtl ? 'right-0' : 'left-0'} w-1 h-full bg-gold`}></div>
-                    <p className="text-[15px] leading-loose text-foreground/80 text-justify relative z-10">
+                    <p className="text-[14px] leading-relaxed text-foreground/80 text-justify relative z-10">
                       {selectedLanguage === 'fa' 
                         ? 'الافق الذهبی همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار است. ما مسیر راه‌اندازی و توسعه شرکت شما را در کشورهای حوزه خلیج فارس ساده، سریع و امن می‌کنیم. لطفاً برای مشاهده خدمات، کشور مورد نظر خود را انتخاب کنید.'
                         : selectedLanguage === 'ar'
@@ -248,25 +248,25 @@ export default function Home() {
                     </p>
                   </div>
                   
-                  <div className="flex items-center justify-center gap-3 mb-8">
-                    <div className="h-[1px] w-12 bg-border"></div>
-                    <h3 className="text-xl font-extrabold text-foreground tracking-tight">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <div className="h-[1px] w-8 bg-border"></div>
+                    <h3 className="text-lg font-bold text-foreground tracking-tight">
                       {selectedLanguage === 'fa' ? 'انتخاب کشور مقصد' : selectedLanguage === 'ar' ? 'اختر وجهتك' : 'Select Destination'}
                     </h3>
-                    <div className="h-[1px] w-12 bg-border"></div>
+                    <div className="h-[1px] w-8 bg-border"></div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     {/* UAE Button */}
                     <button
                       onClick={() => handleCountrySelect('uae')}
-                      className="group relative flex flex-col items-center gap-4 rounded-[2rem] border border-border/60 bg-gradient-to-b from-white to-[#f8f9fa] p-6 transition-all duration-300 hover:border-gold hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1 active:scale-95 overflow-hidden"
+                      className="group relative flex flex-col items-center gap-2 rounded-3xl border border-border/60 bg-gradient-to-b from-white to-[#f8f9fa] p-4 transition-all duration-300 hover:border-gold hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1 active:scale-95 overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gold/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-                      <div className="relative w-28 h-16 group-hover:scale-105 transition-transform duration-300">
+                      <div className="relative w-20 h-12 group-hover:scale-105 transition-transform duration-300">
                         <Image src="/UAEFlag.gif" alt="UAE Flag" fill className="object-contain" unoptimized />
                       </div>
-                      <span className="font-extrabold text-[15px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
+                      <span className="font-extrabold text-[13px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
                         {selectedLanguage ? content[selectedLanguage].uae.header.title === 'الافق الذهبی' ? 'امارات متحده عربی' : content[selectedLanguage].uae.header.title === 'الأفق الذهبي' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates' : 'UAE'}
                       </span>
                     </button>
@@ -274,13 +274,13 @@ export default function Home() {
                     {/* Oman Button */}
                     <button
                       onClick={() => handleCountrySelect('oman')}
-                      className="group relative flex flex-col items-center gap-4 rounded-[2rem] border border-border/60 bg-gradient-to-b from-white to-[#f8f9fa] p-6 transition-all duration-300 hover:border-gold hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1 active:scale-95 overflow-hidden"
+                      className="group relative flex flex-col items-center gap-2 rounded-3xl border border-border/60 bg-gradient-to-b from-white to-[#f8f9fa] p-4 transition-all duration-300 hover:border-gold hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1 active:scale-95 overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gold/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-                      <div className="relative w-28 h-16 group-hover:scale-105 transition-transform duration-300">
+                      <div className="relative w-20 h-12 group-hover:scale-105 transition-transform duration-300">
                         <Image src="/OmanFlag.gif" alt="Oman Flag" fill className="object-contain" unoptimized />
                       </div>
-                      <span className="font-extrabold text-[15px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
+                      <span className="font-extrabold text-[13px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
                         {selectedLanguage ? content[selectedLanguage].oman.header.title === 'الافق الذهبی' ? 'سلطان‌نشین عمان' : content[selectedLanguage].oman.header.title === 'الأفق الذهبي' ? 'سلطنة عُمان' : 'Sultanate of Oman' : 'Oman'}
                       </span>
                     </button>

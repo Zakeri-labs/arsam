@@ -61,7 +61,7 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="px-4 pb-8 pt-6"
+      className="px-4 pb-4 pt-6"
     >
       <div className="flex items-stretch gap-4">
         {/* Logo — left side, negative top margin to extend higher, wider to make logo larger */}
