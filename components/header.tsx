@@ -7,7 +7,7 @@ import { type Language, type Country } from '@/lib/content';
 
 interface HeaderProps {
   language: Language;
-  country: Country;
+  country: Country | null;
   onChangeSettings: () => void;
   onMenuClick?: () => void;
 }
@@ -19,11 +19,13 @@ export function Header({ language, country, onChangeSettings }: HeaderProps) {
 interface HeroSectionProps {
   subtitle: string;
   language: Language;
-  country: Country;
+  country: Country | null;
 }
 
 export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
-  const cityName = language === 'en' 
+  const cityName = !country
+    ? (language === 'en' ? 'UAE & Oman' : language === 'fa' ? 'امارات و عمان' : 'الإمارات وعُمان')
+    : language === 'en' 
     ? (country === 'uae' ? 'Dubai' : 'Oman')
     : language === 'fa'
     ? (country === 'uae' ? 'دبی' : 'عمان')

@@ -13,9 +13,8 @@ import { type Language, type Country, type Service, content } from '@/lib/conten
 
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
-  const [modalStep, setModalStep] = useState<'language' | 'country'>('language');
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>('en');
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>('uae');
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
@@ -163,7 +162,8 @@ export default function Home() {
 
   const handleLanguageSelect = (lang: Language) => {
     setSelectedLanguage(lang);
-    setModalStep('country');
+    localStorage.setItem('preferredLanguage', lang);
+    setShowModal(false);
   };
 
   const handleCountrySelect = (country: Country) => {
@@ -176,7 +176,6 @@ export default function Home() {
   };
 
   const handleChangeSettings = () => {
-    setModalStep('language');
     setShowModal(true);
   };
 
@@ -186,6 +185,9 @@ export default function Home() {
   };
 
   const isRtl = selectedLanguage === 'fa' || selectedLanguage === 'ar';
+  
+  // Base content for the HeroSection even if country is not selected yet
+  const baseContent = selectedLanguage ? content[selectedLanguage][selectedCountry || 'uae'] : null;
   const currentContent = selectedLanguage && selectedCountry 
     ? content[selectedLanguage][selectedCountry] 
     : null;
@@ -199,15 +201,13 @@ export default function Home() {
       {/* Selection Modal */}
       <SelectionModal
         isOpen={showModal}
-        step={modalStep}
         selectedLanguage={selectedLanguage}
         onLanguageSelect={handleLanguageSelect}
-        onCountrySelect={handleCountrySelect}
       />
 
       {/* Main Content */}
       <AnimatePresence>
-        {currentContent && (
+        {baseContent && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -224,36 +224,86 @@ export default function Home() {
 
             {/* Hero Section */}
             <HeroSection
-              subtitle={currentContent.header.subtitle}
+              subtitle={baseContent.header.subtitle}
               language={selectedLanguage!}
-              country={selectedCountry!}
+              country={selectedCountry}
             />
 
-            {/* Services Section */}
+            {/* Main Dynamic Area */}
             <main className="px-4">
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="mb-4"
-              >
-                <h2 className="text-lg font-bold text-foreground">
-                  {currentContent.services.title}
-                </h2>
-              </motion.div>
+              {!selectedCountry ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-6 mb-8"
+                >
+                  <p className="text-[15px] leading-relaxed text-muted-foreground text-justify mb-10">
+                    {selectedLanguage === 'fa' 
+                      ? 'الافق الذهبی همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار است. ما مسیر راه‌اندازی و توسعه شرکت شما را در کشورهای حوزه خلیج فارس ساده، سریع و امن می‌کنیم. لطفاً برای مشاهده خدمات، کشور مورد نظر خود را انتخاب کنید.'
+                      : selectedLanguage === 'ar'
+                      ? 'الأفق الذهبي هو شريكك الموثوق لبدء وإدارة وتطوير أعمالك. نحن نجعل عملية تأسيس وتطوير شركتك في دول الخليج بسيطة وسريعة وآمنة. يرجى تحديد الدولة المطلوبة لعرض خدماتنا.'
+                      : 'AL UFUQ AL DAHABI is your trusted partner for starting, managing, and growing your business. We make the process of setting up and expanding your company in the Gulf region simple, fast, and secure. Please select your desired country to view our services.'}
+                  </p>
+                  
+                  <h3 className="text-lg font-bold text-foreground text-center mb-6">
+                    {selectedLanguage === 'fa' ? 'انتخاب کشور مقصد' : selectedLanguage === 'ar' ? 'اختر وجهتك' : 'Select Destination'}
+                  </h3>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="overflow-hidden rounded-2xl border border-border bg-card md:border-none md:bg-transparent md:overflow-visible"
-              >
-                <ServiceList
-                  services={currentContent.services.items}
-                  language={selectedLanguage!}
-                  onServiceClick={handleServiceClick}
-                />
-              </motion.div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* UAE Button */}
+                    <button
+                      onClick={() => handleCountrySelect('uae')}
+                      className="group flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-5 transition-all hover:border-gold hover:shadow-md active:scale-95"
+                    >
+                      <div className="relative w-20 h-14 overflow-hidden rounded-md shadow-sm">
+                        <Image src="/UAEFlag.gif" alt="UAE Flag" fill className="object-cover" unoptimized />
+                      </div>
+                      <span className="font-bold text-sm text-foreground">
+                        {selectedLanguage ? content[selectedLanguage].uae.header.title === 'الافق الذهبی' ? 'امارات متحده عربی' : content[selectedLanguage].uae.header.title === 'الأفق الذهبي' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates' : 'UAE'}
+                      </span>
+                    </button>
+
+                    {/* Oman Button */}
+                    <button
+                      onClick={() => handleCountrySelect('oman')}
+                      className="group flex flex-col items-center gap-3 rounded-3xl border border-border bg-card p-5 transition-all hover:border-gold hover:shadow-md active:scale-95"
+                    >
+                      <div className="relative w-20 h-14 overflow-hidden rounded-md shadow-sm">
+                        <Image src="/OmanFlag.gif" alt="Oman Flag" fill className="object-cover" unoptimized />
+                      </div>
+                      <span className="font-bold text-sm text-foreground">
+                        {selectedLanguage ? content[selectedLanguage].oman.header.title === 'الافق الذهبی' ? 'سلطان‌نشین عمان' : content[selectedLanguage].oman.header.title === 'الأفق الذهبي' ? 'سلطنة عُمان' : 'Sultanate of Oman' : 'Oman'}
+                      </span>
+                    </button>
+                  </div>
+                </motion.div>
+              ) : currentContent && (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mb-4"
+                  >
+                    <h2 className="text-lg font-bold text-foreground">
+                      {currentContent.services.title}
+                    </h2>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="overflow-hidden rounded-2xl border border-border bg-card md:border-none md:bg-transparent md:overflow-visible"
+                  >
+                    <ServiceList
+                      services={currentContent.services.items}
+                      language={selectedLanguage!}
+                      onServiceClick={handleServiceClick}
+                    />
+                  </motion.div>
+                </>
+              )}
             </main>
 
             {/* Bottom Navigation */}
