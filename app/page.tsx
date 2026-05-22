@@ -263,8 +263,8 @@ export default function Home() {
                       className="group relative flex flex-col items-center gap-4 rounded-[2rem] border border-border/60 bg-gradient-to-b from-white to-[#f8f9fa] p-6 transition-all duration-300 hover:border-gold hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1 active:scale-95 overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gold/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-                      <div className="relative w-24 h-16 overflow-hidden rounded-xl shadow-md border border-white/50 group-hover:scale-105 transition-transform duration-300 ring-4 ring-black/5">
-                        <Image src="/UAEFlag.gif" alt="UAE Flag" fill className="object-cover" unoptimized />
+                      <div className="relative w-28 h-16 group-hover:scale-105 transition-transform duration-300">
+                        <Image src="/UAEFlag.gif" alt="UAE Flag" fill className="object-contain" unoptimized />
                       </div>
                       <span className="font-extrabold text-[15px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
                         {selectedLanguage ? content[selectedLanguage].uae.header.title === 'الافق الذهبی' ? 'امارات متحده عربی' : content[selectedLanguage].uae.header.title === 'الأفق الذهبي' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates' : 'UAE'}
@@ -277,8 +277,8 @@ export default function Home() {
                       className="group relative flex flex-col items-center gap-4 rounded-[2rem] border border-border/60 bg-gradient-to-b from-white to-[#f8f9fa] p-6 transition-all duration-300 hover:border-gold hover:shadow-xl hover:shadow-gold/10 hover:-translate-y-1 active:scale-95 overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gold/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
-                      <div className="relative w-24 h-16 overflow-hidden rounded-xl shadow-md border border-white/50 group-hover:scale-105 transition-transform duration-300 ring-4 ring-black/5">
-                        <Image src="/OmanFlag.gif" alt="Oman Flag" fill className="object-cover" unoptimized />
+                      <div className="relative w-28 h-16 group-hover:scale-105 transition-transform duration-300">
+                        <Image src="/OmanFlag.gif" alt="Oman Flag" fill className="object-contain" unoptimized />
                       </div>
                       <span className="font-extrabold text-[15px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
                         {selectedLanguage ? content[selectedLanguage].oman.header.title === 'الافق الذهبی' ? 'سلطان‌نشین عمان' : content[selectedLanguage].oman.header.title === 'الأفق الذهبي' ? 'سلطنة عُمان' : 'Sultanate of Oman' : 'Oman'}
