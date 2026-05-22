@@ -70,13 +70,13 @@ export function SelectionModal({
               transition={{ delay: 0.2 }}
               className="flex flex-col items-center p-4"
             >
-              <div className="logo-shimmer-container bg-white/95 p-5 rounded-3xl shadow-[0_0_30px_rgba(255,255,255,0.1)]">
+              <div className="logo-shimmer-container">
                 <Image
-                  src="/black-lion.png"
+                  src="/logo.png"
                   alt="Shiny Horizon"
-                  width={240}
-                  height={240}
-                  className="h-auto w-40 object-contain drop-shadow-sm"
+                  width={160}
+                  height={200}
+                  className="h-auto w-32 object-contain"
                   priority
                 />
               </div>
