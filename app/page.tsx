@@ -12,13 +12,14 @@ import { AboutModal } from '@/components/about-modal';
 import { type Language, type Country, type Service, content } from '@/lib/content';
 
 export default function Home() {
-  const [showModal, setShowModal] = useState(true);
+  const [showModal, setShowModal] = useState(false);
   const [modalStep, setModalStep] = useState<'language' | 'country'>('language');
-  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>(null);
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<Language | null>('fa');
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>('uae');
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [hasShownSplash, setHasShownSplash] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'services' | 'about' | 'contact'>('home');
 
   useEffect(() => {
@@ -135,10 +136,29 @@ export default function Home() {
     const interval = setInterval(removeBadge, 80);
     const timeout = setTimeout(() => clearInterval(interval), 7000);
 
+    // Splash screen logic
+    const savedLang = localStorage.getItem('preferredLanguage') as Language;
+    const savedCountry = localStorage.getItem('preferredCountry') as Country;
+    
+    let splashTimer: NodeJS.Timeout;
+    if (savedLang && savedCountry) {
+      setSelectedLanguage(savedLang);
+      setSelectedCountry(savedCountry);
+      setHasShownSplash(true);
+    } else {
+      splashTimer = setTimeout(() => {
+        if (!hasShownSplash) {
+          setShowModal(true);
+          setHasShownSplash(true);
+        }
+      }, 3000);
+    }
+
     return () => {
       observer.disconnect();
       clearInterval(interval);
       clearTimeout(timeout);
+      if (splashTimer) clearTimeout(splashTimer);
     };
   }, []);
 
@@ -188,7 +208,7 @@ export default function Home() {
 
       {/* Main Content */}
       <AnimatePresence>
-        {currentContent && !showModal && (
+        {currentContent && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

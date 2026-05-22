@@ -72,11 +72,11 @@ export function SelectionModal({
             >
               <div className="logo-shimmer-container">
                 <Image
-                  src="/logo.png"
+                  src="/black-lion.png"
                   alt="Shiny Horizon"
-                  width={160}
-                  height={200}
-                  className="h-auto w-32 object-contain"
+                  width={240}
+                  height={240}
+                  className="h-auto w-48 object-contain mix-blend-multiply drop-shadow-md"
                   priority
                 />
               </div>
