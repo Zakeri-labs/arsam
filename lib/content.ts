@@ -49,7 +49,7 @@ export const modalContent: Record<Language, { selectLanguage: string; selectCoun
   ar: { selectLanguage: 'اختر لغتك', selectCountry: 'اختر وجهتك', continue: 'متابعة' },
 };
 
-// 28 Services in English
+// 27 Services in English (Residential Ejari Removed)
 const servicesListEN: Service[] = [
   // Renewal Services
   {
@@ -146,15 +146,6 @@ const servicesListEN: Service[] = [
     serviceFee: 'AED 3,250',
     workingDays: '1 Working Day',
     requirements: ['Mandatory For New Companies', 'Mandatory For License Renew', 'Inspection Available For 1 Year'],
-    category: 'Ejari Registration Services'
-  },
-  {
-    id: 'ejari-residential',
-    title: 'Ejari Registration - Residential',
-    description: 'Official residential Ejari registration, valid for 1 month without physical inspection. Perfect for 1 or 2 bedroom apartments to quickly activate utilities or residency sponsorship.',
-    serviceFee: 'AED 2,150',
-    workingDays: '1 Working Day',
-    requirements: ['One Month Valid', 'Without Inspection', 'One or two Bedrooms'],
     category: 'Ejari Registration Services'
   },
 
@@ -329,7 +320,7 @@ const servicesListEN: Service[] = [
   }
 ];
 
-// 28 Services in Persian
+// 27 Services in Persian (Residential Ejari Removed)
 const servicesListFA: Service[] = [
   // Renewal Services
   {
@@ -426,15 +417,6 @@ const servicesListFA: Service[] = [
     serviceFee: '۳,۲۵۰ درهم',
     workingDays: '۱ روز کاری',
     requirements: ['الزامی برای تاسیس شرکت‌های جدید', 'الزامی برای تمدید لایسنس', 'قابلیت بازرسی هماهنگ شده تا ۱ سال'],
-    category: 'Ejari Registration Services'
-  },
-  {
-    id: 'ejari-residential',
-    title: 'ثبت ایجاری مسکونی',
-    description: 'ثبت قرارداد رسمی ایجاری برای واحدهای مسکونی (یک یا دو خوابه) با اعتبار ۱ ماهه و بدون نیاز به بازرسی جهت ثبت فوری اقامت خانواده.',
-    serviceFee: '۲,۱۵۰ درهم',
-    workingDays: '۱ روز کاری',
-    requirements: ['ثبت با اعتبار یک ماهه', 'بدون نیاز به بازرسی فیزیکی', 'مناسب برای آپارتمان‌های یک یا دو خوابه'],
     category: 'Ejari Registration Services'
   },
 
@@ -609,7 +591,7 @@ const servicesListFA: Service[] = [
   }
 ];
 
-// 28 Services in Arabic
+// 27 Services in Arabic (Residential Ejari Removed)
 const servicesListAR: Service[] = [
   // Renewal Services
   {
@@ -706,15 +688,6 @@ const servicesListAR: Service[] = [
     serviceFee: '3,250 درهم',
     workingDays: 'يوم عمل واحد',
     requirements: ['إلزامي للشركات الجديدة', 'إلزامي لتجديد الرخصة التجارية', 'التفتيش متاح لمدة عام كامل'],
-    category: 'Ejari Registration Services'
-  },
-  {
-    id: 'ejari-residential',
-    title: 'تسجيل إيجاري سكني',
-    description: 'تسجيل رسمي لعقد الإيجاري السكني للشقق المكونة من غرفة أو غرفتين بصلاحية شهر وبدون تفتيش، لسرعة كفالة الأسرة وتفعيل الخدمات.',
-    serviceFee: '2,150 درهم',
-    workingDays: 'يوم عمل واحد',
-    requirements: ['صلاحية لمدة شهر واحد', 'إجراء بدون تفتيش ميداني', 'مخصص للشقق السكنية غرفة أو غرفتين'],
     category: 'Ejari Registration Services'
   },
 
@@ -852,7 +825,7 @@ const servicesListAR: Service[] = [
     serviceFee: 'من 450 درهم',
     governmentFees: 'من 3,000 درهم',
     workingDays: '3 أيام عمل',
-    requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'موافقة دائرة التنمية الاقتصادية (DED) مطلوبة'],
+    requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'موافقة دائرة التنمية اقتصادية (DED) مطلوبة'],
     category: 'License Modification Services'
   },
 
