@@ -96,7 +96,7 @@ export function ServiceCard({ service, index, language, onClick }: ServiceCardPr
         <h3 className="text-sm font-semibold text-foreground">
           {service.title}
         </h3>
-        <p className="line-clamp-1 text-xs text-muted-foreground">
+        <p className="line-clamp-2 text-xs text-muted-foreground">
           {service.description}
         </p>
       </div>
