@@ -11,6 +11,50 @@ import { BottomNav } from '@/components/bottom-nav';
 import { AboutModal } from '@/components/about-modal';
 import { type Language, type Country, type Service, content } from '@/lib/content';
 
+const categories = [
+  'all',
+  'Renewal Services',
+  'Ejari Registration Services',
+  'Banking Services',
+  'Tax Services',
+  'Tourism Services',
+  'License Modification Services',
+  'Cancellation Services',
+];
+
+const categoryTranslations: Record<Language, Record<string, string>> = {
+  en: {
+    all: 'All',
+    'Renewal Services': 'Renewal',
+    'Ejari Registration Services': 'Ejari',
+    'Banking Services': 'Banking',
+    'Tax Services': 'Tax Services',
+    'Tourism Services': 'Tourism',
+    'License Modification Services': 'Modification',
+    'Cancellation Services': 'Cancellation',
+  },
+  fa: {
+    all: 'همه',
+    'Renewal Services': 'تمدید خدمات',
+    'Ejari Registration Services': 'ثبت ایجاری',
+    'Banking Services': 'خدمات بانکی',
+    'Tax Services': 'امور مالیاتی',
+    'Tourism Services': 'گردشگری',
+    'License Modification Services': 'اصلاح لایسنس',
+    'Cancellation Services': 'کنسلی و انحلال',
+  },
+  ar: {
+    all: 'الكل',
+    'Renewal Services': 'تجديد المعاملات',
+    'Ejari Registration Services': 'تسجيل إيجاري',
+    'Banking Services': 'خدمات مصرفية',
+    'Tax Services': 'الخدمات الضريبية',
+    'Tourism Services': 'الخدمات السياحية',
+    'License Modification Services': 'تعديل التراخيص',
+    'Cancellation Services': 'إلغاء وتصفية',
+  }
+};
+
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>('en');
@@ -20,6 +64,7 @@ export default function Home() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [hasShownSplash, setHasShownSplash] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'services' | 'about' | 'contact'>('home');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
   useEffect(() => {
     // 1. Dynamic Runtime Style Sheet Injection (prevents Next.js build-time CSS purger from stripping our blocker styles)
@@ -168,6 +213,7 @@ export default function Home() {
 
   const handleCountrySelect = (country: Country) => {
     setSelectedCountry(country);
+    setSelectedCategory('all');
     if (selectedLanguage) {
       localStorage.setItem('preferredLanguage', selectedLanguage);
       localStorage.setItem('preferredCountry', country);
@@ -299,6 +345,32 @@ export default function Home() {
                     </h2>
                   </motion.div>
 
+                  {/* Horizontal Scrollable Category Tabs */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                    className="flex gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {categories.map((cat) => {
+                      const isActive = selectedCategory === cat;
+                      return (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`whitespace-nowrap px-4 py-2 rounded-full text-xs font-bold transition-all border ${
+                            isActive
+                              ? 'bg-navy text-white border-navy shadow-md shadow-navy/15'
+                              : 'bg-secondary/70 text-muted-foreground hover:bg-secondary border-border/40 hover:text-foreground'
+                          }`}
+                        >
+                          {categoryTranslations[selectedLanguage!][cat]}
+                        </button>
+                      );
+                    })}
+                  </motion.div>
+
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -306,7 +378,11 @@ export default function Home() {
                     className="overflow-hidden rounded-2xl border border-border bg-card md:border-none md:bg-transparent md:overflow-visible"
                   >
                     <ServiceList
-                      services={currentContent.services.items}
+                      services={
+                        selectedCategory === 'all'
+                          ? currentContent.services.items
+                          : currentContent.services.items.filter((item) => item.category === selectedCategory)
+                      }
                       language={selectedLanguage!}
                       onServiceClick={handleServiceClick}
                     />

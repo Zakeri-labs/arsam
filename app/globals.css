@@ -230,3 +230,13 @@ a[href*="v0.dev"],
   height: 0 !important;
   overflow: hidden !important;
 }
+
+/* Hide scrollbars for dynamic horizontal list scroll views */
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
