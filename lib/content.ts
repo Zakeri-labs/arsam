@@ -1665,6 +1665,122 @@ function convertToOmanServices(services: Service[], language: Language): Service
         updated.description = 'Step-by-step guidance for converting your home country driving license or starting a new file. We coordinate eye tests and ROP appointments.';
         updated.requirements = ['Valid Oman Civil ID', 'Original Home Country License', 'Oman Eye Test Certificate'];
       }
+    } else if (updated.id === 'family-residency-renewal') {
+      if (language === 'fa') {
+        updated.requirements = ['پرینت حساب بانکی اسپانسر', 'کارت ملی عمان (Civil ID) اسپانسر باید معتبر باشد', 'نیاز به کارت فیزیکی اسپانسر'];
+      } else if (language === 'ar') {
+        updated.requirements = ['كشف حساب بنكي للكفيل', 'يجب أن تكون هوية الكفيل سارية', 'البطاقة الشخصية العمانية الأصلية للكفيل مطلوبة'];
+      } else {
+        updated.requirements = ['Sponsor Bank Statement', 'Sponsor Oman ID Must be Valid', 'Sponsor Physical ID Required'];
+      }
+    } else if (updated.id === 'investor-residency-renewal') {
+      if (language === 'fa') {
+        updated.requirements = ['پرینت حساب بانکی شرکت', 'سجل تجاری (CR) باید معتبر باشد', 'نیاز به کارت بازرگانی فعال شرکت'];
+      } else if (language === 'ar') {
+        updated.requirements = ['كشف حساب بنكي للشركة', 'يجب أن يكون السجل التجاري سارياً', 'بطاقة غرفة التجارة سارية المفعول مطلوبة'];
+      } else {
+        updated.requirements = ['Business Bank Statement', 'Commercial Registration (CR) Must be Valid', 'Active Chamber Card Required'];
+      }
+    } else if (updated.id === 'investor-residency-cancellation') {
+      if (language === 'fa') {
+        updated.requirements = ['نامه عدم اعتراض (NOC) رسمی', 'سجل تجاری (CR) معتبر شرکت', 'کارت ملی فیزیکی عمان (Civil ID)'];
+      } else if (language === 'ar') {
+        updated.requirements = ['رسالة عدم ممانعة (NOC) رسمية وموقعة', 'سجل تجاري ساري المفعول', 'البطاقة الشخصية العمانية الأصلية مطلوبة'];
+      } else {
+        updated.requirements = ['NOC Letter Required', 'Valid Commercial Registration (CR)', 'Physical Oman Civil ID Required'];
+      }
+    } else if (updated.id === 'corporate-tax-registration') {
+      if (language === 'fa') {
+        updated.description = 'ثبت‌نام رسمی شرکت در سیستم مالیاتی سازمان امور مالیاتی عمان (Tax Authority) جهت انجام وظایف قانونی مالیات بر درآمد و جلوگیری از جرایم عدم ثبت‌نام.';
+        updated.requirements = ['الزامی برای کلیه شرکت‌های فعال', 'ثبت‌نام در پرتال رسمی مالیاتی عمان', 'جلوگیری از جرایم مالیاتی'];
+      } else if (language === 'ar') {
+        updated.description = 'التسجيل الرسمي للشركة في النظام الضريبي لدى جهاز الضرائب بسلطنة عمان لتفادي الغرامات والعقوبات القانونية بالالتزام بالتسجيل في المواعيد الرسمية.';
+        updated.requirements = ['إلزامي لجميع الشركات والمؤسسات', 'التسجيل في جهاز الضرائب العماني', 'تفادي الغرامات والعقوبات'];
+      } else {
+        updated.description = 'Official corporate tax registration with the Oman Tax Authority (TA). Avoid legal penalties by registering within the required regulatory timeframe.';
+        updated.requirements = ['Mandatory For all Companies', 'Oman Tax Registration', 'Avoid Penalties'];
+      }
+    } else if (updated.id === 'fta-profile-update') {
+      if (language === 'fa') {
+        updated.title = 'به‌روزرسانی پروفایل سازمان امور مالیاتی';
+        updated.description = 'اصلاح و به‌روزرسانی مشخصات و مدارک شرکت در پرتال سازمان امور مالیاتی عمان پس از اعمال تغییرات سجل تجاری، آدرس یا مدیریت جهت جلوگیری از تعلیق پرونده.';
+        updated.requirements = ['اطلاعات سجل تجاری باید به‌روز باشد', 'کارت ملی مدیر مسئول باید به‌روز باشد', 'محل دقیق شرکت باید ثبت و به‌روز باشد'];
+      } else if (language === 'ar') {
+        updated.title = 'تحديث ملف جهاز الضرائب';
+        updated.description = 'تعديل وتحديث بيانات شركتكم الرسمية على بوابة جهاز الضرائب العماني بعد تعديل السجل التجاري أو الإدارة أو المقر لتجنب تعليق الملف.';
+        updated.requirements = ['يجب تحديث بيانات السجل التجاري أولاً', 'يجب تحديث البطاقة الشخصية للمدير المسؤول', 'يجب تحديث موقع وعنوان مقر الشركة'];
+      } else {
+        updated.title = 'Tax Authority Profile Update';
+        updated.description = 'Official update of your Oman Tax Authority profile following updates in commercial registration, managing partners, or company office location to prevent portal issues.';
+        updated.requirements = ['CR Info Must Be Updated', 'Manager ID Must Be Updated', 'Company Location Must Be Updated'];
+      }
+    } else if (updated.id === 'tax-reconsideration') {
+      if (language === 'fa') {
+        updated.description = 'ثبت رسمی درخواست تجدیدنظر و بخشش جرایم مالیاتی طبق قوانین مالیاتی عمان. تنظیم لوایح دفاعی قانونی جهت افزایش شانس معافیت از جریمه.';
+        updated.requirements = ['اعتراض به جرایم صادره مالیاتی', 'عدم تضمین ۱۰۰٪ بخشش (بستگی به قوانین دارد)', 'تنظیم لایحه بر اساس قوانین رسمی عمان'];
+      } else if (language === 'ar') {
+        updated.description = 'تقديم طلب إعادة نظر رسمي في الغرامات المفروضة من جهاز الضرائب العماني، وصياغة الدفوع القانونية المناسبة لزيادة فرص الإعفاء أو التخفيض.';
+        updated.requirements = ['تقديم طلب تظلم من الغرامات', 'الموافقة على الإعفاء غير مضمونة (حسب الحالة)', 'الصياغة وفق قوانين جهاز الضرائب العماني'];
+      } else {
+        updated.description = 'Submit professional appeals and waiver requests for tax penalties under Oman tax laws. We draft robust legal arguments to maximize penalty waiver success.';
+        updated.requirements = ['Penalty Reconsideration', 'Waiving is Not Guaranteed', 'According to Oman Tax Laws'];
+      }
+    } else if (updated.id === 'change-activity') {
+      if (language === 'fa') {
+        updated.requirements = ['سجل تجاری (CR) باید معتبر باشد', 'امضای کلیه شرکا روی برگه اصلاحیه اساسنامه', 'نیاز به ثبت تغییر نام در صورت لزوم'];
+      } else if (language === 'ar') {
+        updated.requirements = ['يجب أن يكون السجل التجاري سارياً', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'مطلوب تعديل الاسم عند الاقتضاء'];
+      } else {
+        updated.requirements = ['CR Must Be Valid', 'All Partners Must Sign MOA', 'Change Name Required (If applicable)'];
+      }
+    } else if (updated.id === 'change-location') {
+      if (language === 'fa') {
+        updated.requirements = ['سجل تجاری (CR) باید معتبر باشد', 'امضای کلیه شرکا روی برگه اصلاحیه اساسنامه', 'نیاز به عقد اجاره بلدیه (شهرداری) جدید'];
+      } else if (language === 'ar') {
+        updated.requirements = ['يجب أن يكون السجل التجاري سارياً', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'عقد إيجار بلدي جديد وموثق مطلوب'];
+      } else {
+        updated.requirements = ['CR Must Be Valid', 'All Partners Must Sign MOA', 'New Tenancy Contract Required'];
+      }
+    } else if (updated.id === 'license-modification') {
+      if (language === 'fa') {
+        updated.requirements = ['سجل تجاری (CR) باید معتبر باشد', 'امضای کلیه شرکا روی برگه اصلاحیه اساسنامه', 'نیاز به تایید رسمی وزارت تجارت و صنعت (MOCI)'];
+      } else if (language === 'ar') {
+        updated.requirements = ['يجب أن يكون السجل التجاري سارياً', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'موافقة وزارة التجارة والصناعة (MOCI) مطلوبة'];
+      } else {
+        updated.requirements = ['CR Must Be Valid', 'All Partners Must Sign MOA', 'MOCI Approval Required'];
+      }
+    } else if (updated.id === 'family-residency-cancellation') {
+      if (language === 'fa') {
+        updated.requirements = ['کارت ملی عمان فیزیکی اسپانسر', 'فرم درخواست لغو مجوز ورود', 'امکان عودت وجه تضمین در صورت وجود'];
+      } else if (language === 'ar') {
+        updated.requirements = ['البطاقة الشخصية العمانية الأصلية للكفيل', 'طلب تصريح إلغاء إذن الدخول', 'استرداد مبلغ الضمان متاح عند الإلغاء'];
+      } else {
+        updated.requirements = ['Sponsor Physical Oman Civil ID', 'Entry Permit Application', 'Refund Available'];
+      }
+    } else if (updated.id === 'trade-license-cancellation') {
+      if (language === 'fa') {
+        updated.title = 'انحلال و کنسلی سجل تجاری (CR)';
+      } else if (language === 'ar') {
+        updated.title = 'إلغاء وإغلاق السجل التجاري';
+      } else {
+        updated.title = 'Commercial Registration (CR) Cancellation';
+      }
+    } else if (updated.id === 'trademark-registration') {
+      if (language === 'fa') {
+        updated.requirements = ['طرح یا لوگوی برند', 'کپی سجل تجاری (CR) شرکت', 'وکالت‌نامه رسمی'];
+      } else if (language === 'ar') {
+        updated.requirements = ['شعار أو تصميم العلامة التجارية', 'نسخة من السجل التجاري', 'وكالة رسمية موثقة'];
+      } else {
+        updated.requirements = ['Trademark Logo / Design', 'Commercial Registration (CR) Copy', 'Power of Attorney'];
+      }
+    } else if (updated.id === 'company-mainland') {
+      if (language === 'fa') {
+        updated.description = 'ثبت شرکت در سرزمین اصلی عمان با مالکیت ۱۰۰ درصد خارجی. انجام تمامی مراحل رزرواسیون نام تجاری، موافقت اولیه، ثبت در وزارت تجارت، صنعت و توسعه سرمایه‌گذاری (MOCI) و امضای اساسنامه.';
+      } else if (language === 'ar') {
+        updated.description = 'تأسيس شركة في البر الرئيسي لسلطنة عمان بملكية أجنبية 100%. ننجز حجز الاسم التجاري، والموافقة المبدئية، والتسجيل لدى وزارة التجارة والصناعة وترويج الاستثمار وعقد التأسيس.';
+      } else {
+        updated.description = 'Establish a company in mainland Oman with 100% foreign ownership. We process trade name reservation, initial approvals, MOCI registrations, and Memorandum of Association (MOA) signing.';
+      }
     }
 
     // Replace general UAE/Emirates terms with Oman terms in requirements and descriptions

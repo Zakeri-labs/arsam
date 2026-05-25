@@ -119,7 +119,7 @@ export default function Home() {
           ];
           selectors.forEach(sel => {
             try {
-              const elements = (root as HTMLElement).querySelectorAll(sel);
+              const elements = (root as unknown as HTMLElement).querySelectorAll(sel);
               elements.forEach(el => el.remove());
             } catch (e) {}
           });
