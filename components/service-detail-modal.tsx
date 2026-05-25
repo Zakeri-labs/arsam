@@ -178,13 +178,14 @@ export function ServiceDetailModal({
                   transition={{ duration: 0.2 }}
                   className="pt-4 text-start"
                 >
-                  <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
-                    <FileText className="h-6 w-6" />
+                  <div className="flex items-center gap-3.5 mb-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
+                      <FileText className="h-6 w-6" />
+                    </div>
+                    <h2 className="text-xl font-bold text-foreground leading-tight">
+                      {service.title}
+                    </h2>
                   </div>
-
-                  <h2 className="mb-2 text-xl font-bold text-foreground">
-                    {service.title}
-                  </h2>
 
                   {/* Service pricing & timeline details */}
                   <div className="mb-5 flex flex-col gap-2.5">
