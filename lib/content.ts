@@ -87,7 +87,7 @@ const servicesListEN: Service[] = [
     title: 'Trade License Renewal',
     description: 'Maintain your commercial operations without fines. We process your trade license renewal, register Ejari contracts, secure approvals from regulatory bodies, and facilitate flexible installment pay vouchers.',
     serviceFee: 'AED 300',
-    governmentFees: 'Government Fees From: AED 4,270',
+    governmentFees: 'From AED 4,270',
     workingDays: '3 Working Days',
     requirements: ['Ejari Must be Valid', 'Valid Establishment Card', 'Pay Voucher By Tabby'],
     category: 'Renewal Services'
@@ -260,7 +260,7 @@ const servicesListEN: Service[] = [
     title: 'Change Activity(ies)',
     description: 'Add, remove, or modify your trade license activities. We handle local department approvals, municipal requirements, and Memorandum of Association (MOA) amendments.',
     serviceFee: 'AED 450',
-    governmentFees: 'Govt. Fees From: AED 3,000',
+    governmentFees: 'From AED 3,000',
     workingDays: '2 Working Days',
     requirements: ['License Must Be Valid', 'All Partners Must Sign MOA', 'Change Name Required'],
     category: 'License Modification Services'
@@ -270,7 +270,7 @@ const servicesListEN: Service[] = [
     title: 'Change Business Name',
     description: 'Officially change your corporate or brand name. We cover brand name reservation, MOA amendment, municipal updates, and publication of the new trade license.',
     serviceFee: 'AED 450',
-    governmentFees: 'Government Fees From: AED 800',
+    governmentFees: 'From AED 800',
     workingDays: '2 Working Days',
     requirements: ['License Must Be Valid', 'All Partners Most Sign MOA', 'Name Reservation Required'],
     category: 'License Modification Services'
@@ -280,7 +280,7 @@ const servicesListEN: Service[] = [
     title: 'Change Location',
     description: 'Relocate your business address legally. We update your physical office location on the trade license and process municipal address modifications swiftly.',
     serviceFee: 'AED 300',
-    governmentFees: 'Government Fees From: AED 800',
+    governmentFees: 'From AED 800',
     workingDays: '2 Working Days',
     requirements: ['License Must Be Valid', 'All Partners Most Sign MOA', 'New Ejari Required'],
     category: 'License Modification Services'
@@ -289,8 +289,8 @@ const servicesListEN: Service[] = [
     id: 'license-modification',
     title: 'License Modification',
     description: 'Comprehensive structural modifications to your license, such as altering partners, modifying share capital, updating management structure, or changing local sponsors.',
-    serviceFee: 'Service Fee From: AED 450',
-    governmentFees: 'Govt. Fees From: AED 3,000',
+    serviceFee: 'From AED 450',
+    governmentFees: 'From AED 3,000',
     workingDays: '3 Working Days',
     requirements: ['License Must Be Valid', 'All Partners Must Sign MOA', 'DED Approval Required'],
     category: 'License Modification Services'
@@ -302,7 +302,7 @@ const servicesListEN: Service[] = [
     title: 'Family Residency Cancellation',
     description: 'Officially cancel family residency permits when relocating or changing sponsors. We ensure error-free paperwork to maintain clean immigration profiles.',
     serviceFee: 'AED 300',
-    governmentFees: 'Government Fees: AED 290',
+    governmentFees: 'AED 290',
     workingDays: '3 Working Days',
     requirements: ['Sponsor Physical EID', 'Entry Permit Application', 'Refund Available'],
     category: 'Cancellation Services'
@@ -312,7 +312,7 @@ const servicesListEN: Service[] = [
     title: 'Investor Residency Cancellation',
     description: 'Proper cancellation of investor/partner residency visas. Highly critical for corporate restructuring, shifting ownership, or cancellation of company license.',
     serviceFee: 'AED 300',
-    governmentFees: 'Government Fees: AED 330',
+    governmentFees: 'AED 330',
     workingDays: '5 Working Days',
     requirements: ['NOC Letter Required', 'Valid Establishment Card', 'Physical Emirates ID'],
     category: 'Cancellation Services'
@@ -322,7 +322,7 @@ const servicesListEN: Service[] = [
     title: 'Trade License Cancellation',
     description: 'Legal company liquidation and license cancellation. We handle auditing reports, official announcements, local department approvals, and final cancellation certificates.',
     serviceFee: 'AED 300',
-    governmentFees: 'Govt. Fees From: AED 6,000',
+    governmentFees: 'From AED 6,000',
     workingDays: '5 Working Days',
     requirements: ['Partners Visa Cancellation', 'All Partners Must Sign', 'Company Audition Required'],
     category: 'Cancellation Services'
@@ -367,7 +367,7 @@ const servicesListFA: Service[] = [
     title: 'تمدید لایسنس تجاری',
     description: 'فعالیت‌های تجاری خود را بدون نگرانی از جریمه‌های شهرداری حفظ کنید. انجام تمدید لایسنس، ثبت عقد ایجاری و صدور فیش‌های پرداختی دولتی.',
     serviceFee: '۳۰۰ درهم',
-    governmentFees: 'هزینه‌های دولتی از: ۴,۲۷۰ درهم',
+    governmentFees: 'از ۴,۲۷۰ درهم',
     workingDays: '۳ روز کاری',
     requirements: ['عقد ایجاری (Ejari) معتبر', 'استبلیشمنت کارت معتبر شرکت', 'قابلیت پرداخت فیش با تبی (Tabby)'],
     category: 'Renewal Services'
@@ -540,7 +540,7 @@ const servicesListFA: Service[] = [
     title: 'تغییر فعالیت‌های لایسنس (Activity)',
     description: 'اضافه، حذف یا اصلاح فعالیت‌های تجاری ثبت شده لایسنس. انجام تاییدیه‌های شهرداری، اصلاح اساسنامه (MOA) و هماهنگی شرکا.',
     serviceFee: '۴۵۰ درهم',
-    governmentFees: 'هزینه‌های دولتی از: ۳,۰۰۰ درهم',
+    governmentFees: 'از ۳,۰۰۰ درهم',
     workingDays: '۲ روز کاری',
     requirements: ['لایسنس شرکت باید معتبر باشد', 'امضای کلیه شرکا روی برگه اصلاحیه اساسنامه', 'نیاز به ثبت تغییر نام در صورت لزوم'],
     category: 'License Modification Services'
@@ -550,7 +550,7 @@ const servicesListFA: Service[] = [
     title: 'تغییر نام تجاری شرکت',
     description: 'تغییر نام رسمی شرکت یا برند تجاری شما. شامل رزرواسیون نام جدید در دپارتمان اقتصادی، اصلاح اساسنامه و صدور لایسنس جدید.',
     serviceFee: '۴۵۰ درهم',
-    governmentFees: 'هزینه‌های دولتی از: ۸۰۰ درهم',
+    governmentFees: 'از ۸۰۰ درهم',
     workingDays: '۲ روز کاری',
     requirements: ['لایسنس شرکت باید معتبر باشد', 'امضای کلیه شرکا روی برگه اصلاحیه اساسنامه', 'نیاز به رزرو رسمی نام جدید شرکت'],
     category: 'License Modification Services'
@@ -560,7 +560,7 @@ const servicesListFA: Service[] = [
     title: 'تغییر آدرس قانونی شرکت',
     description: 'تغییر رسمی و قانونی آدرس ثبت شده شرکت. به‌روزرسانی محل فعالیت جدید در لایسنس تجاری و ثبت آدرس جدید در سامانه‌های شهری.',
     serviceFee: '۳۰۰ درهم',
-    governmentFees: 'هزینه‌های دولتی از: ۸۰۰ درهم',
+    governmentFees: 'از ۸۰۰ درهم',
     workingDays: '۲ روز کاری',
     requirements: ['لایسنس شرکت باید معتبر باشد', 'امضای کلیه شرکا روی برگه اصلاحیه اساسنامه', 'نیاز به عقد ایجاری (Ejari) جدید برای آدرس جدید'],
     category: 'License Modification Services'
@@ -569,8 +569,8 @@ const servicesListFA: Service[] = [
     id: 'license-modification',
     title: 'اصلاح و تغییرات لایسنس',
     description: 'تغییرات اساسی ساختاری در لایسنس شرکت، شامل ورود یا خروج شرکا، کاهش یا افزایش سرمایه، تغییرات مدیریتی و تایید سازمان اقتصادی.',
-    serviceFee: 'هزینه خدمات از: ۴۵۰ درهم',
-    governmentFees: 'هزینه‌های دولتی از: ۳,۰۰۰ درهم',
+    serviceFee: 'از ۴۵۰ درهم',
+    governmentFees: 'از ۳,۰۰۰ درهم',
     workingDays: '۳ روز کاری',
     requirements: ['لایسنس شرکت باید معتبر باشد', 'امضای کلیه شرکا روی برگه اصلاحیه اساسنامه', 'نیاز به تایید رسمی دپارتمان اقتصادی (DED)'],
     category: 'License Modification Services'
@@ -582,7 +582,7 @@ const servicesListFA: Service[] = [
     title: 'کنسلی اقامت خانواده',
     description: 'لغو رسمی اقامت و ویزای اعضای خانواده جهت تغییر اسپانسر یا خروج از کشور. انجام سریع فرآیند اداری بدون دردسر.',
     serviceFee: '۳۰۰ درهم',
-    governmentFees: 'هزینه‌های دولتی: ۲۹۰ درهم',
+    governmentFees: '۲۹۰ درهم',
     workingDays: '۳ روز کاری',
     requirements: ['کارت ملی امارات فیزیکی اسپانسر', 'فرم درخواست لغو مجوز ورود', 'امکان عودت وجه تضمین در صورت وجود'],
     category: 'Cancellation Services'
@@ -592,7 +592,7 @@ const servicesListFA: Service[] = [
     title: 'کنسلی اقامت سرمایه‌گذار',
     description: 'ابطال و کنسلی اصولی ویزای اقامت سرمایه‌گذاری یا شریک شرکت. فرآیندی بسیار حساس جهت فروش سهم یا خروج رسمی از ساختار شرکت.',
     serviceFee: '۳۰۰ درهم',
-    governmentFees: 'هزینه‌های دولتی: ۳۳۰ درهم',
+    governmentFees: '۳۳۰ درهم',
     workingDays: '۵ روز کاری',
     requirements: ['نامه عدم اعتراض (NOC) رسمی', 'استبلیشمنت کارت معتبر شرکت', 'کارت فیزیکی ملی امارات (Emirates ID)'],
     category: 'Cancellation Services'
@@ -602,7 +602,7 @@ const servicesListFA: Service[] = [
     title: 'انحلال و کنسلی لایسنس تجاری',
     description: 'تصفیه قانونی و ابطال رسمی لایسنس تجاری شرکت. شامل خدمات حسابرسی تسویه، ثبت آگهی رسمی انحلال و اخذ گواهی نهایی ابطال.',
     serviceFee: '۳۰۰ درهم',
-    governmentFees: 'هزینه‌های دولتی از: ۶,۰۰۰ درهم',
+    governmentFees: 'از ۶,۰۰۰ درهم',
     workingDays: '۵ روز کاری',
     requirements: ['ابطال قبلی ویزای اقامت کلیه شرکا', 'امضا و تایید رسمی انحلال توسط تمام شرکا', 'ارائه گزارش رسمی حسابرسی تصفیه شرکت'],
     category: 'Cancellation Services'
@@ -647,7 +647,7 @@ const servicesListAR: Service[] = [
     title: 'تجديد الرخصة التجارية',
     description: 'تجديد رخصتكم التجارية لتفادي الغرامات وضمان استمرارية نشاطكم التجاري بشكل متوافق تماماً، مع تسهيل خيارات الدفع والتقسيط.',
     serviceFee: '300 درهم',
-    governmentFees: 'الرسوم الحكومية تبدأ من: 4,270 درهم',
+    governmentFees: 'من 4,270 درهم',
     workingDays: '3 أيام عمل',
     requirements: ['يجب أن يكون عقد إيجاري سارياً', 'بطاقة منشأة سارية المفعول', 'دفع الرسوم عبر منصة تابي (Tabby)'],
     category: 'Renewal Services'
@@ -820,7 +820,7 @@ const servicesListAR: Service[] = [
     title: 'تعديل الأنشطة التجارية',
     description: 'إضافة أو تعديل الأنشطة في رخصتكم التجارية بما يتناسب مع تطور أعمالكم، وإنجاز الموافقات وتعديل عقد التأسيس (MOA) رسمياً.',
     serviceFee: '450 درهم',
-    governmentFees: 'الرسوم الحكومية تبدأ من: 3,000 درهم',
+    governmentFees: 'من 3,000 درهم',
     workingDays: '2 يوم عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'مطلوب تعديل الاسم عند الاقتضاء'],
     category: 'License Modification Services'
@@ -830,7 +830,7 @@ const servicesListAR: Service[] = [
     title: 'تغيير الاسم التجاري',
     description: 'تغيير الاسم الرسمي للشركة أو العلامة التجارية، بما يشمل حجز الاسم الجديد وتعديل عقد التأسيس وإصدار الرخصة المحدثة والموافقات البلدية.',
     serviceFee: '450 درهم',
-    governmentFees: 'الرسوم الحكومية تبدأ من: 800 درهم',
+    governmentFees: 'من 800 درهم',
     workingDays: '2 يوم عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'حجز الاسم التجاري الجديد مطلوب أولاً'],
     category: 'License Modification Services'
@@ -840,7 +840,7 @@ const servicesListAR: Service[] = [
     title: 'تغيير عنوان وموقع الشركة',
     description: 'تعديل العنوان الرسمي للشركة في الرخصة التجارية، وإنجاز المعاملات البلدية والإيجارية لإثبات المقر الجديد وتثبيته في السجلات.',
     serviceFee: '300 درهم',
-    governmentFees: 'الرسوم الحكومية تبدأ من: 800 درهم',
+    governmentFees: 'من 800 درهم',
     workingDays: '2 يوم عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'عقد إيجاري (Ejari) جديد وموثق مطلوب'],
     category: 'License Modification Services'
@@ -849,8 +849,8 @@ const servicesListAR: Service[] = [
     id: 'license-modification',
     title: 'تعديل وتحديث الرخصة',
     description: 'إجراء تعديلات هيكلية شاملة على الرخصة، مثل إدخال أو إخراج الشركاء وتعديل رأس المال أو تحديث الهيكل الإداري أو الكفيل المحلي.',
-    serviceFee: 'رسوم الخدمة تبدأ من: 450 درهم',
-    governmentFees: 'الرسوم الحكومية تبدأ من: 3,000 درهم',
+    serviceFee: 'من 450 درهم',
+    governmentFees: 'من 3,000 درهم',
     workingDays: '3 أيام عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'موافقة دائرة التنمية الاقتصادية (DED) مطلوبة'],
     category: 'License Modification Services'
@@ -860,9 +860,9 @@ const servicesListAR: Service[] = [
   {
     id: 'family-residency-cancellation',
     title: 'إلغاء الإقامة العائلية',
-    description: 'إلغاء تصاريح الإقامة العائلية بشكل رسمي عند تغيير الكفيل أو مغادرة الدولة، مع ضمان إنجاز المعاملة في إدارة الهجرة بلا غرامات.',
+    description: 'إلغاء تصاريح الإقامة العائلية بشكل رسمي عند تغيير الكفيل أو مغادرة الدولة، مع ضمان إنجاز المعاملة في إيضاحات الهجرة بلا غرامات.',
     serviceFee: '300 درهم',
-    governmentFees: 'الرسوم الحكومية: 290 درهم',
+    governmentFees: '290 درهم',
     workingDays: '3 أيام عمل',
     requirements: ['الهوية الإماراتية الأصلية للكفيل', 'طلب تصريح إلغاء إذن الدخول', 'استرداد مبلغ الضمان متاح عند الإلغاء'],
     category: 'Cancellation Services'
@@ -872,7 +872,7 @@ const servicesListAR: Service[] = [
     title: 'إلغاء إقامة مستثمر',
     description: 'إلغاء تصريح إقامة الشريك أو المستثمر بشكل قانوني سليم، وهو أمر أساسي لإعادة هيكلة الشركة أو نقل الملكية أو إغلاق الرخصة.',
     serviceFee: '300 درهم',
-    governmentFees: 'الرسوم الحكومية: 330 درهم',
+    governmentFees: '330 درهم',
     workingDays: '5 أيام عمل',
     requirements: ['رسالة عدم ممانعة (NOC) رسمية وموقعة', 'بطاقة منشأة سارية المفعول', 'الهوية الإماراتية الأصلية مطلوبة'],
     category: 'Cancellation Services'
@@ -882,9 +882,9 @@ const servicesListAR: Service[] = [
     title: 'إلغاء وإغلاق الرخصة التجارية',
     description: 'تصفية الشركة وإلغاء رخصتها التجارية بشكل رسمي وقانوني متكامل، يشمل تقديم التقرير المالي النهائي ونشر إعلان التصفية وإصدار الشهادة.',
     serviceFee: '300 درهم',
-    governmentFees: 'الرسوم الحكومية تبدأ من: 6,000 درهم',
+    governmentFees: 'من 6,000 درهم',
     workingDays: '5 أيام عمل',
-    requirements: ['إلغاء تأشيرات إقامة جميع الشركاء أولاً', 'توقيع جميع الشركاء على قرار التصفية', 'إعداد تقرير مالي نهائي معتمد لتصفية الشركة'],
+    requirements: ['إلغاء تأشيرات إقامة جميع الشركاء أولاً', 'توقيع جميع الشركاء على قرار التصفية', 'إعداد تقرير مالي معتمد لتصفية الشركة'],
     category: 'Cancellation Services'
   }
 ];
@@ -917,7 +917,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'Our Services in Oman',
-        items: servicesListEN, // Use the same structured service list for Oman as requested
+        items: servicesListEN,
       },
       cta: {
         title: 'Ready to Start Your Business Journey?',
@@ -955,7 +955,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'خدمات ما در عمان',
-        items: servicesListFA, // Use the same structured service list for Oman as requested
+        items: servicesListFA,
       },
       cta: {
         title: 'آماده شروع سفر کسب‌وکار خود هستید؟',
@@ -993,7 +993,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'خدماتنا في عمان',
-        items: servicesListAR, // Use the same structured service list for Oman as requested
+        items: servicesListAR,
       },
       cta: {
         title: 'هل أنت مستعد لبدء رحلة أعمالك؟',
