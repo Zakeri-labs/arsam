@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Service, Language } from '@/lib/content';
-import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock } from 'lucide-react';
+import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock, UploadCloud, X, Paperclip } from 'lucide-react';
 
 interface ServiceDetailModalProps {
   service: Service | null;
@@ -33,7 +33,10 @@ const localizations = {
     whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
     serviceFeeLabel: 'Service Fee:',
     govtFeeLabel: 'Government Fees:',
-    workingDaysLabel: 'Working Days'
+    workingDaysLabel: 'Working Days',
+    uploadLabel: 'Upload Documents (Optional)',
+    dragDropText: 'Drag & drop files here or click to browse',
+    maxSizeText: 'Support multiple files (PDF, JPG, PNG)'
   },
   fa: {
     whatsappBtn: 'درخواست از طریق واتساپ',
@@ -54,7 +57,10 @@ const localizations = {
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
     serviceFeeLabel: 'هزینه خدمات:',
     govtFeeLabel: 'هزینه‌های دولتی:',
-    workingDaysLabel: 'روز کاری'
+    workingDaysLabel: 'روز کاری',
+    uploadLabel: 'آپلود مدارک (اختیاری)',
+    dragDropText: 'فایل‌ها را بکشید و رها کنید یا کلیک کنید',
+    maxSizeText: 'پشتیبانی از چندین فایل (PDF، JPG، PNG)'
   },
   ar: {
     whatsappBtn: 'طلب عبر الواتساب',
@@ -75,7 +81,10 @@ const localizations = {
     whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
     serviceFeeLabel: 'رسوم الخدمة:',
     govtFeeLabel: 'الرسوم الحكومية:',
-    workingDaysLabel: 'أيام عمل'
+    workingDaysLabel: 'أيام عمل',
+    uploadLabel: 'تحميل المستندات (اختياري)',
+    dragDropText: 'اسحب وأسقط الملفات هنا أو انقر للتصفح',
+    maxSizeText: 'دعم ملفات متعددة (PDF, JPG, PNG)'
   }
 };
 
@@ -93,6 +102,8 @@ export function ServiceDetailModal({
   const [phone, setPhone] = useState('');
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean }>({});
+  const [files, setFiles] = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
 
   // Reset form state when modal closes/opens
   useEffect(() => {
@@ -102,6 +113,8 @@ export function ServiceDetailModal({
       setPhone('');
       setDescription('');
       setErrors({});
+      setFiles([]);
+      setIsDragging(false);
     }
   }, [isOpen]);
 
@@ -112,6 +125,35 @@ export function ServiceDetailModal({
     const encodedText = encodeURIComponent(template);
     const whatsappUrl = `https://wa.me/971552554688?text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const newFiles = Array.from(e.dataTransfer.files);
+      setFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -125,12 +167,14 @@ export function ServiceDetailModal({
       return;
     }
 
-    // Simulate form submission
+    // Simulate form submission with uploaded files
     console.log('Submitted Request:', {
       service: service.title,
       name,
       phone,
       description,
+      filesCount: files.length,
+      filesNames: files.map(f => f.name)
     });
 
     setView('success');
@@ -347,6 +391,67 @@ export function ServiceDetailModal({
                         rows={3}
                         className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-gold placeholder:text-muted-foreground/60 resize-none"
                       />
+                    </div>
+
+                    {/* Premium Drag and Drop File Upload Field */}
+                    <div className="flex flex-col gap-1.5 text-start">
+                      <label className="text-xs font-semibold text-foreground px-1">
+                        {t.uploadLabel}
+                      </label>
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition-all cursor-pointer ${
+                          isDragging
+                            ? 'border-gold bg-secondary bg-opacity-70 scale-[0.99]'
+                            : 'border-border/80 bg-secondary/30 hover:border-gold/50 hover:bg-secondary/40'
+                        }`}
+                      >
+                        <input
+                          type="file"
+                          multiple
+                          onChange={handleFileChange}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                        />
+                        <UploadCloud className={`h-8 w-8 mb-2 transition-transform duration-300 text-gold ${isDragging ? 'scale-110' : ''}`} />
+                        <p className="text-xs font-bold text-foreground">
+                          {t.dragDropText}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          {t.maxSizeText}
+                        </p>
+                      </div>
+
+                      {/* Selected files list with size and removal trigger */}
+                      {files.length > 0 && (
+                        <div className="mt-3 flex flex-col gap-1.5 max-h-[150px] overflow-y-auto pr-1">
+                          {files.map((file, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between rounded-xl bg-secondary/50 border border-border/40 px-3 py-2 text-xs"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
+                                <span className="truncate font-semibold text-foreground max-w-[200px]">
+                                  {file.name}
+                                </span>
+                                <span className="text-[10px] text-muted-foreground shrink-0">
+                                  ({(file.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeFile(idx)}
+                                className="rounded-full p-1 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Submit Button */}
