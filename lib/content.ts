@@ -49,8 +49,40 @@ export const modalContent: Record<Language, { selectLanguage: string; selectCoun
   ar: { selectLanguage: 'اختر لغتك', selectCountry: 'اختر وجهتك', continue: 'متابعة' },
 };
 
-// 27 Services in English (Residential Ejari Removed)
+// 48 Services in English
 const servicesListEN: Service[] = [
+  // Company Setup Services (New from PDF)
+  {
+    id: 'company-mainland',
+    title: 'Company Registration (Mainland)',
+    description: 'Establish a company in mainland UAE or Oman with 100% foreign ownership. We process trade name reservation, initial approvals, DED/MOCI registrations, and Memorandum of Association (MOA) signing.',
+    serviceFee: 'AED 3,000',
+    governmentFees: 'From AED 12,000',
+    workingDays: '5 Working Days',
+    requirements: ['Copy of Passport', 'Copy of Tourist Visa / Entry Stamp', 'Three Proposed Trade Names'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'company-freezone',
+    title: 'Company Registration (Freezone)',
+    description: 'Set up your business in premium Free Zones with 100% tax exemption, full import/export exemption, and no corporate tax. Includes business license, registration certificate, and lease agreement.',
+    serviceFee: 'AED 2,500',
+    governmentFees: 'From AED 9,500',
+    workingDays: '4 Working Days',
+    requirements: ['Copy of Passport', 'Passport-size Photo with White Background', 'Proposed Business Activities'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'trademark-registration',
+    title: 'Trademark Registration',
+    description: 'Protect your brand identity legally. We handle trademark search, application filing, ministry publications, and final registration certificate issuance.',
+    serviceFee: 'AED 1,500',
+    governmentFees: 'AED 7,500',
+    workingDays: '15 Working Days',
+    requirements: ['Trademark Logo / Design', 'Trade License Copy', 'Power of Attorney'],
+    category: 'Company Setup Services'
+  },
+
   // Renewal Services
   {
     id: 'establishment-card-renewal',
@@ -168,6 +200,15 @@ const servicesListEN: Service[] = [
     requirements: ['License Must Be Valid', 'All Partners Visa Must Be Valid', 'Required For Residency Renew'],
     category: 'Banking Services'
   },
+  {
+    id: 'personal-account-guidance',
+    title: 'Personal Bank Account Guidance',
+    description: 'Open a personal checking or savings account with top-tier local banks. We review your profile, compile required documents, and secure fast bank approval.',
+    serviceFee: 'AED 950',
+    workingDays: '5 Working Days',
+    requirements: ['Valid Residency Visa & EID', 'Passport with Entry Stamp', 'Salary Certificate or Proof of Funds'],
+    category: 'Banking Services'
+  },
 
   // Tax Services
   {
@@ -189,6 +230,15 @@ const servicesListEN: Service[] = [
     category: 'Tax Services'
   },
   {
+    id: 'vat-registration',
+    title: 'VAT Registration',
+    description: 'Official Value Added Tax (VAT) registration with the tax authority. Mandatory for businesses exceeding the legal taxable threshold. Avoid penalties with timely filing.',
+    serviceFee: 'AED 350',
+    workingDays: '3 Working Days',
+    requirements: ['Trade License Copy', 'Financial Statement (Sales exceeding AED 187,500)', 'Passport & Visa of Manager'],
+    category: 'Tax Services'
+  },
+  {
     id: 'fta-profile-update',
     title: 'FTA Profile Update',
     description: 'Official update of your Federal Tax Authority profile following updates in trade license, managing partners, or company office location to prevent portal freezes.',
@@ -204,6 +254,15 @@ const servicesListEN: Service[] = [
     serviceFee: 'AED 380',
     workingDays: '2 Working Days',
     requirements: ['Penalty Reconsideration', 'Waiving is Not Guaranteed', 'According to FTA Laws'],
+    category: 'Tax Services'
+  },
+  {
+    id: 'industrial-tax-exemptions',
+    title: 'Industrial Tax Exemptions',
+    description: 'Obtain official industrial tax exemption certificates for raw materials, machinery, or industrial operations in Oman to significantly lower production costs.',
+    serviceFee: 'AED 950',
+    workingDays: '10 Working Days',
+    requirements: ['Industrial License Copy', 'List of Raw Materials & Equipment', 'Environmental Approval'],
     category: 'Tax Services'
   },
 
@@ -242,6 +301,15 @@ const servicesListEN: Service[] = [
     serviceFee: 'AED 1,090',
     workingDays: '3 Working Days',
     requirements: ['Max Stay: Four Month in Total'],
+    category: 'Tourism Services'
+  },
+  {
+    id: 'travel-tourism-services',
+    title: 'Travel & Tourism Services',
+    description: 'Comprehensive travel booking services. We assist with hotel reservations, corporate flight bookings, customized holiday tour packages, and travel insurance.',
+    serviceFee: 'AED 150',
+    workingDays: '2 Working Days',
+    requirements: ['Passport Copy', 'Travel Dates & Preferences', 'Destination Information'],
     category: 'Tourism Services'
   },
 
@@ -317,11 +385,176 @@ const servicesListEN: Service[] = [
     workingDays: '5 Working Days',
     requirements: ['Partners Visa Cancellation', 'All Partners Must Sign', 'Company Audition Required'],
     category: 'Cancellation Services'
+  },
+
+  // General Government Services (New from PDF)
+  {
+    id: 'driving-license-guidance',
+    title: 'Driving License Guidance',
+    description: 'Step-by-step guidance for converting your home country driving license or starting a new file. We arrange eye tests, translation approvals, and RTA/ROP appointments.',
+    serviceFee: 'AED 350',
+    governmentFees: 'AED 850',
+    workingDays: '5 Working Days',
+    requirements: ['Valid Emirates / Oman ID', 'Original Home Country Driving License', 'Eye Test Certificate'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'dubai-municipality-permits',
+    title: 'Dubai Municipality Permits',
+    description: 'Secure commercial, advertising, or fit-out permits from Dubai Municipality. We handle application submission, technical plan approvals, and inspection coordination.',
+    serviceFee: 'AED 650',
+    governmentFees: 'From AED 1,500',
+    workingDays: '5 Working Days',
+    requirements: ['Trade License Copy', 'Tenancy Contract / Ejari', 'Layout Plan of Office/Shop'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'sports-council-permits',
+    title: 'Dubai Sports Council Permits',
+    description: 'Obtain official activity approvals and licenses for sports events, gyms, fitness academies, or sports academies from the Dubai Sports Council.',
+    serviceFee: 'AED 850',
+    governmentFees: 'From AED 2,500',
+    workingDays: '7 Working Days',
+    requirements: ['Trade License Copy', 'Trainer Certificates / Qualifications', 'Premises Safety Certificate'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'rera-permits',
+    title: 'RERA (Real Estate Permits)',
+    description: 'Secure real estate commercial activity approvals, broker licenses, or property advertisement permits from the Real Estate Regulatory Agency (RERA).',
+    serviceFee: 'AED 950',
+    governmentFees: 'From AED 3,500',
+    workingDays: '5 Working Days',
+    requirements: ['Trade License Copy', 'Manager Broker Card / Certificate', 'Ejari of Commercial Office'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'customs-bayan',
+    title: 'Customs Clearance (Bayan)',
+    description: 'Fast and professional customs cargo clearance in Oman through the official Bayan Customs System. Minimizes container demurrage and delays at ports.',
+    serviceFee: 'AED 450',
+    workingDays: '2 Working Days',
+    requirements: ['Import/Export License', 'Commercial Invoice & Packing List', 'Certificate of Origin'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'made-in-oman',
+    title: 'Made in Oman Certificate',
+    description: 'Secure the official "Made in Oman" quality certificate for locally manufactured products to qualify for national procurement and export advantages.',
+    serviceFee: 'AED 550',
+    workingDays: '5 Working Days',
+    requirements: ['Industrial/Trade License Copy', 'Proof of Local Value Addition', 'Product Test Report'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'riyada-card',
+    title: 'Riyada Card Guidance',
+    description: 'Comprehensive assistance for securing the Omani Riyada Card for small and medium enterprises (SMEs) to unlock governmental tenders, funding, and waivers.',
+    serviceFee: 'AED 250',
+    workingDays: '3 Working Days',
+    requirements: ['Omani Ownership Proof', 'Valid Trade License', 'Active Social Insurance Registration'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'pacda-permits',
+    title: 'PACDA Safety Permits',
+    description: 'Obtain official fire safety approvals, civil defense licenses, and municipal safety permits from the Public Authority for Civil Defense and Ambulance (PACDA).',
+    serviceFee: 'AED 450',
+    governmentFees: 'From AED 1,000',
+    workingDays: '4 Working Days',
+    requirements: ['Trade License Copy', 'Tenancy Contract', 'Fire Fighting Equipment Certificate'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'product-standards',
+    title: 'Product Standards Certificate',
+    description: 'Secure official Omani product standards approvals and G-mark quality certifications from the Directorate General for Specifications and Measurements (DGSMM).',
+    serviceFee: 'AED 550',
+    workingDays: '5 Working Days',
+    requirements: ['Product Specifications Sheet', 'ISO / Quality Certificates Copy', 'Importer/Exporter License'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'business-setup-consulting',
+    title: 'Business Setup Consulting',
+    description: 'Expert advisory on structural setup, partner distributions, commercial unit selections, and machinery distribution setups for trading and industrial entities.',
+    serviceFee: 'AED 500',
+    workingDays: '3 Working Days',
+    requirements: ['Concept Description', 'Initial Capital Planning', 'Proposed Location Ideas'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'government-land-rental',
+    title: 'Government Land Rental Guidance',
+    description: 'Step-by-step assistance in securing government-leased land for industrial, warehouse, or farming projects in premium industrial estates like Madayn.',
+    serviceFee: 'AED 950',
+    workingDays: '10 Working Days',
+    requirements: ['Valid Industrial/Commercial License', 'Project Feasibility Summary', 'Application Letter to Ministry'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'feasibility-study',
+    title: 'Feasibility Study & Business Plan',
+    description: 'Professional feasibility studies and business plans, structured specifically for bank loan applications, ministry approvals, and investor presentations.',
+    serviceFee: 'AED 1,500',
+    workingDays: '8 Working Days',
+    requirements: ['Market Concept Description', 'Project Financial Estimates', 'Competitors Information'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'accounting-auditing',
+    title: 'Accounting & Auditing Services',
+    description: 'Keep your business compliant with local regulations. Professional bookkeeping, financial statements preparation, auditing, and accounting reviews.',
+    serviceFee: 'AED 450',
+    workingDays: '3 Working Days',
+    requirements: ['Company Ledger / Bank Statements', 'Previous Tax Invoices List', 'Expenses Proof Documents'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'omanisation-management',
+    title: 'Omanisation Management',
+    description: 'Ensure fully compliant recruitment in Oman. We align Omani and expat hiring distributions with the ministry standards to bypass blocks.',
+    serviceFee: 'AED 650',
+    workingDays: '4 Working Days',
+    requirements: ['Trade License Copy', 'Active Employee Visa List', 'Desired Nationalization Target'],
+    category: 'General Government Services'
   }
 ];
 
-// 27 Services in Persian (Residential Ejari Removed)
+// 48 Services in Persian
 const servicesListFA: Service[] = [
+  // Company Setup Services (New from PDF)
+  {
+    id: 'company-mainland',
+    title: 'ثبت شرکت در سرزمین اصلی (Mainland)',
+    description: 'ثبت شرکت در سرزمین اصلی امارات یا عمان با مالکیت ۱۰۰ درصد خارجی. انجام تمامی مراحل رزرواسیون نام تجاری، موافقت اولیه، ثبت در دپارتمان اقتصادی و امضای اساسنامه.',
+    serviceFee: '۳,۰۰۰ درهم',
+    governmentFees: 'از ۱۲,۰۰۰ درهم',
+    workingDays: '۵ روز کاری',
+    requirements: ['کپی پاسپورت سهام‌داران', 'کپی ویزای توریستی یا مهر ورود', 'سه نام پیشنهادی برای شرکت'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'company-freezone',
+    title: 'ثبت شرکت در منطقه آزاد (Freezone)',
+    description: 'راه‌اندازی کسب‌وکار در مناطق آزاد با معافیت ۱۰۰٪ مالیاتی و گمرکی و مالکیت کامل بدون نیاز به کفیل محلی. شامل صدور لایسنس، گواهی ثبت و اجاره‌نامه اداری.',
+    serviceFee: '۲,۵۰۰ درهم',
+    governmentFees: 'از ۹,۵۰۰ درهم',
+    workingDays: '۴ روز کاری',
+    requirements: ['کپی پاسپورت سهام‌داران', 'عکس پرسنلی با زمینه سفید', 'لیست فعالیت‌های تجاری مورد نظر'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'trademark-registration',
+    title: 'ثبت برند و علامت تجاری',
+    description: 'حفاظت قانونی از هویت برند و لوگوی شما. انجام استعلام قبلی برند، ثبت پرونده در وزارت اقتصاد، انتشار در روزنامه رسمی و صدور سند ثبت نهایی.',
+    serviceFee: '۱,۵۰۰ درهم',
+    governmentFees: '۷,۵۰۰ درهم',
+    workingDays: '۱۵ روز کاری',
+    requirements: ['طرح یا لوگوی برند', 'کپی لایسنس تجاری شرکت', 'وکالت‌نامه رسمی'],
+    category: 'Company Setup Services'
+  },
+
   // Renewal Services
   {
     id: 'establishment-card-renewal',
@@ -439,6 +672,15 @@ const servicesListFA: Service[] = [
     requirements: ['لایسنس شرکت باید معتبر باشد', 'ویزای کلیه شرکا باید معتبر باشد', 'الزامی جهت فرآیند تمدید اقامت'],
     category: 'Banking Services'
   },
+  {
+    id: 'personal-account-guidance',
+    title: 'راهنمایی افتتاح حساب شخصی',
+    description: 'افتتاح حساب بانکی شخصی پس‌انداز یا جاری در بهترین بانک‌های داخلی. ارزیابی مدارک، هماهنگی با بانک و دریافت سریع تاییدیه افتتاح حساب.',
+    serviceFee: '۹۵۰ درهم',
+    workingDays: '۵ روز کاری',
+    requirements: ['ویزای اقامت و کارت ملی معتبر', 'پاسپورت با مهر ورود', 'فیش حقوقی یا گواهی تمکن مالی'],
+    category: 'Banking Services'
+  },
 
   // Tax Services
   {
@@ -460,6 +702,15 @@ const servicesListFA: Service[] = [
     category: 'Tax Services'
   },
   {
+    id: 'vat-registration',
+    title: 'ثبت‌نام مالیات بر ارزش افزوده (VAT)',
+    description: 'ثبت‌نام رسمی در پرتال مالیات بر ارزش افزوده (VAT) سازمان مالیات. الزامی برای شرکت‌هایی که میزان فروش سالانه آن‌ها از حد مجاز قانونی فراتر رفته است.',
+    serviceFee: '۳۵۰ درهم',
+    workingDays: '۳ روز کاری',
+    requirements: ['کپی لایسنس تجاری شرکت', 'تراز مالی رسمی فروش بالای ۱۸۷,۵۰۰ درهم', 'پاسپورت و ویزای مدیر شرکت'],
+    category: 'Tax Services'
+  },
+  {
     id: 'fta-profile-update',
     title: 'به‌روزرسانی پروفایل مالیاتی (FTA)',
     description: 'اصلاح و به‌روزرسانی مشخصات و مدارک شرکت در پرتال سازمان مالیات فدرال (FTA) پس از اعمال تغییرات لایسنس، آدرس یا مدیریت.',
@@ -477,6 +728,15 @@ const servicesListFA: Service[] = [
     requirements: ['اعتراض به جرایم صادره مالیاتی', 'عدم تضمین ۱۰۰٪ بخشش (بستگی به قوانین دارد)', 'تنظیم لایحه بر اساس قوانین رسمی FTA'],
     category: 'Tax Services'
   },
+  {
+    id: 'industrial-tax-exemptions',
+    title: 'اخذ معافیت‌های مالیاتی صنعتی',
+    description: 'اخذ گواهی رسمی معافیت‌های مالیاتی صنعتی برای تجهیزات، ماشین‌آلات تولیدی و مواد اولیه در عمان جهت کاهش حداکثری هزینه‌های تولید کارخانه‌ها.',
+    serviceFee: '۹۵۰ درهم',
+    workingDays: '۱۰ روز کاری',
+    requirements: ['کپی لایسنس صنعتی معتبر', 'لیست دقیق تجهیزات و مواد اولیه وارداتی', 'مجوز زیست‌محیطی معتبر'],
+    category: 'Tax Services'
+  },
 
   // Tourism Services
   {
@@ -491,7 +751,7 @@ const servicesListFA: Service[] = [
   {
     id: 'tourist-visa-60-days',
     title: 'ویزای توریستی ۶۰ روزه',
-    description: 'اقامت طولانی‌تر در کشور با ویزای ۶۰ روزه یک‌بار ورود. مناسب برای دیدارهای خانوادگی، تعطیلات طولانی یا کار‌های اداری اولیه.',
+    description: 'اقامت طولانی‌تر در کشور با ویزای ۶۰ روزه یک‌بار ورود. مناسب برای دیدارهای خانوادگی، تعطیت طولانی یا کار‌های اداری اولیه.',
     serviceFee: '۴۹۰ درهم',
     workingDays: '۳ روز کاری',
     requirements: ['نوع ویزا: یک‌بار ورود (Single Entry)'],
@@ -513,6 +773,15 @@ const servicesListFA: Service[] = [
     serviceFee: '۱,۰۹۰ درهم',
     workingDays: '۳ روز کاری',
     requirements: ['حداکثر مدت اقامت: ۴ ماه در مجموع'],
+    category: 'Tourism Services'
+  },
+  {
+    id: 'travel-tourism-services',
+    title: 'خدمات گردشگری (هتل و بلیط)',
+    description: 'خدمات کامل گردشگری شامل رزرو هتل‌های ممتاز، خرید بلیط پروازهای شرکتی و توریستی، بیمه مسافرتی و تورهای مسافرتی سفارشی.',
+    serviceFee: '۱۵۰ درهم',
+    workingDays: '۲ روز کاری',
+    requirements: ['کپی پاسپورت مسافران', 'تاریخ دقیق و ترجیحات پروازی', 'اطلاعات هتل مورد نظر'],
     category: 'Tourism Services'
   },
 
@@ -588,11 +857,176 @@ const servicesListFA: Service[] = [
     workingDays: '۵ روز کاری',
     requirements: ['ابطال قبلی ویزای اقامت کلیه شرکا', 'امضا و تایید رسمی انحلال توسط تمام شرکا', 'ارائه گزارش رسمی حسابرسی تصفیه شرکت'],
     category: 'Cancellation Services'
+  },
+
+  // General Government Services (New from PDF)
+  {
+    id: 'driving-license-guidance',
+    title: 'راهنمایی دریافت گواهینامه رانندگی',
+    description: 'کمک گام‌به‌گام برای تبدیل گواهینامه رانندگی کشور مادری به گواهینامه امارات/عمان یا باز کردن پرونده جدید. هماهنگی تست چشم، ترجمه رسمی و نوبت اداری.',
+    serviceFee: '۳۵۰ درهم',
+    governmentFees: '۸۵۰ درهم',
+    workingDays: '۵ روز کاری',
+    requirements: ['کارت ملی معتبر (EID یا عمان)', 'اصل گواهینامه رانندگی کشور مبدا', 'گواهی معاینه چشم معتبر'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'dubai-municipality-permits',
+    title: 'دریافت مجوزهای شهرداری دبی',
+    description: 'اخذ مجوزهای تجاری، تبلیغاتی، تابلو یا اصلاحات دکوراسیون از شهرداری دبی. پیگیری درخواست، تایید نقشه‌های فنی و هماهنگی بازرسی شهرداری.',
+    serviceFee: '۶۵۰ درهم',
+    governmentFees: 'از ۱,۵۰۰ درهم',
+    workingDays: '۵ روز کاری',
+    requirements: ['کپی لایسنس تجاری شرکت', 'قرارداد اجاره رسمی (ایجاری)', 'نقشه مهندسی یا چیدمان دفتر/مغازه'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'sports-council-permits',
+    title: 'دریافت مجوزهای سازمان ورزش دبی',
+    description: 'اخذ تاییدیه و مجوزهای لازم برای راه‌اندازی باشگاه ورزشی، برگزاری رویدادهای ورزشی یا آکادمی‌های تناسب اندام از سازمان ورزش دبی.',
+    serviceFee: '۸۵۰ درهم',
+    governmentFees: 'از ۲,۵۰۰ درهم',
+    workingDays: '۷ روز کاری',
+    requirements: ['کپی لایسنس تجاری شرکت', 'مدارک و گواهینامه‌های مربیگری معتبر', 'تاییدیه ایمنی سالن ورزشی'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'rera-permits',
+    title: 'مجوزهای املاک و اراضی (RERA)',
+    description: 'اخذ مجوزهای رسمی معاملات ملکی، بروکری یا مجوزهای تبلیغات فروش املاک از سازمان تنظیم مقررات املاک دبی (RERA).',
+    serviceFee: '۹۵۰ درهم',
+    governmentFees: 'از ۳,۵۰۰ درهم',
+    workingDays: '۵ روز کاری',
+    requirements: ['کپی لایسنس تجاری شرکت', 'کارت بروکری یا گواهی دوره مدیریت املاک', 'عقد ایجاری دفتر کار تجاری'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'customs-bayan',
+    title: 'ترخیص کالا از گمرک (سامانه بیان)',
+    description: 'ترخیص سریع، تخصصی و قانونی محموله‌های تجاری از بنادر و مرزهای گمرکی عمان از طریق سامانه گمرکی رسمی بیان (Bayan).',
+    serviceFee: '۴۵۰ درهم',
+    workingDays: '۲ روز کاری',
+    requirements: ['لایسنس معتبر واردات و صادرات', 'سیاهه خرید (فاکتور) و پکینگ لیست رسمی', 'گواهی مبدا کالا'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'made-in-oman',
+    title: 'اخذ گواهی Made in Oman',
+    description: 'اخذ گواهی رسمی نشان ملی "Made in Oman" برای محصولات تولید شده در عمان جهت بهره‌مندی از امتیازات دولتی و صادرات ترجیحی.',
+    serviceFee: '۵۵۰ درهم',
+    workingDays: '۵ روز کاری',
+    requirements: ['کپی لایسنس صنعتی یا تجاری شرکت', 'مستندات ارزش افزوده محلی تولید', 'گزارش رسمی آزمایش استاندارد کالا'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'riyada-card',
+    title: 'دریافت کارت ریاده (Riyada)',
+    description: 'راهنمایی و پشتیبانی اداری برای دریافت کارت ریاده (کارت حمایت از کارآفرینی عمان) جهت اخذ مناقصات دولتی، تسهیلات بانکی و معافیت‌های قانونی.',
+    serviceFee: '۲۵۰ درهم',
+    workingDays: '۳ روز کاری',
+    requirements: ['مالکیت ۱۰۰٪ اتباع عمان یا شراکت خاص', 'لایسنس تجاری معتبر شرکت', 'ثبت‌نام فعال در بیمه تامین اجتماعی'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'pacda-permits',
+    title: 'مجوزهای ایمنی دفاع مدنی (PACDA)',
+    description: 'اخذ تاییدیه رسمی ایمنی و آتش‌نشانی و پروانه‌های سلامت محیطی از سازمان دفاع مدنی و شهرداری عمان (PACDA) جهت انطباق با قوانین ایمنی عمومی.',
+    serviceFee: '۴۵۰ درهم',
+    governmentFees: 'از ۱,۰۰۰ درهم',
+    workingDays: '۴ روز کاری',
+    requirements: ['کپی لایسنس تجاری شرکت', 'عقد اجاره یا سند ملک تجاری', 'تاییدیه رسمی نصب کپسول و تجهیزات اطفای حریق'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'product-standards',
+    title: 'اخذ گواهی استاندارد کالا (G-mark)',
+    description: 'اخذ تاییدیه و گواهی‌های کیفی استاندارد کالا، نشان ایمنی خلیج فارس (G-mark) و انطباق محصول از سازمان ملی استاندارد و کیفیت عمان (DGSMM).',
+    serviceFee: '۵۵۰ درهم',
+    workingDays: '۵ روز کاری',
+    requirements: ['کاتالوگ فنی یا برگه مشخصات کالا', 'کپی گواهی کیفیت بین‌المللی مانند ISO', 'لایسنس بازرگانی شرکت'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'business-setup-consulting',
+    title: 'مشاوره تجهیز و راه‌اندازی واحدها',
+    description: 'ارائه مشاوره‌های تخصصی در خصوص ساختار قانونی شرکت، سهم شرکا، موقعیت جغرافیایی واحدهای تجاری/صنعتی و نحوه چینش ماشین‌آلات و انبار طبق ضوابط شهرداری.',
+    serviceFee: '۵۰۰ درهم',
+    workingDays: '۳ روز کاری',
+    requirements: ['خلاصه ایده و طرح بیزینس', 'برنامه‌ریزی سرمایه اولیه شرکت', 'محدوده جغرافیایی مورد نظر'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'government-land-rental',
+    title: 'راهنمایی اجاره زمین دولتی',
+    description: 'راهنمایی و پیگیری اداری جهت دریافت و اجاره طولانی‌مدت زمین‌های ارزان‌قیمت دولتی برای پروژه‌های صنعتی، کارخانجات یا انبارداری در شهرک‌های صنعتی نظیر مدائن.',
+    serviceFee: '۹۵۰ درهم',
+    workingDays: '۱۰ روز کاری',
+    requirements: ['لایسنس تجاری یا صنعتی معتبر', 'طرح توجیهی مختصر پروژه', 'نامه رسمی درخواست به وزارت مربوطه'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'feasibility-study',
+    title: 'تهیه طرح توجیهی و بیزینس پلن',
+    description: 'طراحی و تدوین حرفه‌ای طرح‌های توجیهی رسمی (Feasibility Study) و بیزینس پلن‌های جامع جهت ارائه به بانک‌ها برای اخذ وام، ادارات دولتی و جذب سرمایه‌گذار.',
+    serviceFee: '۱,۵۰۰ درهم',
+    workingDays: '۸ روز کاری',
+    requirements: ['توضیحات بازار و ایده تجاری', 'برآورد مالی و درآمدی پروژه', 'اطلاعات رقبای اصلی بازار'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'accounting-auditing',
+    title: 'خدمات حسابداری و حسابرسی',
+    description: 'حفظ سلامت مالی شرکت طبق قوانین استانداردهای حسابداری خلیج فارس. خدمات حسابداری مستمر، تهیه ترازنامه، حسابرسی رسمی و مشاوره بستن دفاتر مالی سالانه.',
+    serviceFee: '۴۵۰ درهم',
+    workingDays: '۳ روز کاری',
+    requirements: ['دفاتر مالی یا پرینت حساب بانکی شرکت', 'لیست فاکتورهای رسمی قبلی', 'مدارک و اسناد اثبات مخارج شرکت'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'omanisation-management',
+    title: 'مدیریت عمان‌سازی (Omanisation)',
+    description: 'انطباق کامل نیروهای انسانی شرکت با قوانین عمان‌سازی مصوب وزارت کار. تنظیم توزیع استخدامی اتباع عمان و مهاجران جهت جلوگیری از مسدودی پرونده.',
+    serviceFee: '۶۵۰ درهم',
+    workingDays: '۴ روز کاری',
+    requirements: ['کپی لایسنس تجاری شرکت', 'لیست ویزای کل پرسنل فعال شرکت', 'درصد عمان‌سازی هدف برای صنف شرکت'],
+    category: 'General Government Services'
   }
 ];
 
-// 27 Services in Arabic (Residential Ejari Removed)
+// 48 Services in Arabic
 const servicesListAR: Service[] = [
+  // Company Setup Services (New from PDF)
+  {
+    id: 'company-mainland',
+    title: 'تأسيس شركة في البر الرئيسي (Mainland)',
+    description: 'تأسيس شركة في البر الرئيسي لدولة الإمارات أو سلطنة عمان بملكية أجنبية 100%. ننجز حجز الاسم التجاري، والموافقة المبدئية، والتسجيل الاقتصادي وعقد التأسيس.',
+    serviceFee: '3,000 درهم',
+    governmentFees: 'من 12,000 درهم',
+    workingDays: '5 أيام عمل',
+    requirements: ['نسخة من جواز السفر للشركاء', 'نسخة من تأشيرة السياحة أو ختم الدخول', 'ثلاثة أسماء تجارية مقترحة'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'company-freezone',
+    title: 'تأسيس شركة في المنطقة الحرة (Freezone)',
+    description: 'تأسيس شركتك في المناطق الحرة المتميزة مع إعفاء ضريبي وجمركي بنسبة 100% وملكية كاملة. يشمل إصدار الرخصة التجارية وعقد إيجار المكتب.',
+    serviceFee: '2,500 درهم',
+    governmentFees: 'من 9,500 درهم',
+    workingDays: '4 أيام عمل',
+    requirements: ['نسخة من جواز السفر للشركاء', 'صورة شخصية بخلفية بيضاء', 'الأنشطة التجارية المقترحة'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'trademark-registration',
+    title: 'تسجيل العلامة التجارية',
+    description: 'حماية الهوية القانونية لعلامتكم التجارية. ننجز البحث المسبق، وتقديم الطلب لدى وزارة الاقتصاد، والنشر الرسمي وإصدار شهادة الملكية.',
+    serviceFee: '1,500 درهم',
+    governmentFees: '7,500 درهم',
+    workingDays: '15 يوم عمل',
+    requirements: ['شعار أو تصميم العلامة التجارية', 'نسخة من الرخصة التجارية', 'وكالة رسمية موثقة'],
+    category: 'Company Setup Services'
+  },
+
   // Renewal Services
   {
     id: 'establishment-card-renewal',
@@ -710,6 +1144,15 @@ const servicesListAR: Service[] = [
     requirements: ['يجب أن تكون الرخصة سارية', 'يجب أن تكون إقامات الشركاء سارية', 'مطلوب لتجديد الإقامة'],
     category: 'Banking Services'
   },
+  {
+    id: 'personal-account-guidance',
+    title: 'فتح حساب بنكي شخصي',
+    description: 'تسهيل فتح حساب بنكي شخصي (جاري أو توفير) في أفضل البنوك المحلية. نراجع ملفك، ونعد المستندات المطلوبة للحصول على موافقة سريعة.',
+    serviceFee: '950 درهم',
+    workingDays: '5 أيام عمل',
+    requirements: ['الإقامة والهوية سارية المفعول', 'جواز السفر مع ختم الدخول', 'شهادة راتب أو إثبات مصدر دخل'],
+    category: 'Banking Services'
+  },
 
   // Tax Services
   {
@@ -731,6 +1174,15 @@ const servicesListAR: Service[] = [
     category: 'Tax Services'
   },
   {
+    id: 'vat-registration',
+    title: 'التسجيل في ضريبة القيمة المضافة (VAT)',
+    description: 'التسجيل الرسمي في ضريبة القيمة المضافة لدى هيئة الضرائب. إلزامي للشركات التي تتجاوز مبيعاتها الحد القانوني المفروض.',
+    serviceFee: '350 درهم',
+    workingDays: '3 أيام عمل',
+    requirements: ['نسخة من الرخصة التجارية', 'بيان مالي يوضح مبيعات تفوق 187,500 درهم', 'جواز السفر وتأشيرة المدير'],
+    category: 'Tax Services'
+  },
+  {
     id: 'fta-profile-update',
     title: 'تحديث ملف الهيئة الاتحادية للضرائب',
     description: 'تعديل وتحديث بيانات شركتكم الرسمية على بوابة الهيئة الاتحادية للضرائب بعد تعديل الرخصة أو الإدارة أو المقر لتجنب تعليق الملف.',
@@ -746,6 +1198,15 @@ const servicesListAR: Service[] = [
     serviceFee: '380 درهم',
     workingDays: '2 يوم عمل',
     requirements: ['تقديم طلب تظلم من الغرامات', 'الموافقة على الإعفاء غير مضمونة (حسب الحالة)', 'الصياغة وفق قوانين الهيئة الاتحادية للضرائب'],
+    category: 'Tax Services'
+  },
+  {
+    id: 'industrial-tax-exemptions',
+    title: 'الإعفاءات الضريبية الصناعية',
+    description: 'الحصول على شهادات الإعفاء الضريبي والجمركي الصناعي للمواد الخام والآلات الصناعية في سلطنة عمان لتقليل تكاليف الإنتاج.',
+    serviceFee: '950 درهم',
+    workingDays: '10 أيام عمل',
+    requirements: ['نسخة من الرخصة الصناعية', 'قائمة المواد الخام والمعدات', 'الموافقة البيئية المعتمدة'],
     category: 'Tax Services'
   },
 
@@ -784,6 +1245,15 @@ const servicesListAR: Service[] = [
     serviceFee: '1,090 درهم',
     workingDays: '3 أيام عمل',
     requirements: ['أقصى مدة إقامة: 4 أشهر في المجمل'],
+    category: 'Tourism Services'
+  },
+  {
+    id: 'travel-tourism-services',
+    title: 'خدمات السفر والسياحة',
+    description: 'خدمات السفر والحجوزات المتكاملة. نساعد في حجز الفنادق، تذاكر الطيران للشركات، برامج الرحلات السياحية وتأمين السفر.',
+    serviceFee: '150 درهم',
+    workingDays: '2 يوم عمل',
+    requirements: ['نسخة من جواز السفر', 'تواريخ السفر المفضل', 'تفاصيل الفندق والوجهة'],
     category: 'Tourism Services'
   },
 
@@ -825,7 +1295,7 @@ const servicesListAR: Service[] = [
     serviceFee: 'من 450 درهم',
     governmentFees: 'من 3,000 درهم',
     workingDays: '3 أيام عمل',
-    requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'موافقة دائرة التنمية اقتصادية (DED) مطلوبة'],
+    requirements: ['يجب أن تكون الرخصة سارية', 'توقيع جميع الشركاء على ملحق عقد التأسيس', 'موافقة دائرة التنمية الاقتصادية (DED) مطلوبة'],
     category: 'License Modification Services'
   },
 
@@ -859,6 +1329,139 @@ const servicesListAR: Service[] = [
     workingDays: '5 أيام عمل',
     requirements: ['إلغاء تأشيرات إقامة جميع الشركاء أولاً', 'توقيع جميع الشركاء على قرار التصفية', 'إعداد تقرير مالي معتمد لتصفية الشركة'],
     category: 'Cancellation Services'
+  },
+
+  // General Government Services (New from PDF)
+  {
+    id: 'driving-license-guidance',
+    title: 'إرشادات الحصول على رخصة القيادة',
+    description: 'مساعدة خطوة بخطوة لتحويل رخصة قيادتكم الدولية أو فتح ملف جديد. تشمل فحص النظر، ترجمة المستندات وجدولة المواعيد الرسمية.',
+    serviceFee: '350 درهم',
+    governmentFees: '850 درهم',
+    workingDays: '5 أيام عمل',
+    requirements: ['الهوية الوطنية سارية المفعول', 'رخصة القيادة الأصلية من البلد الأم', 'شهادة فحص نظر معتمدة'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'dubai-municipality-permits',
+    title: 'تصاريح بلدية دبي',
+    description: 'الحصول على التصاريح التجارية أو الإعلانية أو التجهيزات من بلدية دبي. تشمل مراجعة المخططات الهندسية وتنسيق التفتيش الميداني.',
+    serviceFee: '650 درهم',
+    governmentFees: 'من 1,500 درهم',
+    workingDays: '5 أيام عمل',
+    requirements: ['نسخة من الرخصة التجارية', 'عقد الإيجار الموثق (إيجاري)', 'مخطط هندسي للمكتب أو المحل'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'sports-council-permits',
+    title: 'تصاريح مجلس دبي الرياضي',
+    description: 'الحصول على التصاريح والموافقات الرسمية للفعاليات الرياضية، الصالات الرياضية، أو أكاديميات اللياقة البدنية من مجلس دبي الرياضي.',
+    serviceFee: '850 درهم',
+    governmentFees: 'من 2,500 درهم',
+    workingDays: '7 أيام عمل',
+    requirements: ['نسخة من الرخصة التجارية', 'شهادات ومؤهلات المدربين معتمدة', 'شهادة السلامة للمرفق الرياضي'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'rera-permits',
+    title: 'تصاريح مؤسسة التنظيم العقاري (RERA)',
+    description: 'الحصول على تصاريح الأنشطة العقارية، رخص الوساطة، أو تصاريح الإعلانات العقارية من مؤسسة التنظيم العقاري بدبي (RERA).',
+    serviceFee: '950 درهم',
+    governmentFees: 'من 3,500 درهم',
+    workingDays: '5 أيام عمل',
+    requirements: ['نسخة من الرخصة التجارية', 'شهادة أو بطاقة وسيط عقاري معتمد', 'إيجاري للمكتب التجاري'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'customs-bayan',
+    title: 'التخليص الجمركي (نظام بيان)',
+    description: 'تخليص البضائع الجمركي السريع والمهني في سلطنة عمان عبر نظام "بيان" الجمركي الرسمي لتفادي غرامات التأخير في الموانئ.',
+    serviceFee: '450 درهم',
+    workingDays: '2 يوم عمل',
+    requirements: ['رخصة الاستيراد والتصدير', 'الفاتورة التجارية وقائمة التعبئة', 'شهادة منشأ البضاعة'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'made-in-oman',
+    title: 'شهادة صنع في عمان',
+    description: 'الحصول على شهادة الجودة الرسمية "صنع في عمان" للمنتجات المصنعة محلياً للتأهل للمشتريات الحكومية وتسهيل التصدير.',
+    serviceFee: '550 درهم',
+    workingDays: '5 أيام عمل',
+    requirements: ['نسخة من الرخصة الصناعية أو التجارية', 'إثبات القيمة المحلية المضافة للتصنيع', 'تقرير فحص جودة المنتج'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'riyada-card',
+    title: 'بطاقة ريادة للمؤسسات',
+    description: 'مساعدة متكاملة للحصول على بطاقة ريادة للمؤسسات الصغيرة والمتوسطة للاستفادة من المناقصات الحكومية والتسهيلات والتمويل والاعفاءات.',
+    serviceFee: '250 درهم',
+    workingDays: '3 أيام عمل',
+    requirements: ['إثبات الملكية العمانية الكاملة للمؤسسة', 'رخصة تجارية سارية المفعول', 'التسجيل الفعال في التأمينات الاجتماعية'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'pacda-permits',
+    title: 'تصاريح الدفاع المدني (PACDA)',
+    description: 'الحصول على موافقات السلامة والوقاية من الحرائق ورخص الدفاع المدني والبلدية (PACDA) لضمان متطلبات السلامة العامة.',
+    serviceFee: '450 درهم',
+    governmentFees: 'من 1,000 درهم',
+    workingDays: '4 أيام عمل',
+    requirements: ['نسخة من الرخصة التجارية', 'عقد إيجار المقر التجاري', 'شهادة تركيب وصيانة معدات الإطفاء'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'product-standards',
+    title: 'شهادة مطابقة معايير المنتج',
+    description: 'إصدار موافقات مطابقة المقاييس العمانية وشهادات الجودة الخليجية (G-mark) من المديرية العامة للمواصفات والمقاييس بوزارة التجارة.',
+    serviceFee: '550 درهم',
+    workingDays: '5 أيام عمل',
+    requirements: ['ورقة المواصفات الفنية للمنتج', 'نسخة من شهادات الجودة العالمية (ISO)', 'رخصة تجارية أو صناعية للشركة'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'business-setup-consulting',
+    title: 'استشارات تأسيس وتجهيز المشاريع',
+    description: 'استشارات متخصصة حول الهيكل القانوني الأنسب، توزيع حصص الشركاء، اختيار المقر التجاري أو الصناعي وتجهيز الوحدات وفقاً للوائح التنظيمية.',
+    serviceFee: '500 درهم',
+    workingDays: '3 أيام عمل',
+    requirements: ['وصف فكرة ونشاط المشروع', 'تخطيط رأس المال الأولي', 'الموقع الجغرافي المقترح'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'government-land-rental',
+    title: 'إرشادات استئجار الأراضي الحكومية',
+    description: 'مساعدة شاملة للحصول على الأراضي الحكومية المستأجرة بأسعار مدعومة لإقامة المصانع، المستودعات، أو المشاريع الكبرى في المدن الصناعية (مدائن).',
+    serviceFee: '950 درهم',
+    workingDays: '10 أيام عمل',
+    requirements: ['رخصة صناعية أو تجارية سارية', 'ملخص دراسة الجدوى للمشروع', 'خطاب رسمي موجه للوزارة المعنية'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'feasibility-study',
+    title: 'دراسة الجدوى وخطة العمل',
+    description: 'إعداد دراسات جدوى وخطط عمل احترافية متكاملة، مصممة خصيصاً للتقديم للمصارف للحصول على تمويل، والجهات الحكومية وجذب المستثمرين.',
+    serviceFee: '1,500 درهم',
+    workingDays: '8 أيام عمل',
+    requirements: ['فكرة المشروع والمنتجات المقترحة', 'التقديرات المالية وتكلفة التشغيل', 'معلومات السوق والمنافسين'],
+    category: 'Company Setup Services'
+  },
+  {
+    id: 'accounting-auditing',
+    title: 'خدمات المحاسبة وتدقيق الحسابات',
+    description: 'تنظيم وإدارة السجلات المالية لشركتكم وفقاً للقوانين المعتمدة. يشمل إمساك الدفاتر، إعداد الميزانيات، وتدقيق القوائم المالية السنوية.',
+    serviceFee: '450 درهم',
+    workingDays: '3 أيام عمل',
+    requirements: ['دفاتر الحسابات أو كشوف البنك', 'قائمة الفواتير الضريبية السابقة', 'مستندات إثبات المصروفات'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'omanisation-management',
+    title: 'إدارة نسب التعمين (Omanisation)',
+    description: 'ضمان توافق نسب التوظيف لشركتكم مع متطلبات وزارة العمل العمانية لتوظيف الكفاءات الوطنية وتفادي حظر المعاملات الحكومية.',
+    serviceFee: '650 درهم',
+    workingDays: '4 أيام عمل',
+    requirements: ['نسخة من الرخصة التجارية', 'قائمة تأشيرات موظفي الشركة', 'النسبة المستهدفة لنشاط المؤسسة'],
+    category: 'General Government Services'
   }
 ];
 

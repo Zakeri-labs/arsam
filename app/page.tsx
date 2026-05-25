@@ -13,6 +13,7 @@ import { type Language, type Country, type Service, content } from '@/lib/conten
 
 const categories = [
   'all',
+  'Company Setup Services',
   'Renewal Services',
   'Ejari Registration Services',
   'Banking Services',
@@ -20,21 +21,25 @@ const categories = [
   'Tourism Services',
   'License Modification Services',
   'Cancellation Services',
+  'General Government Services',
 ];
 
 const categoryTranslations: Record<Language, Record<string, string>> = {
   en: {
     all: 'All',
+    'Company Setup Services': 'Company Setup',
     'Renewal Services': 'Renewal',
     'Ejari Registration Services': 'Ejari',
     'Banking Services': 'Banking',
-    'Tax Services': 'Tax Services',
+    'Tax Services': 'Tax',
     'Tourism Services': 'Tourism',
     'License Modification Services': 'Modification',
     'Cancellation Services': 'Cancellation',
+    'General Government Services': 'Govt. Services',
   },
   fa: {
     all: 'همه',
+    'Company Setup Services': 'ثبت شرکت',
     'Renewal Services': 'تمدید خدمات',
     'Ejari Registration Services': 'ثبت ایجاری',
     'Banking Services': 'خدمات بانکی',
@@ -42,16 +47,19 @@ const categoryTranslations: Record<Language, Record<string, string>> = {
     'Tourism Services': 'گردشگری',
     'License Modification Services': 'اصلاح لایسنس',
     'Cancellation Services': 'کنسلی و انحلال',
+    'General Government Services': 'خدمات دولتی',
   },
   ar: {
     all: 'الكل',
+    'Company Setup Services': 'تأسيس الشركات',
     'Renewal Services': 'تجديد المعاملات',
     'Ejari Registration Services': 'تسجيل إيجاري',
     'Banking Services': 'خدمات مصرفية',
-    'Tax Services': 'الخدمات الضريبية',
+    'Tax Services': 'الضرائب',
     'Tourism Services': 'الخدمات السياحية',
     'License Modification Services': 'تعديل التراخيص',
     'Cancellation Services': 'إلغاء وتصفية',
+    'General Government Services': 'خدمات حكومية',
   }
 };
 
