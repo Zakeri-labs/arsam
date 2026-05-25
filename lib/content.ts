@@ -751,7 +751,7 @@ const servicesListFA: Service[] = [
   {
     id: 'tourist-visa-60-days',
     title: 'ویزای توریستی ۶۰ روزه',
-    description: 'اقامت طولانی‌تر در کشور با ویزای ۶۰ روزه یک‌بار ورود. مناسب برای دیدارهای خانوادگی، تعطیت طولانی یا کار‌های اداری اولیه.',
+    description: 'اقامت طولانی‌تر در کشور با ویزای ۶۰ روزه یک‌بار ورود. مناسب برای دیدارهای خانوادگی، تعطیلات طولانی یا کار‌های اداری اولیه.',
     serviceFee: '۴۹۰ درهم',
     workingDays: '۳ روز کاری',
     requirements: ['نوع ویزا: یک‌بار ورود (Single Entry)'],
@@ -993,7 +993,7 @@ const servicesListFA: Service[] = [
   }
 ];
 
-// 48 Services in Arabic
+// 28 Services in Arabic
 const servicesListAR: Service[] = [
   // Company Setup Services (New from PDF)
   {
@@ -1176,7 +1176,7 @@ const servicesListAR: Service[] = [
   {
     id: 'vat-registration',
     title: 'التسجيل في ضريبة القيمة المضافة (VAT)',
-    description: 'التسجيل الرسمي في ضريبة القيمة المضافة لدى هيئة الضرائب. إلزامي للشركات التي تتجاوز مبيعاتها الحد القانوني المفروض.',
+    description: 'التسجيل الرسمي في ضريبة القيمة المضافة لدى هيئة الضرائب. إعفاء للمؤسسات التي لا تتجاوز مبيعاتها الحد الفرضي.',
     serviceFee: '350 درهم',
     workingDays: '3 أيام عمل',
     requirements: ['نسخة من الرخصة التجارية', 'بيان مالي يوضح مبيعات تفوق 187,500 درهم', 'جواز السفر وتأشيرة المدير'],
@@ -1465,6 +1465,68 @@ const servicesListAR: Service[] = [
   }
 ];
 
+// Helper function to map AED services list to OMR for Oman
+function convertToOmanServices(services: Service[], language: Language): Service[] {
+  const toEnglishDigits = (str: string): string => {
+    const persianDigits = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
+    const arabicDigits = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
+    let normalized = str;
+    for (let i = 0; i < 10; i++) {
+      normalized = normalized.replace(persianDigits[i], String(i)).replace(arabicDigits[i], String(i));
+    }
+    return normalized;
+  };
+
+  return services.map(service => {
+    const updated = { ...service };
+    
+    // Helper to convert AED to OMR (divide by 10 and replace AED with OMR unit)
+    const convertPrice = (priceStr?: string): string | undefined => {
+      if (!priceStr) return undefined;
+      
+      // Normalize Persian/Arabic digits to Western digits first
+      const normalizedStr = toEnglishDigits(priceStr);
+      
+      // Extract numbers (e.g. 1200 or 150) after removing commas
+      const numMatch = normalizedStr.replace(/,/g, '').match(/\d+/);
+      if (!numMatch) return priceStr;
+      
+      const numVal = parseInt(numMatch[0], 10);
+      const omarVal = Math.round(numVal / 10);
+      
+      // Formatting number with commas (e.g. 1,200)
+      const formattedOmar = omarVal.toLocaleString('en-US');
+      
+      if (language === 'fa') {
+        // Convert to Persian digits and add "ریال عمان"
+        const faDigits = formattedOmar.replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[parseInt(d, 10)]);
+        return priceStr.toLowerCase().includes('from') || priceStr.includes('از')
+          ? `از ${faDigits} ریال عمان`
+          : `${faDigits} ریال عمان`;
+      } else if (language === 'ar') {
+        // Convert to Arabic digits and add "ريال عماني"
+        return priceStr.toLowerCase().includes('from') || priceStr.includes('من')
+          ? `من ${formattedOmar} ريال عماني`
+          : `${formattedOmar} ريال عماني`;
+      } else {
+        // English: e.g. "OMR 15" or "From OMR 120"
+        return priceStr.toLowerCase().includes('from')
+          ? `From OMR ${formattedOmar}`
+          : `OMR ${formattedOmar}`;
+      }
+    };
+
+    if (updated.serviceFee) {
+      updated.serviceFee = convertPrice(updated.serviceFee);
+    }
+    if (updated.governmentFees) {
+      updated.governmentFees = convertPrice(updated.governmentFees);
+    }
+    
+    return updated;
+  });
+}
+
 export const content: Record<Language, Record<Country, Content>> = {
   en: {
     uae: {
@@ -1493,7 +1555,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'Our Services in Oman',
-        items: servicesListEN,
+        items: convertToOmanServices(servicesListEN, 'en'),
       },
       cta: {
         title: 'Ready to Start Your Business Journey?',
@@ -1531,7 +1593,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'خدمات ما در عمان',
-        items: servicesListFA,
+        items: convertToOmanServices(servicesListFA, 'fa'),
       },
       cta: {
         title: 'آماده شروع سفر کسب‌وکار خود هستید؟',
@@ -1569,7 +1631,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'خدماتنا في عمان',
-        items: servicesListAR,
+        items: convertToOmanServices(servicesListAR, 'ar'),
       },
       cta: {
         title: 'هل أنت مستعد لبدء رحلة أعمالك؟',
