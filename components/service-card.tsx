@@ -17,6 +17,7 @@ const serviceIcons: Record<string, React.ReactNode> = {
   'ejari-1-year': <Building className="h-5 w-5" />,
   'ejari-1-year-sep-office': <Building className="h-5 w-5" />,
   'ejari-residential': <Building className="h-5 w-5" />,
+  'baladiya-tenancy': <Building className="h-5 w-5" />,
   'business-account-high-risk': <Landmark className="h-5 w-5" />,
   'business-account-low-risk': <Landmark className="h-5 w-5" />,
   'corporate-tax-registration': <FileText className="h-5 w-5" />,
@@ -34,6 +35,17 @@ const serviceIcons: Record<string, React.ReactNode> = {
   'family-residency-cancellation': <Users className="h-5 w-5" />,
   'investor-residency-cancellation': <Users className="h-5 w-5" />,
   'trade-license-cancellation': <Building2 className="h-5 w-5" />,
+  'customs-bayan': <CreditCard className="h-5 w-5" />,
+  'made-in-oman': <Building2 className="h-5 w-5" />,
+  'icv-certificate': <FileText className="h-5 w-5" />,
+  'riyada-card': <CreditCard className="h-5 w-5" />,
+  'pacda-permits': <Building className="h-5 w-5" />,
+  'product-standards': <FileText className="h-5 w-5" />,
+  'business-setup-consulting': <Building2 className="h-5 w-5" />,
+  'government-land-rental': <Building className="h-5 w-5" />,
+  'feasibility-study': <FileText className="h-5 w-5" />,
+  'accounting-auditing': <FileText className="h-5 w-5" />,
+  'omanisation-management': <Users className="h-5 w-5" />,
 };
 
 // Get simplified service names for the list view

@@ -180,6 +180,15 @@ const servicesListEN: Service[] = [
     requirements: ['Mandatory For New Companies', 'Mandatory For License Renew', 'Inspection Available For 1 Year'],
     category: 'Ejari Registration Services'
   },
+  {
+    id: 'baladiya-tenancy',
+    title: 'Municipal Tenancy (Baladiya) Registration',
+    description: 'Official registration of your commercial tenancy contract with the Oman Municipality (Baladiya). Essential for company registration, renewing commercial licenses, and securing municipal permits.',
+    serviceFee: 'AED 1,500',
+    workingDays: '2 Working Days',
+    requirements: ['Copy of Title Deed (Krooki)', 'Landlord Civil ID Copy', 'Company Commercial Registration (CR)'],
+    category: 'Ejari Registration Services'
+  },
 
   // Banking Services
   {
@@ -518,6 +527,15 @@ const servicesListEN: Service[] = [
     workingDays: '4 Working Days',
     requirements: ['Trade License Copy', 'Active Employee Visa List', 'Desired Nationalization Target'],
     category: 'General Government Services'
+  },
+  {
+    id: 'icv-certificate',
+    title: 'In-Country Value (ICV) Certificate',
+    description: 'Guidance and preparation for securing the official Omani In-Country Value (ICV) certificate, which measures and highlights your business contribution to the local economy. Crucial for bidding on large governmental and oil & gas tenders.',
+    serviceFee: 'AED 1,500',
+    workingDays: '7 Working Days',
+    requirements: ['Audited Financial Statements', 'Omanisation Ratio Report', 'Local Purchase Invoices'],
+    category: 'General Government Services'
   }
 ];
 
@@ -650,6 +668,15 @@ const servicesListFA: Service[] = [
     serviceFee: '۳,۲۵۰ درهم',
     workingDays: '۱ روز کاری',
     requirements: ['الزامی برای تاسیس شرکت‌های جدید', 'الزامی برای تمدید لایسنس', 'قابلیت بازرسی هماهنگ شده تا ۱ سال'],
+    category: 'Ejari Registration Services'
+  },
+  {
+    id: 'baladiya-tenancy',
+    title: 'تنظیم و ثبت عقد ایجاری رسمی (بلدیه)',
+    description: 'ثبت رسمی قرارداد اجاره تجاری در شهرداری عمان (بلدیه). الزامی برای ثبت شرکت، تمدید لایسنس تجاری و اخذ مجوزهای شهرداری و محیط زیست.',
+    serviceFee: '۱,۵۰۰ درهم',
+    workingDays: '۲ روز کاری',
+    requirements: ['کپی سند ملک تجاری (کروکی)', 'کپی کارت ملی مالک ملک (Civil ID)', 'سجل تجاری شرکت (CR)'],
     category: 'Ejari Registration Services'
   },
 
@@ -990,6 +1017,15 @@ const servicesListFA: Service[] = [
     workingDays: '۴ روز کاری',
     requirements: ['کپی لایسنس تجاری شرکت', 'لیست ویزای کل پرسنل فعال شرکت', 'درصد عمان‌سازی هدف برای صنف شرکت'],
     category: 'General Government Services'
+  },
+  {
+    id: 'icv-certificate',
+    title: 'دریافت گواهی ارزش افزوده محلی (ICV)',
+    description: 'راهنمایی و آماده‌سازی جهت اخذ گواهی رسمی ارزش افزوده محلی (ICV) در عمان. این گواهی سهم مشارکت کسب‌وکار شما در اقتصاد ملی را ارزیابی می‌کند و برای شرکت در مناقصات بزرگ دولتی و نفت و گاز حیاتی است.',
+    serviceFee: '۱,۵۰۰ درهم',
+    workingDays: '۷ روز کاری',
+    requirements: ['گزارش مالی و حسابرسی رسمی شرکت', 'گزارش نسبت عمان‌سازی پرسنل', 'فاکتورهای خریدهای محلی شرکت'],
+    category: 'General Government Services'
   }
 ];
 
@@ -1122,6 +1158,15 @@ const servicesListAR: Service[] = [
     serviceFee: '3,250 درهم',
     workingDays: 'يوم عمل واحد',
     requirements: ['إلزامي للشركات الجديدة', 'إلزامي لتجديد الرخصة التجارية', 'التفتيش متاح لمدة عام كامل'],
+    category: 'Ejari Registration Services'
+  },
+  {
+    id: 'baladiya-tenancy',
+    title: 'تنظيم وتوثيق عقد الإيجار البلدي (بلدية)',
+    description: 'التسجيل والتوثيق الرسمي لعقد الإيجار التجاري لدى البلدية في سلطنة عمان. أساسي لتأسيس الشركات، تجديد التراخيص التجارية، والحصول على موافقات البلدية.',
+    serviceFee: '1,500 درهم',
+    workingDays: '2 يوم عمل',
+    requirements: ['نسخة من كروكي الأرض/العقار', 'نسخة من البطاقة الشخصية للمالك', 'السجل التجاري للشركة'],
     category: 'Ejari Registration Services'
   },
 
@@ -1462,7 +1507,101 @@ const servicesListAR: Service[] = [
     workingDays: '4 أيام عمل',
     requirements: ['نسخة من الرخصة التجارية', 'قائمة تأشيرات موظفي الشركة', 'النسبة المستهدفة لنشاط المؤسسة'],
     category: 'General Government Services'
+  },
+  {
+    id: 'icv-certificate',
+    title: 'شهادة القيمة المحلية المضافة (ICV)',
+    description: 'إرشادات وإعداد ملف الحصول على شهادة القيمة المحلية المضافة (ICV) الرسمية في عمان، والتي تقيس مساهمة شركتكم في الاقتصاد الوطني. ضرورية للمشاركة في المناقصات الحكومية والنفط والغاز الكبرى.',
+    serviceFee: '1,500 درهم',
+    workingDays: '7 أيام عمل',
+    requirements: ['البيانات المالية المدققة للشركة', 'تقرير نسبة التعمين من وزارة العمل', 'فواتير المشتريات المحلية'],
+    category: 'General Government Services'
   }
+];
+
+// Master lists of allowed IDs for UAE and Oman specifically
+const uaeServiceIds = [
+  'company-mainland',
+  'company-freezone',
+  'trademark-registration',
+  'establishment-card-renewal',
+  'family-residency-renewal',
+  'investor-residency-renewal',
+  'trade-license-renewal',
+  'ejari-1-month-inspection',
+  'ejari-1-month-no-inspection',
+  'ejari-1-month-sep-office',
+  'ejari-1-month-shop',
+  'ejari-1-year',
+  'ejari-1-year-sep-office',
+  'business-account-high-risk',
+  'business-account-low-risk',
+  'personal-account-guidance',
+  'corporate-tax-registration',
+  'corporate-tax-filing',
+  'vat-registration',
+  'fta-profile-update',
+  'tax-reconsideration',
+  'tourist-visa-30-days',
+  'tourist-visa-60-days',
+  'tourist-visa-multi-60-days',
+  'tourist-visa-renewal',
+  'travel-tourism-services',
+  'change-activity',
+  'change-business-name',
+  'change-location',
+  'license-modification',
+  'family-residency-cancellation',
+  'investor-residency-cancellation',
+  'trade-license-cancellation',
+  'driving-license-guidance',
+  'dubai-municipality-permits',
+  'sports-council-permits',
+  'rera-permits'
+];
+
+const omanServiceIds = [
+  'company-mainland',
+  'company-freezone',
+  'trademark-registration',
+  'business-setup-consulting',
+  'feasibility-study',
+  'establishment-card-renewal',
+  'family-residency-renewal',
+  'investor-residency-renewal',
+  'trade-license-renewal',
+  'baladiya-tenancy',
+  'business-account-high-risk',
+  'business-account-low-risk',
+  'personal-account-guidance',
+  'corporate-tax-registration',
+  'corporate-tax-filing',
+  'vat-registration',
+  'fta-profile-update',
+  'tax-reconsideration',
+  'industrial-tax-exemptions',
+  'tourist-visa-30-days',
+  'tourist-visa-60-days',
+  'tourist-visa-multi-60-days',
+  'tourist-visa-renewal',
+  'travel-tourism-services',
+  'change-activity',
+  'change-business-name',
+  'change-location',
+  'license-modification',
+  'family-residency-cancellation',
+  'investor-residency-cancellation',
+  'trade-license-cancellation',
+  'driving-license-guidance',
+  'customs-bayan',
+  'made-in-oman',
+  'icv-certificate',
+  'riyada-card',
+  'pacda-permits',
+  'product-standards',
+  'government-land-rental',
+  'accounting-auditing',
+  'omanisation-management'
 ];
 
 // Helper function to map AED services list to OMR for Oman
@@ -1477,8 +1616,74 @@ function convertToOmanServices(services: Service[], language: Language): Service
     return normalized;
   };
 
-  return services.map(service => {
+  // Filter only services that belong to Oman
+  const omanServices = services.filter(s => omanServiceIds.includes(s.id));
+
+  return omanServices.map(service => {
     const updated = { ...service };
+
+    // Customize shared services for Oman specifically
+    if (updated.id === 'establishment-card-renewal') {
+      if (language === 'fa') {
+        updated.title = 'تمدید سجل تجاری و کارت بازرگانی';
+        updated.description = 'تمدید به موقع سجل تجاری و کارت عضویت اتاق بازرگانی عمان جهت حفظ وضعیت قانونی و تسهیل کلیه امور اداری و استخدامی.';
+        updated.requirements = ['سجل تجاری (CR) باید معتبر باشد', 'نیاز به کارت بازرگانی معتبر', 'نیاز به کارت ملی فیزیکی عمان (Civil ID)'];
+      } else if (language === 'ar') {
+        updated.title = 'تجديد السجل التجاري وغرفة التجارة';
+        updated.description = 'تجديد السجل التجاري وبطاقة الانتساب لغرفة تجارة وصناعة عمان لضمان توافق الشركة القانوني وتجنب الغرامات أو تعطل المعاملات.';
+        updated.requirements = ['يجب أن يكون السجل التجاري سارياً', 'بطاقة الغرفة التجارية مطلوبة', 'الهوية العمانية الأصلية للمفوض بالتوقيع'];
+      } else {
+        updated.title = 'Commercial CR & Chamber Card Renewal';
+        updated.description = 'Timely renewal of your Commercial Registration (CR) and Chamber of Commerce card in Oman to maintain legal compliance and prevent operational blocks.';
+        updated.requirements = ['CR Must be Valid', 'Chamber Card Must be Active', 'Physical Oman ID Required'];
+      }
+    } else if (updated.id === 'trade-license-renewal') {
+      if (language === 'fa') {
+        updated.title = 'تمدید مجوز بلدیه (شهرداری) و تجاری';
+        updated.description = 'تمدید مجوزهای فعالیت تجاری از شهرداری عمان (بلدیه) و تاییدیه محیط زیست جهت تداوم قانونی کسب‌وکار.';
+        updated.requirements = ['عقد اجاره بلدیه معتبر', 'سجل تجاری فعال شرکت', 'تاییدیه دفاع مدنی (PACDA) در صورت نیاز'];
+      } else if (language === 'ar') {
+        updated.title = 'تجديد الترخيص البلدي والأنشطة';
+        updated.description = 'تجديد التراخيص البلدية والأنشطة التجارية في عمان لضمان الامتثال التام مع لوائح وزارة البلديات الإقليمية وموارد المياه.';
+        updated.requirements = ['عقد إيجار بلدي ساري المفعول', 'سجل تجاري نشط', 'موافقة الدفاع المدني عند الحاجة'];
+      } else {
+        updated.title = 'Municipal & Activity License Renewal';
+        updated.description = 'Renew your Oman Municipality (Baladiya) license and registered commercial activities to prevent operational fines and penalties.';
+        updated.requirements = ['Valid Baladiya Tenancy Contract', 'Active CR Registration', 'PACDA Approval (If applicable)'];
+      }
+    } else if (updated.id === 'driving-license-guidance') {
+      if (language === 'fa') {
+        updated.title = 'راهنمایی دریافت گواهینامه رانندگی عمان';
+        updated.description = 'کمک گام‌به‌گام برای تبدیل گواهینامه معتبر یا باز کردن پرونده جدید در پلیس سلطنتی عمان (ROP). هماهنگی تست چشم و نوبت‌های اداری.';
+        updated.requirements = ['کارت ملی معتبر عمان (Civil ID)', 'اصل گواهینامه رانندگی کشور مبدا', 'گواهی معاینه چشم معتبر عمان'];
+      } else if (language === 'ar') {
+        updated.title = 'إرشادات الحصول على رخصة القيادة العمانية';
+        updated.description = 'مساعدة شاملة لتحويل رخصة قيادتكم الأصلية أو فتح ملف جديد لدى شرطة عمان السلطانية (ROP). تشمل فحوصات النظر ومواعيد الفحص.';
+        updated.requirements = ['بطاقة شخصية عمانية سارية', 'رخصة القيادة الأصلية من البلد الأم', 'فحص نظر معتمد في عمان'];
+      } else {
+        updated.title = 'Oman Driving License Guidance';
+        updated.description = 'Step-by-step guidance for converting your home country driving license or starting a new file. We coordinate eye tests and ROP appointments.';
+        updated.requirements = ['Valid Oman Civil ID', 'Original Home Country License', 'Oman Eye Test Certificate'];
+      }
+    }
+
+    // Replace general UAE/Emirates terms with Oman terms in requirements and descriptions
+    const replaceUaeTerms = (text: string): string => {
+      return text
+        .replace(/Emirates ID/g, 'Oman Civil ID')
+        .replace(/Emirates Driving/g, 'Oman Driving')
+        .replace(/UAE/g, 'Oman')
+        .replace(/امارات/g, 'عمان')
+        .replace(/الإمارات/g, 'عمان')
+        .replace(/دبی/g, 'مسقط')
+        .replace(/دبي/g, 'مسقط')
+        .replace(/EID/g, 'Oman ID');
+    };
+
+    if (updated.description) updated.description = replaceUaeTerms(updated.description);
+    if (updated.requirements) {
+      updated.requirements = updated.requirements.map(req => replaceUaeTerms(req));
+    }
     
     // Helper to convert AED to OMR (divide by 10 and replace AED with OMR unit)
     const convertPrice = (priceStr?: string): string | undefined => {
@@ -1537,7 +1742,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'Our Services in UAE',
-        items: servicesListEN,
+        items: servicesListEN.filter(s => uaeServiceIds.includes(s.id)),
       },
       cta: {
         title: 'Ready to Start Your Business Journey?',
@@ -1575,7 +1780,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'خدمات ما در امارات',
-        items: servicesListFA,
+        items: servicesListFA.filter(s => uaeServiceIds.includes(s.id)),
       },
       cta: {
         title: 'آماده شروع سفر کسب‌وکار خود هستید؟',
@@ -1613,7 +1818,7 @@ export const content: Record<Language, Record<Country, Content>> = {
       },
       services: {
         title: 'خدماتنا في الإمارات',
-        items: servicesListAR,
+        items: servicesListAR.filter(s => uaeServiceIds.includes(s.id)),
       },
       cta: {
         title: 'هل أنت مستعد لبدء رحلة أعمالك؟',
