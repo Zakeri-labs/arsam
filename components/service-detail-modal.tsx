@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Service, Language } from '@/lib/content';
-import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send } from 'lucide-react';
+import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock } from 'lucide-react';
 
 interface ServiceDetailModalProps {
   service: Service | null;
@@ -30,7 +30,10 @@ const localizations = {
     successTitle: 'Request Submitted!',
     successDesc: 'Thank you. Our experts will contact you shortly.',
     requiredField: 'This field is required',
-    whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.'
+    whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
+    serviceFeeLabel: 'Service Fee:',
+    govtFeeLabel: 'Government Fees:',
+    workingDaysLabel: 'Working Days'
   },
   fa: {
     whatsappBtn: 'درخواست از طریق واتساپ',
@@ -48,7 +51,10 @@ const localizations = {
     successTitle: 'درخواست شما ثبت شد!',
     successDesc: 'با تشکر از شما. کارشناسان ما به زودی با شما تماس خواهند گرفت.',
     requiredField: 'این فیلد الزامی است',
-    whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.'
+    whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
+    serviceFeeLabel: 'هزینه خدمات:',
+    govtFeeLabel: 'هزینه‌های دولتی:',
+    workingDaysLabel: 'روز کاری'
   },
   ar: {
     whatsappBtn: 'طلب عبر الواتساب',
@@ -66,7 +72,10 @@ const localizations = {
     successTitle: 'تم تقديم الطلب بنجاح!',
     successDesc: 'شكراً لك. سيتواصل معك خبراؤنا قريباً.',
     requiredField: 'هذا الحقل مطلوب',
-    whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.'
+    whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
+    serviceFeeLabel: 'رسوم الخدمة:',
+    govtFeeLabel: 'الرسوم الحكومية:',
+    workingDaysLabel: 'أيام عمل'
   }
 };
 
@@ -167,7 +176,7 @@ export function ServiceDetailModal({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isRtl ? -15 : 15 }}
                   transition={{ duration: 0.2 }}
-                  className="pt-4"
+                  className="pt-4 text-start"
                 >
                   <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
                     <FileText className="h-6 w-6" />
@@ -177,7 +186,50 @@ export function ServiceDetailModal({
                     {service.title}
                   </h2>
 
-                  <p className="mb-6 leading-relaxed text-muted-foreground text-sm">
+                  {/* Service pricing & timeline details */}
+                  <div className="mb-5 flex flex-col gap-2.5">
+                    {service.serviceFee && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{t.serviceFeeLabel}</span>
+                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                          {service.serviceFee}
+                        </span>
+                      </div>
+                    )}
+                    {service.governmentFees && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{t.govtFeeLabel}</span>
+                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                          {service.governmentFees}
+                        </span>
+                      </div>
+                    )}
+                    {service.workingDays && (
+                      <div className="mt-1">
+                        <span className="inline-flex items-center gap-1.5 bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-3 py-1 rounded-full text-xs font-bold border border-amber-200/25">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          <span>{service.workingDays}</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Requirements List (slate-coloured bullet points) */}
+                  {service.requirements && service.requirements.length > 0 && (
+                    <div className="mb-5 border-t border-border/50 pt-4">
+                      <ul className="flex flex-col gap-2 text-[13px] text-slate-600 dark:text-slate-400 font-medium">
+                        {service.requirements.map((req, idx) => (
+                          <li key={idx} className="flex items-start gap-1.5 leading-relaxed">
+                            <span className="shrink-0 text-slate-400">-</span>
+                            <span>{req}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Long text description */}
+                  <p className="mb-6 leading-relaxed text-muted-foreground text-sm border-t border-border/50 pt-4">
                     {service.description}
                   </p>
 
@@ -238,7 +290,7 @@ export function ServiceDetailModal({
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     {/* Name field */}
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 text-start">
                       <label className="text-xs font-semibold text-foreground px-1">
                         {t.nameLabel} <span className="text-destructive">*</span>
                       </label>
@@ -260,7 +312,7 @@ export function ServiceDetailModal({
                     </div>
 
                     {/* Phone field */}
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 text-start">
                       <label className="text-xs font-semibold text-foreground px-1">
                         {t.phoneLabel} <span className="text-destructive">*</span>
                       </label>
@@ -283,7 +335,7 @@ export function ServiceDetailModal({
                     </div>
 
                     {/* Description field */}
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-1.5 text-start">
                       <label className="text-xs font-semibold text-foreground px-1">
                         {t.descLabel}
                       </label>
