@@ -234,23 +234,23 @@ export function ServiceDetailModal({
                     {service.description}
                   </p>
 
-                  <div className="flex flex-col gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     {/* WhatsApp CTA */}
                     <button
                       onClick={handleWhatsAppRequest}
-                      className="flex items-center justify-center gap-2.5 rounded-2xl bg-[#25D366] px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-[#25D366]/20 transition-transform active:scale-98 hover:brightness-105"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-3 py-3.5 text-xs font-bold text-white shadow-md shadow-[#25D366]/20 transition-transform active:scale-98 hover:brightness-105"
                     >
-                      <MessageSquare className="h-4.5 w-4.5 fill-current" />
-                      <span>{t.whatsappBtn}</span>
+                      <MessageSquare className="h-4.5 w-4.5 fill-current shrink-0" />
+                      <span className="truncate">{t.whatsappBtn}</span>
                     </button>
 
                     {/* Form Request CTA */}
                     <button
                       onClick={() => setView('form')}
-                      className="flex items-center justify-center gap-2.5 rounded-2xl bg-navy px-6 py-3.5 text-sm font-semibold text-white transition-transform active:scale-98 hover:bg-navy-light shadow-md shadow-navy/15"
+                      className="flex items-center justify-center gap-2 rounded-2xl bg-navy px-3 py-3.5 text-xs font-bold text-white transition-transform active:scale-98 hover:bg-navy-light shadow-md shadow-navy/15"
                     >
-                      <FileText className="h-4.5 w-4.5" />
-                      <span>{t.formBtn}</span>
+                      <FileText className="h-4.5 w-4.5 shrink-0" />
+                      <span className="truncate">{t.formBtn}</span>
                     </button>
                   </div>
                 </motion.div>
