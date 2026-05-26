@@ -28,8 +28,8 @@ interface ServiceDetailModalProps {
 
 const localizations = {
   en: {
-    whatsappBtn: 'Request via WhatsApp',
-    formBtn: 'Request via Form',
+    whatsappBtn: 'WhatsApp',
+    formBtn: 'Order Form',
     formTitle: 'Request Service',
     nameLabel: 'Full Name',
     namePlaceholder: 'Enter your full name',
@@ -55,8 +55,8 @@ const localizations = {
     maxSizeText: 'Support multiple files (PDF, JPG, PNG)'
   },
   fa: {
-    whatsappBtn: 'درخواست از طریق واتساپ',
-    formBtn: 'درخواست از طریق فرم',
+    whatsappBtn: 'واتساپ',
+    formBtn: 'فرم درخواست',
     formTitle: 'درخواست خدمت',
     nameLabel: 'نام و نام خانوادگی',
     namePlaceholder: 'نام خود را وارد کنید',
@@ -82,8 +82,8 @@ const localizations = {
     maxSizeText: 'پشتیبانی از چندین فایل (PDF، JPG، PNG)'
   },
   ar: {
-    whatsappBtn: 'طلب عبر الواتساب',
-    formBtn: 'طلب عبر النموذج',
+    whatsappBtn: 'واتساب',
+    formBtn: 'نموذج الطلب',
     formTitle: 'طلب خدمة',
     nameLabel: 'الاسم الكامل',
     namePlaceholder: 'أدخل اسمك الكامل',
