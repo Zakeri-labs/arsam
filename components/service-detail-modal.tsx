@@ -122,7 +122,8 @@ export function ServiceDetailModal({
   const isRtl = language === 'fa' || language === 'ar';
   const t = localizations[language] || localizations.en;
 
-  const portraitUrl = service?.imageUrl || (service?.category ? categoryImages[service.category] : null) || 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=600&auto=format&fit=crop';
+  const hasImage = !!service?.imageUrl;
+  const portraitUrl = service?.imageUrl || '';
 
   const [view, setView] = useState<'details' | 'form' | 'success'>('details');
   const [name, setName] = useState('');
@@ -239,33 +240,42 @@ export function ServiceDetailModal({
             animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
             exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-45%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md md:max-w-3xl rounded-3xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[90vh] md:max-h-[580px]"
+            className={`fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] rounded-3xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col ${
+              hasImage 
+                ? 'md:max-w-3xl md:flex-row max-h-[90vh] md:max-h-[580px]' 
+                : 'max-w-md p-6 max-h-[90vh] overflow-y-auto'
+            }`}
             dir={isRtl ? 'rtl' : 'ltr'}
           >
             {/* Portrait Image Column (Desktop only) */}
-            <div className={`hidden md:block w-[280px] h-full shrink-0 relative overflow-hidden bg-navy/25 ${isRtl ? 'order-last border-r' : 'order-first border-l'} border-border/40`}>
-              <Image 
-                src={portraitUrl} 
-                alt={service.title} 
-                fill 
-                className="object-cover transition-transform duration-700 hover:scale-105" 
-                sizes="300px"
-                priority
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/35 to-transparent z-10" />
-              <div className="absolute bottom-6 right-6 left-6 z-20 text-right select-none animate-fadeIn" dir="rtl">
-                <span className="text-[10px] font-black text-gold tracking-widest uppercase block mb-1">الافق الذهبی</span>
-                <h3 className="text-sm font-black text-white leading-snug">{service.title}</h3>
-                <div className="h-0.5 w-8 bg-gold mt-2.5 rounded-full" />
+            {hasImage && (
+              <div className={`hidden md:block w-[280px] h-full shrink-0 relative overflow-hidden bg-navy/25 ${isRtl ? 'order-last border-r' : 'order-first border-l'} border-border/40`}>
+                <Image 
+                  src={portraitUrl} 
+                  alt={service.title} 
+                  fill 
+                  className="object-cover transition-transform duration-700 hover:scale-105" 
+                  sizes="300px"
+                  priority
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/35 to-transparent z-10" />
+                <div className="absolute bottom-6 right-6 left-6 z-20 text-right select-none animate-fadeIn" dir="rtl">
+                  <span className="text-[10px] font-black text-gold tracking-widest uppercase block mb-1">الافق الذهبی</span>
+                  <h3 className="text-sm font-black text-white leading-snug">{service.title}</h3>
+                  <div className="h-0.5 w-8 bg-gold mt-2.5 rounded-full" />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Main Content Area (Form / Details) */}
-            <div className="flex-1 p-6 md:p-8 overflow-y-auto flex flex-col justify-between h-full relative">
+            <div className={hasImage ? "flex-1 p-6 md:p-8 overflow-y-auto flex flex-col justify-between h-full relative" : "relative w-full"}>
               {/* Close button */}
               <button
                 onClick={onClose}
-                className="absolute end-4 top-4 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-30 bg-white/70 backdrop-blur-sm shadow-sm"
+                className={hasImage 
+                  ? "absolute end-4 top-4 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-30 bg-white/70 backdrop-blur-sm shadow-sm" 
+                  : "absolute end-0 top-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-10"
+                }
               >
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -283,21 +293,23 @@ export function ServiceDetailModal({
                   className="pt-4 md:pt-0 text-start flex flex-col justify-between"
                 >
                   {/* Mobile portrait banner (compact) */}
-                  <div className="md:hidden relative h-32 w-full overflow-hidden rounded-2xl mb-4 border border-border/40 shrink-0">
-                    <Image 
-                      src={portraitUrl} 
-                      alt={service.title} 
-                      fill 
-                      className="object-cover" 
-                      sizes="300px"
-                      priority
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent z-10" />
-                    <div className="absolute bottom-3 right-4 left-4 z-20 text-right text-white" dir="rtl">
-                      <span className="text-[9px] font-extrabold text-gold tracking-wider block mb-0.5">الافق الذهبی</span>
-                      <h3 className="text-xs font-bold leading-tight">{service.title}</h3>
+                  {hasImage && (
+                    <div className="md:hidden relative h-32 w-full overflow-hidden rounded-2xl mb-4 border border-border/40 shrink-0">
+                      <Image 
+                        src={portraitUrl} 
+                        alt={service.title} 
+                        fill 
+                        className="object-cover" 
+                        sizes="300px"
+                        priority
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent z-10" />
+                      <div className="absolute bottom-3 right-4 left-4 z-20 text-right text-white" dir="rtl">
+                        <span className="text-[9px] font-extrabold text-gold tracking-wider block mb-0.5">الافق الذهبی</span>
+                        <h3 className="text-xs font-bold leading-tight">{service.title}</h3>
+                      </div>
                     </div>
-                  </div>
+                  )}
                   <div className="flex items-center gap-3.5 mb-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
                       <FileText className="h-6 w-6" />
