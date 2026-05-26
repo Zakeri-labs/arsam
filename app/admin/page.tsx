@@ -1281,7 +1281,7 @@ export default function AdminPage() {
 
           {/* DESKTOP BRAND BANNER */}
           <header className="hidden md:block w-full border-b border-border bg-white py-4.5 px-6 select-none">
-            <div className="flex items-center justify-between">
+            <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
               <div>
                 <h1 className="text-base font-extrabold text-navy leading-none">
                   {activeScreen === 'services' ? 'مدیریت خدمات' : 'درخواست‌های ارسالی کاربران'}
@@ -1298,8 +1298,10 @@ export default function AdminPage() {
           </header>
 
           {/* Dynamic Content Panel */}
-          <main className="flex-1 px-4 py-6 md:px-6">
-            {activeScreen === 'services' ? renderServicesScreen() : renderRequestsScreen()}
+          <main className="flex-1 px-4 py-6 md:px-6 w-full">
+            <div className="max-w-6xl mx-auto w-full">
+              {activeScreen === 'services' ? renderServicesScreen() : renderRequestsScreen()}
+            </div>
           </main>
 
         </div>
