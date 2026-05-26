@@ -105,6 +105,7 @@ export default function AdminPage() {
   const [formWorkingDays, setFormWorkingDays] = useState('');
   const [formUaeActive, setFormUaeActive] = useState(true);
   const [formOmanActive, setFormOmanActive] = useState(false);
+  const [formImageUrl, setFormImageUrl] = useState('');
 
   // Language specific form values
   const [langData, setLangData] = useState<Record<'en' | 'fa' | 'ar', {
@@ -326,6 +327,7 @@ export default function AdminPage() {
     setFormWorkingDays('');
     setFormUaeActive(true);
     setFormOmanActive(false);
+    setFormImageUrl('');
 
     setLangData({
       en: { title: '', description: '', requirements: [''] },
@@ -359,6 +361,7 @@ export default function AdminPage() {
     setFormWorkingDays(base.workingDays || '');
     setFormUaeActive(db.uaeServiceIds.includes(serviceId));
     setFormOmanActive(db.omanServiceIds.includes(serviceId));
+    setFormImageUrl(base.imageUrl || '');
 
     setLangData({
       en: {
@@ -520,6 +523,7 @@ export default function AdminPage() {
       if (formServiceFee.trim()) obj.serviceFee = formServiceFee.trim();
       if (formGovFees.trim()) obj.governmentFees = formGovFees.trim();
       if (formWorkingDays.trim()) obj.workingDays = formWorkingDays.trim();
+      if (formImageUrl.trim()) obj.imageUrl = formImageUrl.trim();
 
       return obj;
     };
@@ -1443,6 +1447,19 @@ export default function AdminPage() {
                           عمان
                         </label>
                       </div>
+                    </div>
+
+                    <div className="space-y-1.5 md:col-span-2">
+                      <label className="text-[11px] font-bold text-navy">آدرس اینترنتی تصویر شاخص لنداسکیپ (ImageUrl)</label>
+                      <input
+                        type="text"
+                        value={formImageUrl}
+                        onChange={(e) => setFormImageUrl(e.target.value)}
+                        placeholder="مثال: /uploads/image.jpg یا یک لینک مستقیم عکس لنداسکیپ (اختیاری)"
+                        className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs outline-none focus:border-gold"
+                        dir="ltr"
+                      />
+                      <p className="text-[9px] text-muted-foreground">اگر آدرس عکس پر شود، بنر لنداسکیپ در بالای مودال جزئیات خدمت در سایت نمایش داده خواهد شد.</p>
                     </div>
                   </div>
                 </div>
