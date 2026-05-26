@@ -177,18 +177,19 @@ export function ServiceDetailModal({
     }
 
     try {
-      const filesInfo = files.map(f => ({ name: f.name, size: f.size }));
+      const formData = new FormData();
+      formData.append('name', name.trim());
+      formData.append('phone', phone.trim());
+      formData.append('description', description.trim());
+      formData.append('serviceTitle', service.title);
+      
+      files.forEach(file => {
+        formData.append('files', file);
+      });
 
       const res = await fetch('/api/requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          phone: phone.trim(),
-          description: description.trim(),
-          serviceTitle: service.title,
-          files: filesInfo
-        })
+        body: formData
       });
 
       if (res.ok) {

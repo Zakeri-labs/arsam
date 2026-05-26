@@ -57,6 +57,7 @@ interface ServicesDB {
 interface RequestFile {
   name: string;
   size: number;
+  url?: string; // Web accessible download URL
 }
 
 interface ServiceRequest {
@@ -115,14 +116,132 @@ export default function AdminPage() {
     ar: { title: '', description: '', requirements: [''] },
   });
 
-  // Check auth status on mount
+  // Check auth status on mount and remove v0 badge watermarks
   useEffect(() => {
+    // 1. Dynamic Runtime Style Sheet Injection
+    try {
+      const style = document.createElement('style');
+      style.innerHTML = `
+        a[href*="v0.dev"],
+        a[href*="vercel.com"],
+        [class*="v0-badge"],
+        [id*="v0-badge"],
+        #v0-badge,
+        .v0-badge,
+        [class*="v0-brand"],
+        [id*="v0-brand"],
+        [class*="built-with-v0"] {
+          display: none !important;
+          opacity: 0 !important;
+          visibility: hidden !important;
+          pointer-events: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          overflow: hidden !important;
+        }
+      `;
+      document.head.appendChild(style);
+    } catch (e) {}
+
+    const removeBadge = () => {
+      const traverse = (root: Node | ShadowRoot) => {
+        if (!root) return;
+
+        // Query Selector scans on Element roots
+        if ('querySelectorAll' in root) {
+          const selectors = [
+            'a[href*="v0"]',
+            'a[href*="vercel"]',
+            '[class*="v0"]',
+            '[id*="v0"]',
+            '[class*="vercel"]',
+            '[id*="vercel"]',
+            '[class*="built-with"]',
+            'iframe[src*="v0"]',
+            'iframe[src*="vercel"]'
+          ];
+          selectors.forEach(sel => {
+            try {
+              const elements = (root as unknown as HTMLElement).querySelectorAll(sel);
+              elements.forEach(el => el.remove());
+            } catch (e) {}
+          });
+        }
+
+        // Scan child nodes recursively
+        const children = Array.from(root.childNodes);
+        children.forEach(child => {
+          const el = child as HTMLElement;
+          
+          if (el.textContent) {
+            const text = el.textContent;
+            if (
+              text.includes('Built with v0') || 
+              text.includes('built with v0') || 
+              text.includes('with v0') ||
+              (el.innerHTML && el.innerHTML.includes('Built with v0'))
+            ) {
+              const tagName = el.tagName?.toLowerCase();
+              if (tagName && tagName !== 'body' && tagName !== 'html' && tagName !== 'main') {
+                el.remove();
+                return;
+              }
+            }
+          }
+
+          // Deep shadow DOM penetration
+          if (el.shadowRoot) {
+            const shadow = el.shadowRoot;
+            traverse(shadow);
+            
+            try {
+              const hasBadge = shadow.querySelector('a[href*="v0"]') || 
+                               shadow.querySelector('a[href*="vercel"]') ||
+                               (shadow.textContent && shadow.textContent.includes('v0'));
+              if (hasBadge) {
+                el.remove();
+                return;
+              }
+            } catch (e) {}
+          }
+
+          traverse(child);
+        });
+      };
+
+      try {
+        traverse(document.documentElement);
+      } catch (e) {}
+    };
+
+    removeBadge();
+    
+    const observer = new MutationObserver(() => {
+      removeBadge();
+    });
+    
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+    
+    const interval = setInterval(removeBadge, 80);
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      observer.disconnect();
+    }, 7000);
+
     fetch('/api/auth')
       .then(res => res.json())
       .then(data => {
         setIsAuthenticated(data.authenticated);
       })
       .catch(() => setIsAuthenticated(false));
+
+    return () => {
+      clearInterval(interval);
+      observer.disconnect();
+    };
   }, []);
 
   // Fetch databases when authenticated
@@ -643,10 +762,7 @@ export default function AdminPage() {
     <div className="flex flex-col h-full bg-navy text-white text-right" dir="rtl">
       {/* Brand Header */}
       <div className="p-6 border-b border-white/10 flex flex-col items-center select-none">
-        <div className="relative h-10 w-24 mb-1">
-          <Image src="/logo.png" alt="افق طلایی" fill className="object-contain" />
-        </div>
-        <h2 className="text-base font-extrabold text-gold leading-none mt-1.5">افق طلایی</h2>
+        <h2 className="text-base font-extrabold text-gold leading-none">افق طلایی</h2>
         <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1.5">پنل مدیریت ادمین</span>
       </div>
 
@@ -833,13 +949,25 @@ export default function AdminPage() {
                             <FileText className="h-3.5 w-3.5 text-gold shrink-0" />
                             <span className="truncate max-w-[180px]">{file.name}</span>
                             <span className="text-[9px] text-muted-foreground">({formatFileSize(file.size)})</span>
-                            <button
-                              type="button"
-                              onClick={() => alert(`شبیه‌سازی دانلود فایل: ${file.name}`)}
-                              className="text-[9px] text-gold hover:text-gold-dark pr-1 border-r border-border/60 hover:underline cursor-pointer"
-                            >
-                              دانلود
-                            </button>
+                            {file.url ? (
+                              <a
+                                href={file.url}
+                                download={file.name}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[9px] text-gold hover:text-gold-dark pr-1 border-r border-border/60 hover:underline font-bold"
+                              >
+                                دانلود مدارک
+                              </a>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => alert(`شبیه‌سازی دانلود فایل: ${file.name}`)}
+                                className="text-[9px] text-gold hover:text-gold-dark pr-1 border-r border-border/60 hover:underline cursor-pointer"
+                              >
+                                دانلود فرضی
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>

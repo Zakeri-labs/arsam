@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getRequests, addRequest, deleteRequest } from '@/lib/db-requests';
+import fs from 'fs';
+import path from 'path';
 
-// POST (Public) - Submit a new request from landing page form
+// POST (Public) - Submit a new request from landing page form with physical file uploads
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { name, phone, description, serviceTitle, files } = body;
+    const formData = await request.formData();
+    const name = formData.get('name') as string;
+    const phone = formData.get('phone') as string;
+    const description = formData.get('description') as string;
+    const serviceTitle = formData.get('serviceTitle') as string;
 
     if (!name || !name.trim() || !phone || !phone.trim() || !serviceTitle) {
       return NextResponse.json(
@@ -15,12 +20,40 @@ export async function POST(request: Request) {
       );
     }
 
+    // Process and save physical files to /public/uploads/
+    const fileObjects = formData.getAll('files') as File[];
+    const uploadedFilesMetadata = [];
+
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    for (const file of fileObjects) {
+      if (!file || file.size === 0) continue;
+
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const fileExt = path.extname(file.name) || '';
+      const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+      const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
+      const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
+
+      const filePath = path.join(uploadDir, safeFileName);
+      fs.writeFileSync(filePath, buffer);
+
+      uploadedFilesMetadata.push({
+        name: file.name,
+        size: file.size,
+        url: `/uploads/${safeFileName}` // Public URL that can be directly accessed/downloaded
+      });
+    }
+
     const newRequest = addRequest({
       name: name.trim(),
       phone: phone.trim(),
       description: (description || '').trim(),
       serviceTitle,
-      files: files || []
+      files: uploadedFilesMetadata
     });
 
     return NextResponse.json({ success: true, request: newRequest });

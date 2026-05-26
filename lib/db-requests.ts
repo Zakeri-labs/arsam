@@ -4,6 +4,7 @@ import path from 'path';
 export interface RequestFile {
   name: string;
   size: number; // in bytes
+  url?: string; // Web accessible download URL
 }
 
 export interface ServiceRequest {
