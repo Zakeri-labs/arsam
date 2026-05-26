@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
@@ -490,10 +491,14 @@ export default function AdminPage() {
         >
           {/* Brand Logo & Name */}
           <div className="mb-8 flex flex-col items-center">
-            <div className="logo-shimmer-container relative h-16 w-36 mb-3">
-              <div className="flex h-full w-full items-center justify-center rounded-xl bg-gradient-to-br from-[#0f1e37] to-[#1e3a5f] border border-gold/30">
-                <span className="text-[15px] font-black tracking-widest text-gold uppercase">AL UFUQ</span>
-              </div>
+            <div className="logo-shimmer-container relative h-20 w-44 mb-3">
+              <Image
+                src="/logo.png"
+                alt="الافق الذهبی"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
             <h2 className="text-xl font-bold text-white tracking-wide">الافق الذهبی</h2>
             <p className="mt-1.5 text-xs text-white/60">ورود به پنل مدیریت کل خدمات</p>
