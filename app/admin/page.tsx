@@ -491,13 +491,8 @@ export default function AdminPage() {
         >
           {/* Brand Logo & Name */}
           <div className="mb-8 flex flex-col items-center">
-            <div className="logo-shimmer-container relative h-16 w-40 mb-3">
-              <div className="flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f1e37] to-[#1e3a5f] border border-gold/30 shadow-inner">
-                <span className="text-[17px] font-extrabold tracking-wide text-gold">افق طلایی</span>
-              </div>
-            </div>
-            <h2 className="text-xl font-bold text-white tracking-wide">الافق الذهبی</h2>
-            <p className="mt-1.5 text-xs text-white/60">ورود به پنل مدیریت کل خدمات</p>
+            <h2 className="text-2xl font-black text-white tracking-wide mb-1">افق طلایی</h2>
+            <p className="text-xs text-white/60">ورود به پنل مدیریت کل خدمات</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
