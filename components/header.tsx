@@ -35,22 +35,22 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
     if (language === 'en') {
       return (
         <>
-          Turn The Engine Of<br />Your Business On In{' '}
-          <span className="text-primary">{cityName}</span>
+          Turn the Engine of<br />Your Business on in{' '}
+          <span className="text-primary">Dubai and Muscat</span>
         </>
       );
     } else if (language === 'fa') {
       return (
         <>
           موتور کسب‌وکار خود را<br />در{' '}
-          <span className="text-primary">{cityName}</span> روشن کنید
+          <span className="text-primary">دبی و مسقط</span> روشن کنید
         </>
       );
     } else {
       return (
         <>
           أطلق محرك أعمالك<br />في{' '}
-          <span className="text-primary">{cityName}</span>
+          <span className="text-primary">دبي ومسقط</span>
         </>
       );
     }
