@@ -11,25 +11,38 @@ export interface ServicesDB {
   omanServiceIds: string[];
 }
 
-const DB_PATH = path.join(process.cwd(), 'lib', 'services.json');
+const isVercel = !!process.env.VERCEL;
+const DB_PATH = isVercel
+  ? path.join('/tmp', 'services.json')
+  : path.join(process.cwd(), 'lib', 'services.json');
+
+// Ensure that we copy the existing committed services from static to /tmp if it doesn't exist yet
+async function ensureDBFile() {
+  if (isVercel && !fs.existsSync(DB_PATH)) {
+    try {
+      const staticPath = path.join(process.cwd(), 'lib', 'services.json');
+      const dir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      if (fs.existsSync(staticPath)) {
+        const data = fs.readFileSync(staticPath, 'utf8');
+        fs.writeFileSync(DB_PATH, data, 'utf8');
+      } else {
+        // Fallback: Initializing from content.ts
+        const defaults = await getDefaultData();
+        fs.writeFileSync(DB_PATH, JSON.stringify(defaults, null, 2), 'utf8');
+      }
+    } catch (e) {
+      console.error('Error seeding services in /tmp:', e);
+    }
+  }
+}
 
 // Safely get default values by importing them dynamically at run-time if needed
 // to prevent compile-time static circular references
 async function getDefaultData(): Promise<ServicesDB> {
   const contentModule = await import('./content');
-  
-  // We need to extract the raw lists. In content.ts, the raw lists are const and not exported.
-  // Wait! Let's check if servicesListEN, servicesListFA, and servicesListAR are exported in content.ts.
-  // Let's verify line 53: "const servicesListEN: Service[] = [" -> they are NOT exported!
-  // But wait, the exported 'content' object contains all the services!
-  // We can extract them from the exported 'content' object!
-  // Let's see: 
-  // 'content.en.uae.services.items' contains services filtered by uaeServiceIds.
-  // 'content.en.oman.services.items' contains Oman services mapped to OMR.
-  // To get the full lists, wait! Are they exported?
-  // Let's check if we can read content.ts and extract them, OR we can export them from content.ts!
-  // Exporting them from content.ts is extremely easy and safe!
-  // Let's edit content.ts to export servicesListEN, servicesListFA, servicesListAR, uaeServiceIds, and omanServiceIds.
   
   return {
     en: (contentModule as any).servicesListEN || [],
@@ -42,6 +55,17 @@ async function getDefaultData(): Promise<ServicesDB> {
 
 export function getServicesDB(): ServicesDB {
   try {
+    // Synchronous fallback copy for getServicesDB if running on Vercel and file is missing
+    if (isVercel && !fs.existsSync(DB_PATH)) {
+      const staticPath = path.join(process.cwd(), 'lib', 'services.json');
+      const dir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      if (fs.existsSync(staticPath)) {
+        const data = fs.readFileSync(staticPath, 'utf8');
+        fs.writeFileSync(DB_PATH, data, 'utf8');
+      }
+    }
+
     if (fs.existsSync(DB_PATH)) {
       const data = fs.readFileSync(DB_PATH, 'utf8');
       return JSON.parse(data) as ServicesDB;
@@ -50,9 +74,7 @@ export function getServicesDB(): ServicesDB {
     console.error('Error reading services DB, falling back to static content:', error);
   }
 
-  // Fallback: If file doesn't exist, we will trigger async initialization in the background
-  // but return empty or dynamic structure. 
-  // To keep it synchronous and simple, we can write the file on the first API request.
+  // Fallback: If file doesn't exist, we will return empty dynamic structure
   return {
     en: [],
     fa: [],
@@ -63,6 +85,7 @@ export function getServicesDB(): ServicesDB {
 }
 
 export async function initializeDBIfNeeded(): Promise<ServicesDB> {
+  await ensureDBFile();
   if (!fs.existsSync(DB_PATH)) {
     console.log('Services JSON database not found. Initializing from content.ts...');
     const defaults = await getDefaultData();

@@ -17,10 +17,35 @@ export interface ServiceRequest {
   createdAt: string; // ISO date string
 }
 
-const REQ_PATH = path.join(process.cwd(), 'lib', 'requests.json');
+const isVercel = !!process.env.VERCEL;
+const REQ_PATH = isVercel 
+  ? path.join('/tmp', 'requests.json')
+  : path.join(process.cwd(), 'lib', 'requests.json');
+
+// Ensure that we copy the existing committed requests from static to /tmp if it doesn't exist yet
+function ensureReqFile() {
+  if (isVercel && !fs.existsSync(REQ_PATH)) {
+    try {
+      const staticPath = path.join(process.cwd(), 'lib', 'requests.json');
+      const dir = path.dirname(REQ_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      if (fs.existsSync(staticPath)) {
+        const data = fs.readFileSync(staticPath, 'utf8');
+        fs.writeFileSync(REQ_PATH, data, 'utf8');
+      } else {
+        fs.writeFileSync(REQ_PATH, '[]', 'utf8');
+      }
+    } catch (e) {
+      console.error('Error seeding requests in /tmp:', e);
+    }
+  }
+}
 
 export function getRequests(): ServiceRequest[] {
   try {
+    ensureReqFile();
     if (fs.existsSync(REQ_PATH)) {
       const data = fs.readFileSync(REQ_PATH, 'utf8');
       return JSON.parse(data) as ServiceRequest[];
@@ -33,6 +58,7 @@ export function getRequests(): ServiceRequest[] {
 
 export function saveRequests(requests: ServiceRequest[]): boolean {
   try {
+    ensureReqFile();
     const dir = path.dirname(REQ_PATH);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });

@@ -20,11 +20,15 @@ export async function POST(request: Request) {
       );
     }
 
-    // Process and save physical files to /public/uploads/
+    // Process and save physical files
     const fileObjects = formData.getAll('files') as File[];
     const uploadedFilesMetadata = [];
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    const isVercel = !!process.env.VERCEL;
+    const uploadDir = isVercel
+      ? path.join('/tmp', 'uploads')
+      : path.join(process.cwd(), 'public', 'uploads');
+
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -61,10 +65,10 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ success: true, request: newRequest });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error submitting request:', error);
     return NextResponse.json(
-      { error: 'خطایی در سرور رخ داده است' },
+      { error: 'خطایی در سرور رخ داده است', details: error.message || String(error) },
       { status: 500 }
     );
   }
