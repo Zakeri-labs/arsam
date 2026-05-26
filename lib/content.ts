@@ -10,6 +10,7 @@ export interface Service {
   workingDays?: string;
   requirements?: string[];
   category?: string;
+  imageUrl?: string; // Web URL to portrait image representing the service
 }
 
 export interface Content {

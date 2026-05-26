@@ -44,6 +44,7 @@ interface Service {
   workingDays?: string;
   requirements?: string[];
   category?: string;
+  imageUrl?: string; // Optional custom portrait image URL
 }
 
 interface ServicesDB {
