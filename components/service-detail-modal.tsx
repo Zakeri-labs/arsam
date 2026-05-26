@@ -41,7 +41,7 @@ const localizations = {
     backBtn: 'Back',
     closeBtn: 'Close',
     successTitle: 'Request Submitted!',
-    successDesc: 'Thank you. Our experts will contact you shortly.',
+    successDesc: 'Your request has been successfully submitted. We will contact you shortly.',
     requiredField: 'This field is required',
     whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
     serviceFeeLabel: 'Service Fee:',
@@ -69,7 +69,7 @@ const localizations = {
     backBtn: 'بازگشت',
     closeBtn: 'بستن',
     successTitle: 'درخواست شما ثبت شد!',
-    successDesc: 'با تشکر از شما. کارشناسان ما به زودی با شما تماس خواهند گرفت.',
+    successDesc: 'درخواست شما با موفقیت ثبت شد. به‌زودی با شما ارتباط خواهیم گرفت.',
     requiredField: 'این فیلد الزامی است',
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
     serviceFeeLabel: 'دستمزد خدمات:',
@@ -97,7 +97,7 @@ const localizations = {
     backBtn: 'العودة',
     closeBtn: 'إغلاق',
     successTitle: 'تم تقديم الطلب بنجاح!',
-    successDesc: 'شكراً لك. سيتواصل معك خبراؤنا قريباً.',
+    successDesc: 'تم تسجيل طلبك بنجاح. سنتواصل معك قريباً.',
     requiredField: 'هذا الحقل مطلوب',
     whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
     serviceFeeLabel: 'رسوم الخدمة:',
@@ -132,6 +132,7 @@ export function ServiceDetailModal({
   const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean }>({});
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form state when modal closes/opens
   useEffect(() => {
@@ -143,6 +144,7 @@ export function ServiceDetailModal({
       setErrors({});
       setFiles([]);
       setIsDragging(false);
+      setIsSubmitting(false);
     }
   }, [isOpen]);
 
@@ -195,6 +197,7 @@ export function ServiceDetailModal({
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const formData = new FormData();
       formData.append('name', name.trim());
@@ -214,10 +217,17 @@ export function ServiceDetailModal({
       if (res.ok) {
         setView('success');
       } else {
-        alert(language === 'fa' ? 'خطا در ثبت درخواست' : language === 'ar' ? 'فشل في تقديم الطلب' : 'Failed to submit request');
+        const errorData = await res.json().catch(() => ({}));
+        alert(language === 'fa' 
+          ? `خطا در ثبت درخواست: ${errorData.details || errorData.error || 'پاسخ نامعتبر از سرور'}` 
+          : `Failed to submit request: ${errorData.details || errorData.error || 'Server error'}`
+        );
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error submitting form:', err);
+      alert(language === 'fa' ? `خطا در ارتباط با سرور: ${err.message || err}` : `Network error: ${err.message || err}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -526,10 +536,17 @@ export function ServiceDetailModal({
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-navy px-6 py-3.5 text-sm font-semibold text-white transition-transform active:scale-98 hover:bg-navy-light"
+                      disabled={isSubmitting}
+                      className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-navy px-6 py-3.5 text-sm font-semibold text-white transition-transform active:scale-98 hover:bg-navy-light disabled:opacity-50 cursor-pointer"
                     >
-                      <Send className="h-4 w-4" />
-                      <span>{t.submitBtn}</span>
+                      {isSubmitting ? (
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          <span>{t.submitBtn}</span>
+                        </>
+                      )}
                     </button>
                   </form>
                 </motion.div>
@@ -542,23 +559,23 @@ export function ServiceDetailModal({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center text-center pt-6 pb-2"
+                  className="flex flex-col items-center text-center pt-6 pb-2 select-none animate-fadeIn"
                 >
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-sm border border-emerald-100">
-                    <CheckCircle2 className="h-8 w-8" />
+                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-md border-2 border-emerald-100/50 animate-bounce">
+                    <CheckCircle2 className="h-12 w-12 text-emerald-500" />
                   </div>
 
-                  <h2 className="mb-2 text-xl font-bold text-foreground">
+                  <h2 className="mb-3 text-xl font-black text-foreground">
                     {t.successTitle}
                   </h2>
 
-                  <p className="mb-6 text-sm text-muted-foreground max-w-[280px]">
+                  <p className="mb-6 text-xs text-muted-foreground leading-relaxed max-w-[280px] font-bold">
                     {t.successDesc}
                   </p>
 
                   <button
                     onClick={onClose}
-                    className="w-full rounded-2xl bg-secondary px-6 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-secondary/80"
+                    className="w-full rounded-2xl bg-secondary px-6 py-3 text-xs font-black text-foreground transition-colors hover:bg-secondary/85 active:scale-98 border border-border/40 shadow-sm cursor-pointer"
                   >
                     {t.closeBtn}
                   </button>

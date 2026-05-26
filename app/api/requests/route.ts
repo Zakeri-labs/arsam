@@ -30,22 +30,26 @@ export async function POST(request: Request) {
     }
 
     for (const file of fileObjects) {
-      if (!file || file.size === 0) continue;
+      if (!file || typeof file === 'string' || !file.name || !file.size) continue;
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const fileExt = path.extname(file.name) || '';
-      const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
-      const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
-      const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const fileExt = path.extname(file.name) || '';
+        const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+        const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
+        const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
 
-      const filePath = path.join(uploadDir, safeFileName);
-      fs.writeFileSync(filePath, buffer);
+        const filePath = path.join(uploadDir, safeFileName);
+        fs.writeFileSync(filePath, buffer);
 
-      uploadedFilesMetadata.push({
-        name: file.name,
-        size: file.size,
-        url: `/uploads/${safeFileName}` // Public URL that can be directly accessed/downloaded
-      });
+        uploadedFilesMetadata.push({
+          name: file.name,
+          size: file.size,
+          url: `/uploads/${safeFileName}` // Public URL that can be directly accessed/downloaded
+        });
+      } catch (fileErr) {
+        console.error('Failed to save file:', file.name, fileErr);
+      }
     }
 
     const newRequest = addRequest({
