@@ -9,7 +9,7 @@ import { ServiceList } from '@/components/service-card';
 import { ServiceDetailModal } from '@/components/service-detail-modal';
 import { BottomNav } from '@/components/bottom-nav';
 import { AboutModal } from '@/components/about-modal';
-import { type Language, type Country, type Service, content } from '@/lib/content';
+import { type Language, type Country, type Service, content, convertToOmanServices } from '@/lib/content';
 
 const categories = [
   'all',
@@ -73,6 +73,13 @@ export default function Home() {
   const [hasShownSplash, setHasShownSplash] = useState(false);
   const [activeTab, setActiveTab] = useState<'home' | 'services' | 'about' | 'contact'>('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [dynamicServices, setDynamicServices] = useState<{
+    en: Service[];
+    fa: Service[];
+    ar: Service[];
+    uaeServiceIds: string[];
+    omanServiceIds: string[];
+  } | null>(null);
 
   useEffect(() => {
     // 1. Dynamic Runtime Style Sheet Injection (prevents Next.js build-time CSS purger from stripping our blocker styles)
@@ -202,6 +209,16 @@ export default function Home() {
       }
     }, 3000);
 
+    // Fetch dynamic services in real-time
+    fetch('/api/services')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.en && data.fa && data.ar) {
+          setDynamicServices(data);
+        }
+      })
+      .catch((err) => console.error('Failed to fetch dynamic services:', err));
+
     // If we want to restore localStorage check, we can uncomment:
     // if (savedLang && savedCountry) { ... }
 
@@ -245,6 +262,29 @@ export default function Home() {
   const currentContent = selectedLanguage && selectedCountry 
     ? content[selectedLanguage][selectedCountry] 
     : null;
+
+  // Resolve dynamic services with static fallback
+  const getActiveServices = (): Service[] => {
+    if (!selectedLanguage || !selectedCountry) return [];
+
+    if (dynamicServices) {
+      const allServices = dynamicServices[selectedLanguage] || [];
+      const allowedIds = selectedCountry === 'uae' 
+        ? dynamicServices.uaeServiceIds 
+        : dynamicServices.omanServiceIds;
+      
+      const filtered = allServices.filter(s => allowedIds.includes(s.id));
+      
+      if (selectedCountry === 'oman') {
+        return convertToOmanServices(filtered, selectedLanguage);
+      }
+      return filtered;
+    }
+
+    return currentContent?.services.items || [];
+  };
+
+  const activeServices = getActiveServices();
 
   return (
     <div 
@@ -388,8 +428,8 @@ export default function Home() {
                     <ServiceList
                       services={
                         selectedCategory === 'all'
-                          ? currentContent.services.items
-                          : currentContent.services.items.filter((item) => item.category === selectedCategory)
+                          ? activeServices
+                          : activeServices.filter((item) => item.category === selectedCategory)
                       }
                       language={selectedLanguage!}
                       onServiceClick={handleServiceClick}

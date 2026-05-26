@@ -50,7 +50,7 @@ export const modalContent: Record<Language, { selectLanguage: string; selectCoun
 };
 
 // 48 Services in English
-const servicesListEN: Service[] = [
+export const servicesListEN: Service[] = [
   // Company Setup Services (New from PDF)
   {
     id: 'company-mainland',
@@ -540,7 +540,7 @@ const servicesListEN: Service[] = [
 ];
 
 // 48 Services in Persian
-const servicesListFA: Service[] = [
+export const servicesListFA: Service[] = [
   // Company Setup Services (New from PDF)
   {
     id: 'company-mainland',
@@ -1030,7 +1030,7 @@ const servicesListFA: Service[] = [
 ];
 
 // 28 Services in Arabic
-const servicesListAR: Service[] = [
+export const servicesListAR: Service[] = [
   // Company Setup Services (New from PDF)
   {
     id: 'company-mainland',
@@ -1520,7 +1520,7 @@ const servicesListAR: Service[] = [
 ];
 
 // Master lists of allowed IDs for UAE and Oman specifically
-const uaeServiceIds = [
+export const uaeServiceIds = [
   'company-mainland',
   'company-freezone',
   'trademark-registration',
@@ -1560,7 +1560,7 @@ const uaeServiceIds = [
   'rera-permits'
 ];
 
-const omanServiceIds = [
+export const omanServiceIds = [
   'company-mainland',
   'company-freezone',
   'trademark-registration',
@@ -1605,7 +1605,7 @@ const omanServiceIds = [
 ];
 
 // Helper function to map AED services list to OMR for Oman
-function convertToOmanServices(services: Service[], language: Language): Service[] {
+export function convertToOmanServices(services: Service[], language: Language): Service[] {
   const toEnglishDigits = (str: string): string => {
     const persianDigits = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
     const arabicDigits = [/٠/g, /١/g, /٢/g, /٣/g, /٤/g, /٥/g, /٦/g, /٧/g, /٨/g, /٩/g];
