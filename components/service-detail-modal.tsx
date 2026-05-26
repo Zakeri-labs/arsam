@@ -33,6 +33,8 @@ const localizations = {
     whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
     serviceFeeLabel: 'Service Fee:',
     govtFeeLabel: 'Government Fees:',
+    systemRegLabel: 'System Registration 30 Mins',
+    finalIssueLabel: 'Final Issuance:',
     workingDaysLabel: 'Working Days',
     uploadLabel: 'Upload Documents (Optional)',
     dragDropText: 'Drag & drop files here or click to browse',
@@ -57,6 +59,8 @@ const localizations = {
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
     serviceFeeLabel: 'دستمزد خدمات:',
     govtFeeLabel: 'هزینه‌های دولتی:',
+    systemRegLabel: 'ثبت درخواست ۳۰ دقیقه',
+    finalIssueLabel: 'صدور نهایی:',
     workingDaysLabel: 'روز کاری',
     uploadLabel: 'آپلود مدارک (اختیاری)',
     dragDropText: 'فایل‌ها را بکشید و رها کنید یا کلیک کنید',
@@ -81,6 +85,8 @@ const localizations = {
     whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
     serviceFeeLabel: 'رسوم الخدمة:',
     govtFeeLabel: 'الرسوم الحكومية:',
+    systemRegLabel: 'تسجيل الطلب ٣٠ دقيقة',
+    finalIssueLabel: 'الإصدار النهائي:',
     workingDaysLabel: 'أيام عمل',
     uploadLabel: 'تحميل المستندات (اختياري)',
     dragDropText: 'اسحب وأسقط الملفات هنا أو انقر للتصفح',
@@ -250,10 +256,14 @@ export function ServiceDetailModal({
                       </div>
                     )}
                     {service.workingDays && (
-                      <div className="mt-1">
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200/30">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                          <span>{t.systemRegLabel}</span>
+                        </span>
                         <span className="inline-flex items-center gap-1.5 bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-3 py-1 rounded-full text-xs font-bold border border-amber-200/25">
                           <Clock className="h-3.5 w-3.5 shrink-0" />
-                          <span>{service.workingDays}</span>
+                          <span>{t.finalIssueLabel} {service.workingDays}</span>
                         </span>
                       </div>
                     )}
