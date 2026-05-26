@@ -165,7 +165,7 @@ export function ServiceDetailModal({
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { name?: boolean; phone?: boolean } = {};
     if (!name.trim()) newErrors.name = true;
@@ -176,17 +176,29 @@ export function ServiceDetailModal({
       return;
     }
 
-    // Simulate form submission with uploaded files
-    console.log('Submitted Request:', {
-      service: service.title,
-      name,
-      phone,
-      description,
-      filesCount: files.length,
-      filesNames: files.map(f => f.name)
-    });
+    try {
+      const filesInfo = files.map(f => ({ name: f.name, size: f.size }));
 
-    setView('success');
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          description: description.trim(),
+          serviceTitle: service.title,
+          files: filesInfo
+        })
+      });
+
+      if (res.ok) {
+        setView('success');
+      } else {
+        alert(language === 'fa' ? 'خطا در ثبت درخواست' : language === 'ar' ? 'فشل في تقديم الطلب' : 'Failed to submit request');
+      }
+    } catch (err) {
+      console.error('Error submitting form:', err);
+    }
   };
 
   return (

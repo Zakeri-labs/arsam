@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
   Trash2, Edit3, Globe, Save, LogOut, Check, X, FileText, 
-  Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink
+  Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink, Menu
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
@@ -54,6 +54,21 @@ interface ServicesDB {
   omanServiceIds: string[];
 }
 
+interface RequestFile {
+  name: string;
+  size: number;
+}
+
+interface ServiceRequest {
+  id: string;
+  name: string;
+  phone: string;
+  description: string;
+  serviceTitle: string;
+  files: RequestFile[];
+  createdAt: string;
+}
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [email, setEmail] = useState('');
@@ -61,11 +76,19 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Layout & Navigation State
+  const [activeScreen, setActiveScreen] = useState<'services' | 'requests'>('services');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Dashboard state
   const [db, setDb] = useState<ServicesDB | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('all');
   const [selectedCountryFilter, setSelectedCountryFilter] = useState('all');
+
+  // Requests state
+  const [requests, setRequests] = useState<ServiceRequest[] | null>(null);
+  const [requestsSearchQuery, setRequestsSearchQuery] = useState('');
 
   // Editor modal state
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -102,10 +125,11 @@ export default function AdminPage() {
       .catch(() => setIsAuthenticated(false));
   }, []);
 
-  // Fetch database when authenticated
+  // Fetch databases when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchServices();
+      fetchRequests();
     }
   }, [isAuthenticated]);
 
@@ -118,6 +142,17 @@ export default function AdminPage() {
         }
       })
       .catch(() => toast.error('خطا در لود اطلاعات خدمات'));
+  };
+
+  const fetchRequests = () => {
+    fetch('/api/requests')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setRequests(data);
+        }
+      })
+      .catch(() => toast.error('خطا در لود اطلاعات درخواست‌ها'));
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -154,6 +189,7 @@ export default function AdminPage() {
       await fetch('/api/auth', { method: 'DELETE' });
       setIsAuthenticated(false);
       setDb(null);
+      setRequests(null);
       toast.success('با موفقیت خارج شدید');
     } catch (err) {
       toast.error('خطا در خروج از حساب کاربری');
@@ -259,6 +295,27 @@ export default function AdminPage() {
       toast.error('خطا در ذخیره‌سازی اطلاعات در سرور');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteRequest = async (requestId: string) => {
+    const confirmDelete = window.confirm('آیا مطمئن هستید که می‌خواهید این درخواست پیگیری ثبت شده را حذف کنید؟');
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`/api/requests?id=${requestId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        setRequests(prev => prev ? prev.filter(r => r.id !== requestId) : null);
+        toast.success('درخواست پیگیری با موفقیت حذف شد');
+      } else {
+        const errData = await res.json();
+        toast.error(errData.error || 'خطا در حذف درخواست');
+      }
+    } catch (err) {
+      toast.error('خطا در ارتباط با سرور');
     }
   };
 
@@ -380,13 +437,11 @@ export default function AdminPage() {
     }
 
     // Sync country lists
-    // 1. UAE
     if (formUaeActive) {
       if (!updatedUaeIds.includes(finalId)) updatedUaeIds.push(finalId);
     } else {
       updatedUaeIds = updatedUaeIds.filter(id => id !== finalId);
     }
-    // 2. Oman
     if (formOmanActive) {
       if (!updatedOmanIds.includes(finalId)) updatedOmanIds.push(finalId);
     } else {
@@ -428,10 +483,8 @@ export default function AdminPage() {
   const getFilteredServices = () => {
     if (!db) return [];
 
-    // We list Persian version for the dashboard management
     let services = [...db.fa];
 
-    // If search query exists
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       services = services.filter(s => 
@@ -441,12 +494,10 @@ export default function AdminPage() {
       );
     }
 
-    // Category filter
     if (selectedCategoryFilter !== 'all') {
       services = services.filter(s => s.category === selectedCategoryFilter);
     }
 
-    // Country filter
     if (selectedCountryFilter !== 'all') {
       if (selectedCountryFilter === 'uae') {
         services = services.filter(s => db.uaeServiceIds.includes(s.id));
@@ -461,6 +512,29 @@ export default function AdminPage() {
   };
 
   const filteredList = getFilteredServices();
+
+  const formatRequestDate = (dateStr: string) => {
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('fa-IR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  };
 
   if (isAuthenticated === null) {
     return (
@@ -477,7 +551,6 @@ export default function AdminPage() {
   if (!isAuthenticated) {
     return (
       <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[#070e1b] via-[#0f1e37] to-[#162a4a] px-4 font-sans text-right" dir="rtl">
-        {/* Luxury Background Lights */}
         <div className="absolute top-1/4 left-1/4 h-[350px] w-[350px] rounded-full bg-gold/10 blur-[120px]" />
         <div className="absolute bottom-1/4 right-1/4 h-[350px] w-[350px] rounded-full bg-gold/5 blur-[120px]" />
 
@@ -565,281 +638,558 @@ export default function AdminPage() {
     );
   }
 
-  // --- 2. ADMIN DASHBOARD SCREEN ---
-  return (
-    <div className="min-h-screen bg-slate-50/50 pb-16 font-sans text-right" dir="rtl">
-      <Toaster position="top-center" toastOptions={{ style: { fontFamily: 'inherit' } }} />
-
-      {/* Luxury Navbar */}
-      <header className="sticky top-0 z-30 w-full border-b border-[#ede8df] bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 md:px-6">
-          
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-navy to-[#1e3a5f] text-gold border border-gold/20 shadow-md">
-              <LayoutDashboard className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-[15px] font-black text-navy leading-tight">پنل مدیریت خدمات</h1>
-              <p className="text-[10px] font-bold text-gold tracking-wide mt-0.5">الافق الذهبی | AL UFUQ AL DAHABI</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <a 
-              href="/" 
-              target="_blank" 
-              className="flex items-center gap-1 text-[11px] font-bold text-navy hover:text-gold transition-colors bg-secondary px-3 py-2 rounded-full border border-border"
-            >
-              مشاهده لندینگ پیج
-              <ExternalLink className="h-3 w-3" />
-            </a>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition-all border border-red-200/50 px-4 py-2 rounded-full cursor-pointer"
-            >
-              خروج از حساب
-              <LogOut className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
+  // --- 2. ADMIN SIDEBAR NAVIGATION ---
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full bg-navy text-white text-right" dir="rtl">
+      {/* Brand Header */}
+      <div className="p-6 border-b border-white/10 flex flex-col items-center select-none">
+        <div className="relative h-10 w-24 mb-1">
+          <Image src="/logo.png" alt="افق طلایی" fill className="object-contain" />
         </div>
-      </header>
+        <h2 className="text-base font-extrabold text-gold leading-none mt-1.5">افق طلایی</h2>
+        <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1.5">پنل مدیریت ادمین</span>
+      </div>
 
-      {/* Main Dashboard Layout */}
-      <main className="mx-auto max-w-6xl px-4 py-6 md:px-6">
-        {db ? (
-          <div className="space-y-6">
+      {/* Navigation Items */}
+      <nav className="flex-1 px-4 py-6 space-y-2">
+        <button
+          onClick={() => {
+            setActiveScreen('services');
+            setIsMobileMenuOpen(false);
+          }}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeScreen === 'services'
+              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+              : 'text-white/70 hover:bg-white/5 hover:text-white'
+          }`}
+        >
+          <Briefcase className="h-4.5 w-4.5 shrink-0" />
+          مدیریت خدمات
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveScreen('requests');
+            setIsMobileMenuOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeScreen === 'requests'
+              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+              : 'text-white/70 hover:bg-white/5 hover:text-white'
+          }`}
+        >
+          <span className="flex items-center gap-3">
+            <Mail className="h-4.5 w-4.5 shrink-0" />
+            درخواست‌های ارسالی
+          </span>
+          {requests && requests.length > 0 && (
+            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black shrink-0 ${
+              activeScreen === 'requests' ? 'bg-[#0f1e37] text-gold' : 'bg-gold text-[#0f1e37]'
+            }`}>
+              {requests.length}
+            </span>
+          )}
+        </button>
+      </nav>
+
+      {/* Sidebar Footer / Action buttons */}
+      <div className="p-4 border-t border-white/10 space-y-2 select-none">
+        <a
+          href="/"
+          target="_blank"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
+        >
+          <ExternalLink className="h-4.5 w-4.5 shrink-0" />
+          مشاهده لندینگ پیج
+        </a>
+        <button
+          onClick={() => {
+            handleLogout();
+            setIsMobileMenuOpen(false);
+          }}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer"
+        >
+          <LogOut className="h-4.5 w-4.5 shrink-0" />
+          خروج از حساب
+        </button>
+      </div>
+    </div>
+  );
+
+  // --- 3. REQUESTS SCREEN RENDER ---
+  const renderRequestsScreen = () => {
+    if (!requests) {
+      return (
+        <div className="flex h-80 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#0f1e37] border-t-transparent"></div>
+            <span className="text-sm font-semibold text-muted-foreground">درحال دریافت درخواست‌ها از سرور...</span>
+          </div>
+        </div>
+      );
+    }
+
+    const filteredRequests = requests.filter(r => 
+      r.name.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
+      r.phone.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
+      r.serviceTitle.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
+      (r.description && r.description.toLowerCase().includes(requestsSearchQuery.toLowerCase()))
+    );
+
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        {/* Header Section */}
+        <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-black text-[#0f1e37]">درخواست‌های ارسالی کاربران</h2>
+              <p className="text-xs text-muted-foreground mt-1">مشاهده و پیگیری درخواست‌هایی که کاربران در لندینگ پیج ثبت کرده‌اند.</p>
+            </div>
             
-            {/* Quick Stat Cards */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {/* Card 1 */}
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-sm">
-                <div className="absolute top-0 right-0 h-1 w-full bg-navy"></div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-muted-foreground">کل خدمات ثبت شده</span>
-                    <h3 className="mt-2 text-2xl font-black text-navy">{db.fa.length} خدمت</h3>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy/5 text-navy">
-                    <Briefcase className="h-5.5 w-5.5" />
-                  </div>
-                </div>
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                <Search className="h-4 w-4" />
               </div>
-
-              {/* Card 2 */}
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-sm">
-                <div className="absolute top-0 right-0 h-1 w-full bg-gold"></div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-muted-foreground">خدمات فعال در امارات</span>
-                    <h3 className="mt-2 text-2xl font-black text-navy">{db.uaeServiceIds.length} خدمت</h3>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/5 text-gold">
-                    <Landmark className="h-5.5 w-5.5" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3 */}
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-sm">
-                <div className="absolute top-0 right-0 h-1 w-full bg-emerald-500"></div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs font-bold text-muted-foreground">خدمات فعال در عمان</span>
-                    <h3 className="mt-2 text-2xl font-black text-navy">{db.omanServiceIds.length} خدمت</h3>
-                  </div>
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
-                    <Globe className="h-5.5 w-5.5" />
-                  </div>
-                </div>
-              </div>
+              <input
+                type="text"
+                value={requestsSearchQuery}
+                onChange={(e) => setRequestsSearchQuery(e.target.value)}
+                placeholder="جستجو در نام، تلفن یا خدمت..."
+                className="w-full rounded-xl border border-border bg-slate-50/50 py-2.5 pr-9 pl-4 text-xs outline-none focus:border-gold focus:bg-white focus:ring-1 focus:ring-gold/30"
+              />
             </div>
+          </div>
+        </div>
 
-            {/* Filter and Management Bar */}
-            <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                
-                {/* Search & Filters */}
-                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
-                  {/* Search Input */}
-                  <div className="relative">
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
-                      <Search className="h-4 w-4" />
+        {/* Requests List */}
+        {filteredRequests.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4">
+            {filteredRequests.map(req => {
+              const cleanPhone = req.phone.replace(/[^0-9+]/g, '');
+              const whatsappUrl = `https://wa.me/${cleanPhone}`;
+
+              return (
+                <div key={req.id} className="rounded-2xl border border-border bg-white p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden text-right" dir="rtl">
+                  <div className="absolute top-0 right-0 h-full w-1 bg-gold"></div>
+                  
+                  {/* Row 1: User details and submitted time */}
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/10 text-gold border border-gold/25 font-bold text-sm">
+                        {req.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-[#0f1e37] text-sm">{req.name}</h4>
+                        <span className="text-[10px] text-muted-foreground mt-0.5 inline-block">{formatRequestDate(req.createdAt)}</span>
+                      </div>
                     </div>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="جستجو در عنوان یا شناسه..."
-                      className="w-full rounded-xl border border-border bg-slate-50/50 py-2.5 pr-9 pl-4 text-xs outline-none focus:border-gold focus:bg-white focus:ring-1 focus:ring-gold/30"
-                    />
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full bg-navy/5 px-3 py-1 text-[10px] font-bold text-navy border border-navy/10">
+                        {req.serviceTitle}
+                      </span>
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-mono text-muted-foreground border border-border select-all">
+                        {req.id}
+                      </span>
+                    </div>
                   </div>
 
-                  {/* Category Filter */}
-                  <select
-                    value={selectedCategoryFilter}
-                    onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                    className="rounded-xl border border-border bg-slate-50/50 px-3 py-2.5 text-xs outline-none focus:border-gold focus:bg-white focus:ring-1 focus:ring-gold/30"
-                  >
-                    <option value="all">همه دسته‌بندی‌ها</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{categoryTranslations[cat]}</option>
-                    ))}
-                  </select>
+                  {/* Row 2: Contact info and detailed description */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground block">شماره تماس متقاضی:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-navy text-xs select-all bg-secondary/30 px-3 py-1.5 rounded-xl border border-border/30">{req.phone}</span>
+                        <a
+                          href={whatsappUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 bg-[#25D366] text-white hover:brightness-105 transition-all text-[10px] font-bold px-3 py-1.5 rounded-xl shadow-sm shadow-[#25D366]/10"
+                        >
+                          واتساپ
+                        </a>
+                      </div>
+                    </div>
 
-                  {/* Country Filter */}
-                  <select
-                    value={selectedCountryFilter}
-                    onChange={(e) => setSelectedCountryFilter(e.target.value)}
-                    className="rounded-xl border border-border bg-slate-50/50 px-3 py-2.5 text-xs outline-none focus:border-gold focus:bg-white focus:ring-1 focus:ring-gold/30"
-                  >
-                    <option value="all">همه کشورها (امارات / عمان)</option>
-                    <option value="uae">فقط امارات متحده عربی</option>
-                    <option value="oman">فقط سلطان‌نشین عمان</option>
-                    <option value="both">مشترک در هر دو کشور</option>
-                  </select>
-                </div>
+                    <div className="md:col-span-2 space-y-1.5">
+                      <span className="text-[10px] font-bold text-muted-foreground block">توضیحات و یادداشت کاربر:</span>
+                      <p className="text-xs text-foreground/80 leading-relaxed bg-slate-50/50 p-3 rounded-xl border border-border/40 min-h-12 text-justify">
+                        {req.description || 'کاربر توضیحات اضافی برای این درخواست ثبت نکرده است.'}
+                      </p>
+                    </div>
+                  </div>
 
-                {/* Add Service Button */}
-                <button
-                  onClick={handleAddClick}
-                  className="flex items-center justify-center gap-1.5 rounded-xl bg-navy px-5 py-2.5 text-xs font-bold text-white hover:bg-navy-light shadow-md shadow-navy/10 active:scale-98 transition-all cursor-pointer"
-                >
-                  <Plus className="h-4.5 w-4.5" />
-                  افزودن خدمت جدید
-                </button>
-
-              </div>
-            </div>
-
-            {/* Services Table List */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full table-auto border-collapse text-right text-xs">
-                  <thead>
-                    <tr className="border-b border-border bg-slate-50/70 text-navy font-bold">
-                      <th className="py-4.5 px-4 font-extrabold">عنوان خدمت (فارسی)</th>
-                      <th className="py-4.5 px-4 font-extrabold">دسته‌بندی</th>
-                      <th className="py-4.5 px-4 font-extrabold">هزینه خدمات / کارمزد</th>
-                      <th className="py-4.5 px-4 font-extrabold text-center">کشورها</th>
-                      <th className="py-4.5 px-4 font-extrabold text-center">ترجمه‌ها</th>
-                      <th className="py-4.5 px-4 font-extrabold text-center">عملیات</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/60">
-                    {filteredList.length > 0 ? (
-                      filteredList.map((service) => {
-                        const inUae = db.uaeServiceIds.includes(service.id);
-                        const inOman = db.omanServiceIds.includes(service.id);
-                        
-                        // Check if translated versions exist
-                        const hasEn = db.en.some(s => s.id === service.id && s.title.trim() !== '');
-                        const hasAr = db.ar.some(s => s.id === service.id && s.title.trim() !== '');
-
-                        return (
-                          <tr key={service.id} className="hover:bg-slate-50/30 transition-colors">
-                            {/* Title & ID */}
-                            <td className="py-4 px-4">
-                              <div className="font-bold text-navy text-[13px]">{service.title}</div>
-                              <div className="mt-1 font-mono text-[10px] text-muted-foreground select-all bg-slate-50 px-2 py-0.5 rounded border border-border/20 inline-block">{service.id}</div>
-                            </td>
-                            
-                            {/* Category */}
-                            <td className="py-4 px-4 text-muted-foreground font-semibold">
-                              {categoryTranslations[service.category || ''] || service.category}
-                            </td>
-
-                            {/* Service Fee */}
-                            <td className="py-4 px-4 font-mono font-bold text-navy">
-                              {service.serviceFee || 'ثبت نشده'}
-                            </td>
-
-                            {/* Countries Active */}
-                            <td className="py-4 px-4 text-center">
-                              <div className="flex justify-center gap-1.5">
-                                {inUae && (
-                                  <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold border border-gold/20">امارات</span>
-                                )}
-                                {inOman && (
-                                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-200/50">عمان</span>
-                                )}
-                                {!inUae && !inOman && (
-                                  <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600 border border-red-100">غیرفعال</span>
-                                )}
-                              </div>
-                            </td>
-
-                            {/* Translation Status */}
-                            <td className="py-4 px-4 text-center">
-                              <div className="flex justify-center gap-1">
-                                <span className="rounded-full bg-navy/5 px-1.5 py-0.5 text-[9px] font-extrabold text-navy/70 border border-navy/10">FA</span>
-                                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold border ${hasEn ? 'bg-indigo-50 text-indigo-600 border-indigo-200/50' : 'bg-red-50 text-red-400 border-red-100'}`}>EN</span>
-                                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold border ${hasAr ? 'bg-orange-50 text-orange-600 border-orange-200/50' : 'bg-red-50 text-red-400 border-red-100'}`}>AR</span>
-                              </div>
-                            </td>
-
-                            {/* Action Buttons */}
-                            <td className="py-4 px-4 text-center">
-                              <div className="flex justify-center gap-1.5">
-                                <button
-                                  onClick={() => handleEditClick(service.id)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-navy hover:border-gold hover:bg-secondary transition-all active:scale-95 cursor-pointer"
-                                  title="ویرایش خدمت"
-                                >
-                                  <Edit3 className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteClick(service.id)}
-                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-white text-red-600 hover:border-red-300 hover:bg-red-50 transition-all active:scale-95 cursor-pointer"
-                                  title="حذف خدمت"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={6} className="py-12 px-4 text-center">
-                          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
-                            <AlertTriangle className="h-8 w-8 text-amber-500" />
-                            <span className="font-bold text-[13px]">هیچ خدمتی منطبق با فیلترها و جستجوی شما یافت نشد.</span>
+                  {/* Row 3: Attachments/files list */}
+                  {req.files && req.files.length > 0 && (
+                    <div className="border-t border-border/40 pt-3.5 space-y-2">
+                      <span className="text-[10px] font-bold text-muted-foreground block">مدارک و فایل‌های پیوست شده:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {req.files.map((file, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 rounded-xl bg-secondary/40 border border-border/50 px-3 py-1.5 text-xs text-navy font-semibold hover:border-gold hover:bg-secondary/60 transition-colors"
+                          >
+                            <FileText className="h-3.5 w-3.5 text-gold shrink-0" />
+                            <span className="truncate max-w-[180px]">{file.name}</span>
+                            <span className="text-[9px] text-muted-foreground">({formatFileSize(file.size)})</span>
+                            <button
+                              type="button"
+                              onClick={() => alert(`شبیه‌سازی دانلود فایل: ${file.name}`)}
+                              className="text-[9px] text-gold hover:text-gold-dark pr-1 border-r border-border/60 hover:underline cursor-pointer"
+                            >
+                              دانلود
+                            </button>
                           </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
+                  {/* Row 4: Status and actions */}
+                  <div className="border-t border-border/40 pt-3 flex justify-between items-center">
+                    <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
+                      <Check className="h-3.5 w-3.5 text-emerald-500" />
+                      آماده پیگیری و تماس
+                    </span>
+                    
+                    <button
+                      onClick={() => handleDeleteRequest(req.id)}
+                      className="flex items-center gap-1.5 text-[10px] font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg border border-red-100/50 cursor-pointer"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      حذف درخواست پیگیری
+                    </button>
+                  </div>
+
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex h-80 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
-            <div className="flex flex-col items-center gap-4">
-              <div className="h-8 w-8 animate-spin rounded-full border-3 border-navy border-t-transparent"></div>
-              <span className="text-sm font-semibold text-muted-foreground">درحال دریافت اطلاعات از دیتابیس محلی خدمات...</span>
+            <div className="flex flex-col items-center gap-2 text-muted-foreground">
+              <AlertTriangle className="h-8 w-8 text-amber-500" />
+              <span className="font-bold text-[13px]">هیچ درخواستی ثبت نگردیده یا یافت نشد.</span>
             </div>
           </div>
         )}
-      </main>
+      </div>
+    );
+  };
 
-      {/* --- 3. MULTILINGUAL SERVICE EDITOR MODAL --- */}
+  // --- 4. SERVICES LIST RENDER ---
+  const renderServicesScreen = () => {
+    if (!db) {
+      return (
+        <div className="flex h-80 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-[#0f1e37] border-t-transparent"></div>
+            <span className="text-sm font-semibold text-muted-foreground">درحال دریافت اطلاعات از دیتابیس خدمات...</span>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        {/* Quick Stat Cards */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* Card 1 */}
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-sm">
+            <div className="absolute top-0 right-0 h-1 w-full bg-navy"></div>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-muted-foreground">کل خدمات ثبت شده</span>
+                <h3 className="mt-2 text-2xl font-black text-navy">{db.fa.length} خدمت</h3>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-navy/5 text-navy">
+                <Briefcase className="h-5.5 w-5.5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2 */}
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-sm">
+            <div className="absolute top-0 right-0 h-1 w-full bg-gold"></div>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-muted-foreground">خدمات فعال در امارات</span>
+                <h3 className="mt-2 text-2xl font-black text-navy">{db.uaeServiceIds.length} خدمت</h3>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/5 text-gold">
+                <Landmark className="h-5.5 w-5.5" />
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3 */}
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-white p-5 shadow-sm">
+            <div className="absolute top-0 right-0 h-1 w-full bg-emerald-500"></div>
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-xs font-bold text-muted-foreground">خدمات فعال در عمان</span>
+                <h3 className="mt-2 text-2xl font-black text-navy">{db.omanServiceIds.length} خدمت</h3>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <Globe className="h-5.5 w-5.5" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter and Management Bar */}
+        <div className="rounded-2xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            
+            {/* Search & Filters */}
+            <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+              {/* Search Input */}
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+                  <Search className="h-4 w-4" />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="جستجو در عنوان یا شناسه..."
+                  className="w-full rounded-xl border border-border bg-slate-50/50 py-2.5 pr-9 pl-4 text-xs outline-none focus:border-gold focus:bg-white focus:ring-1 focus:ring-gold/30"
+                />
+              </div>
+
+              {/* Category Filter */}
+              <select
+                value={selectedCategoryFilter}
+                onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                className="rounded-xl border border-border bg-slate-50/50 px-3 py-2.5 text-xs outline-none focus:border-gold focus:bg-white focus:ring-1 focus:ring-gold/30"
+              >
+                <option value="all">همه دسته‌بندی‌ها</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{categoryTranslations[cat]}</option>
+                ))}
+              </select>
+
+              {/* Country Filter */}
+              <select
+                value={selectedCountryFilter}
+                onChange={(e) => setSelectedCountryFilter(e.target.value)}
+                className="rounded-xl border border-border bg-slate-50/50 px-3 py-2.5 text-xs outline-none focus:border-gold focus:bg-white focus:ring-1 focus:ring-gold/30"
+              >
+                <option value="all">همه کشورها (امارات / عمان)</option>
+                <option value="uae">فقط امارات متحده عربی</option>
+                <option value="oman">فقط سلطان‌نشین عمان</option>
+                <option value="both">مشترک در هر دو کشور</option>
+              </select>
+            </div>
+
+            {/* Add Service Button */}
+            <button
+              onClick={handleAddClick}
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-navy px-5 py-2.5 text-xs font-bold text-white hover:bg-navy-light shadow-md shadow-navy/10 active:scale-98 transition-all cursor-pointer"
+            >
+              <Plus className="h-4.5 w-4.5" />
+              افزودن خدمت جدید
+            </button>
+
+          </div>
+        </div>
+
+        {/* Services Table List */}
+        <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full table-auto border-collapse text-right text-xs">
+              <thead>
+                <tr className="border-b border-border bg-slate-50/70 text-navy font-bold">
+                  <th className="py-4.5 px-4 font-extrabold">عنوان خدمت (فارسی)</th>
+                  <th className="py-4.5 px-4 font-extrabold">دسته‌بندی</th>
+                  <th className="py-4.5 px-4 font-extrabold">هزینه خدمات / کارمزد</th>
+                  <th className="py-4.5 px-4 font-extrabold text-center">کشورها</th>
+                  <th className="py-4.5 px-4 font-extrabold text-center">ترجمه‌ها</th>
+                  <th className="py-4.5 px-4 font-extrabold text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filteredList.length > 0 ? (
+                  filteredList.map((service) => {
+                    const inUae = db.uaeServiceIds.includes(service.id);
+                    const inOman = db.omanServiceIds.includes(service.id);
+                    
+                    const hasEn = db.en.some(s => s.id === service.id && s.title.trim() !== '');
+                    const hasAr = db.ar.some(s => s.id === service.id && s.title.trim() !== '');
+
+                    return (
+                      <tr key={service.id} className="hover:bg-slate-50/30 transition-colors">
+                        <td className="py-4 px-4">
+                          <div className="font-bold text-navy text-[13px]">{service.title}</div>
+                          <div className="mt-1 font-mono text-[10px] text-muted-foreground select-all bg-slate-50 px-2 py-0.5 rounded border border-border/20 inline-block">{service.id}</div>
+                        </td>
+                        
+                        <td className="py-4 px-4 text-muted-foreground font-semibold">
+                          {categoryTranslations[service.category || ''] || service.category}
+                        </td>
+
+                        <td className="py-4 px-4 font-mono font-bold text-navy">
+                          {service.serviceFee || 'ثبت نشده'}
+                        </td>
+
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex justify-center gap-1.5">
+                            {inUae && (
+                              <span className="rounded-full bg-gold/10 px-2 py-0.5 text-[10px] font-bold text-gold border border-gold/20">امارات</span>
+                            )}
+                            {inOman && (
+                              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-600 border border-emerald-200/50">عمان</span>
+                            )}
+                            {!inUae && !inOman && (
+                              <span className="rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-bold text-red-600 border border-red-100">غیرفعال</span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex justify-center gap-1">
+                            <span className="rounded-full bg-navy/5 px-1.5 py-0.5 text-[9px] font-extrabold text-navy/70 border border-navy/10">FA</span>
+                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold border ${hasEn ? 'bg-indigo-50 text-indigo-600 border-indigo-200/50' : 'bg-red-50 text-red-400 border-red-100'}`}>EN</span>
+                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-extrabold border ${hasAr ? 'bg-orange-50 text-orange-600 border-orange-200/50' : 'bg-red-50 text-red-400 border-red-100'}`}>AR</span>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex justify-center gap-1.5">
+                            <button
+                              onClick={() => handleEditClick(service.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-white text-navy hover:border-gold hover:bg-secondary transition-all active:scale-95 cursor-pointer"
+                              title="ویرایش خدمت"
+                            >
+                              <Edit3 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(service.id)}
+                              className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-100 bg-white text-red-600 hover:border-red-300 hover:bg-red-50 transition-all active:scale-95 cursor-pointer"
+                              title="حذف خدمت"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-12 px-4 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                        <AlertTriangle className="h-8 w-8 text-amber-500" />
+                        <span className="font-bold text-[13px]">هیچ خدمتی منطبق با فیلترها و جستجوی شما یافت نشد.</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- 5. COMPONENT MAIN RENDER ---
+  return (
+    <div className="min-h-screen bg-slate-50/50 font-sans text-right" dir="rtl">
+      <Toaster position="top-center" toastOptions={{ style: { fontFamily: 'inherit' } }} />
+
+      {/* Main Responsive Grid Layout */}
+      <div className="flex min-h-screen">
+        
+        {/* DESKTOP SIDEBAR PANEL (Always visible on large screens) */}
+        <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-screen md:z-20 border-l border-border bg-[#0f1e37] shadow-xl">
+          <SidebarContent />
+        </aside>
+
+        {/* MOBILE SLIDING DRAWER NAIGATION */}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <>
+              {/* Overlay shadow backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+              />
+              {/* Sliding sidebar container */}
+              <motion.aside
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl md:hidden border-l border-white/10"
+              >
+                <SidebarContent />
+              </motion.aside>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* MAIN DISPLAY AREA (Occupies left side, offset on desktop by sidebar width) */}
+        <div className="flex-1 md:mr-64 min-h-screen flex flex-col">
+          
+          {/* MOBILE ONLY TOP HEADER (Provides hamburger trigger) */}
+          <header className="md:hidden sticky top-0 z-30 w-full border-b border-[#ede8df] bg-white/85 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="p-2 rounded-xl border border-border bg-white text-navy hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+            >
+              <Menu className="h-5.5 w-5.5" />
+            </button>
+
+            <div className="flex flex-col items-end select-none">
+              <h1 className="text-[13px] font-black text-navy leading-none">پنل مدیریت</h1>
+              <span className="text-[9px] font-bold text-gold tracking-wide mt-1.5">افق طلایی</span>
+            </div>
+          </header>
+
+          {/* DESKTOP BRAND BANNER */}
+          <header className="hidden md:block w-full border-b border-border bg-white py-4.5 px-6 select-none">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-base font-extrabold text-navy leading-none">
+                  {activeScreen === 'services' ? 'مدیریت خدمات' : 'درخواست‌های ارسالی کاربران'}
+                </h1>
+                <p className="text-[10px] text-muted-foreground mt-1.5 font-bold">
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : 'پیگیری فرم‌های ثبت شده از سمت لندینگ پیج'}
+                </p>
+              </div>
+              
+              <div className="text-[10px] text-gold font-bold tracking-widest bg-secondary px-3 py-1.5 rounded-full border border-border/60">
+                SHINY HORIZON SERVICES
+              </div>
+            </div>
+          </header>
+
+          {/* Dynamic Content Panel */}
+          <main className="flex-1 px-4 py-6 md:px-6">
+            {activeScreen === 'services' ? renderServicesScreen() : renderRequestsScreen()}
+          </main>
+
+        </div>
+
+      </div>
+
+      {/* --- 3. MULTILINGUAL SERVICE EDITOR MODAL (Shared) --- */}
       <AnimatePresence>
         {isEditorOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto px-4 py-8">
-            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsEditorOpen(false)}
-              className="absolute inset-0 bg-navy/40 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#0f1e37]/40 backdrop-blur-sm"
             />
 
-            {/* Modal Card */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -847,7 +1197,6 @@ export default function AdminPage() {
               className="relative z-10 w-full max-w-3xl rounded-3xl border border-border bg-white shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
               
-              {/* Header */}
               <div className="flex items-center justify-between border-b border-border bg-slate-50 px-6 py-4">
                 <div className="flex items-center gap-2">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-navy/5 text-navy border border-navy/10">
@@ -868,10 +1217,9 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {/* Form Content (Scrollable) */}
               <form onSubmit={handleSaveService} className="flex-1 overflow-y-auto p-6 space-y-6">
                 
-                {/* Section A: Common Settings (Shared across languages) */}
+                {/* Section A: Common Settings */}
                 <div className="space-y-4 rounded-2xl border border-border/80 bg-slate-50/50 p-4">
                   <h3 className="text-xs font-extrabold text-navy flex items-center gap-1.5 border-b border-border pb-2">
                     <Layers className="h-4 w-4 text-gold" />
@@ -879,7 +1227,6 @@ export default function AdminPage() {
                   </h3>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                    {/* Unique ID */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy">شناسه انگلیسی یکتا (ID)</label>
                       <input
@@ -897,7 +1244,6 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    {/* Category Selection */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy">دسته‌بندی خدمت</label>
                       <select
@@ -911,7 +1257,6 @@ export default function AdminPage() {
                       </select>
                     </div>
 
-                    {/* Service Fee */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy">هزینه خدمات (Service Fee)</label>
                       <input
@@ -923,7 +1268,6 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    {/* Gov Fees */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy">هزینه دولتی (Government Fees)</label>
                       <input
@@ -935,7 +1279,6 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    {/* Working Days */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy">روزهای کاری مورد نیاز</label>
                       <input
@@ -947,7 +1290,6 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    {/* Countries Active */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy block">کشور مقصد (فعال در:)</label>
                       <div className="flex items-center gap-4 py-1">
@@ -977,7 +1319,6 @@ export default function AdminPage() {
                 {/* Section B: Multilingual Translation Tabs */}
                 <div className="space-y-4">
                   
-                  {/* Language Tab Headers */}
                   <div className="flex gap-2 border-b border-border pb-1">
                     {(['fa', 'en', 'ar'] as const).map(lang => {
                       const isActive = editorLanguageTab === lang;
@@ -998,9 +1339,7 @@ export default function AdminPage() {
                     })}
                   </div>
 
-                  {/* Tab Contents */}
                   <div className="space-y-4">
-                    {/* Title */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy">
                         عنوان خدمت به زبان {editorLanguageTab === 'fa' ? 'فارسی' : editorLanguageTab === 'en' ? 'انگلیسی' : 'عربی'} <span className="text-red-500">*</span>
@@ -1020,7 +1359,6 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    {/* Description */}
                     <div className="space-y-1.5">
                       <label className="text-[11px] font-bold text-navy">
                         توضیحات تفصیلی به زبان {editorLanguageTab === 'fa' ? 'فارسی' : editorLanguageTab === 'en' ? 'انگلیسی' : 'عربی'}
@@ -1039,7 +1377,6 @@ export default function AdminPage() {
                       />
                     </div>
 
-                    {/* Requirements Dynamic Array */}
                     <div className="space-y-2">
                       <label className="text-[11px] font-bold text-navy flex items-center justify-between">
                         <span>مدارک و پیش‌نیازهای لازم ({editorLanguageTab === 'fa' ? 'فارسی' : editorLanguageTab === 'en' ? 'انگلیسی' : 'عربی'})</span>
@@ -1083,7 +1420,6 @@ export default function AdminPage() {
 
               </form>
 
-              {/* Action Buttons */}
               <div className="flex items-center justify-between border-t border-border bg-slate-50 px-6 py-4">
                 <button
                   type="button"
@@ -1117,7 +1453,6 @@ export default function AdminPage() {
   );
 }
 
-// Inline custom chevron component
 function ChevronLeft(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
