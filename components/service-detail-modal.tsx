@@ -327,14 +327,14 @@ export function ServiceDetailModal({
                     )}
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>{t.systemRegLabel}</span>
-                      <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                      <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-3 py-0.5 rounded-full text-[12px] border border-emerald-200/40">
                         {t.systemRegVal}
                       </span>
                     </div>
                     {service.workingDays && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{t.finalIssueLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                        <span className="font-semibold bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-3 py-0.5 rounded-full text-[12px] border border-amber-200/40">
                           {service.workingDays}
                         </span>
                       </div>
