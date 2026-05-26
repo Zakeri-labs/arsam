@@ -35,7 +35,7 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
     if (language === 'en') {
       return (
         <>
-          Turn the Engine of<br />Your Business ON in{' '}
+          Turn the Engine of<br />Your Business On in{' '}
           <span className="text-primary">Dubai and Muscat</span>
         </>
       );

@@ -35,6 +35,7 @@ const localizations = {
     govtFeeLabel: 'Government Fees:',
     systemRegLabel: 'System Registration 30 Mins',
     finalIssueLabel: 'Final Issuance:',
+    requirementsLabel: 'Required Documents:',
     workingDaysLabel: 'Working Days',
     uploadLabel: 'Upload Documents (Optional)',
     dragDropText: 'Drag & drop files here or click to browse',
@@ -61,6 +62,7 @@ const localizations = {
     govtFeeLabel: 'هزینه‌های دولتی:',
     systemRegLabel: 'ثبت درخواست ۳۰ دقیقه',
     finalIssueLabel: 'صدور نهایی:',
+    requirementsLabel: 'مدارک مورد نیاز :',
     workingDaysLabel: 'روز کاری',
     uploadLabel: 'آپلود مدارک (اختیاری)',
     dragDropText: 'فایل‌ها را بکشید و رها کنید یا کلیک کنید',
@@ -87,6 +89,7 @@ const localizations = {
     govtFeeLabel: 'الرسوم الحكومية:',
     systemRegLabel: 'تسجيل الطلب ٣٠ دقيقة',
     finalIssueLabel: 'الإصدار النهائي:',
+    requirementsLabel: 'المستندات المطلوبة:',
     workingDaysLabel: 'أيام عمل',
     uploadLabel: 'تحميل المستندات (اختياري)',
     dragDropText: 'اسحب وأسقط الملفات هنا أو انقر للتصفح',
@@ -271,7 +274,8 @@ export function ServiceDetailModal({
 
                   {/* Requirements List (slate-coloured bullet points) */}
                   {service.requirements && service.requirements.length > 0 && (
-                    <div className="mb-5 border-t border-border/50 pt-4">
+                    <div className="mb-5 border-t border-border/50 pt-4 text-start">
+                      <h4 className="text-xs font-bold text-navy mb-2 block">{t.requirementsLabel}</h4>
                       <ul className="flex flex-col gap-2 text-[13px] text-slate-600 dark:text-slate-400 font-medium">
                         {service.requirements.map((req, idx) => (
                           <li key={idx} className="flex items-start gap-1.5 leading-relaxed">
