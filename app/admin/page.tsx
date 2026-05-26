@@ -106,6 +106,7 @@ export default function AdminPage() {
   const [formUaeActive, setFormUaeActive] = useState(true);
   const [formOmanActive, setFormOmanActive] = useState(false);
   const [formImageUrl, setFormImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   // Language specific form values
   const [langData, setLangData] = useState<Record<'en' | 'fa' | 'ar', {
@@ -463,6 +464,45 @@ export default function AdminPage() {
       updated[lang].requirements[0] = '';
     }
     setLangData(updated);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حداکثر حجم تصویر ۵ مگابایت است.');
+      return;
+    }
+
+    setIsUploadingImage(true);
+    const toastId = toast.loading('در حال آپلود و ذخیره‌سازی تصویر...');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/services/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setFormImageUrl(data.url);
+        toast.success('تصویر با موفقیت آپلود و در استوریج ذخیره شد.', { id: toastId });
+      } else {
+        toast.error(data.error || 'خطا در آپلود تصویر', { id: toastId });
+      }
+    } catch (err) {
+      console.error('Image upload error:', err);
+      toast.error('ارتباط با سرور برقرار نشد.', { id: toastId });
+    } finally {
+      setIsUploadingImage(false);
+      e.target.value = '';
+    }
   };
 
   const handleSaveService = async (e: React.FormEvent) => {
@@ -1449,17 +1489,90 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 md:col-span-2">
-                      <label className="text-[11px] font-bold text-navy">آدرس اینترنتی تصویر شاخص لنداسکیپ (ImageUrl)</label>
-                      <input
-                        type="text"
-                        value={formImageUrl}
-                        onChange={(e) => setFormImageUrl(e.target.value)}
-                        placeholder="مثال: /uploads/image.jpg یا یک لینک مستقیم عکس لنداسکیپ (اختیاری)"
-                        className="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs outline-none focus:border-gold"
-                        dir="ltr"
-                      />
-                      <p className="text-[9px] text-muted-foreground">اگر آدرس عکس پر شود، بنر لنداسکیپ در بالای مودال جزئیات خدمت در سایت نمایش داده خواهد شد.</p>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-[11px] font-bold text-navy block">تصویر شاخص خدمت (لنداسکیپ)</label>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+                        <div className="md:col-span-8 space-y-2">
+                          {/* File Uploader area */}
+                          <div className="flex gap-2">
+                            <label className={`flex-1 flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/5 hover:bg-gold/10 px-4 py-3 text-xs font-semibold text-navy cursor-pointer transition-all ${isUploadingImage ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <svg className="w-4 h-4 text-gold shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                              </svg>
+                              <span>{isUploadingImage ? 'در حال آپلود...' : 'انتخاب و آپلود تصویر جدید'}</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                                disabled={isUploadingImage}
+                              />
+                            </label>
+                            
+                            {formImageUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setFormImageUrl('')}
+                                className="px-3 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold transition-all cursor-pointer"
+                                title="حذف تصویر"
+                              >
+                                حذف عکس
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Fallback Manual URL text input */}
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={formImageUrl}
+                              onChange={(e) => setFormImageUrl(e.target.value)}
+                              placeholder="آدرس اینترنتی تصویر (مثال: /uploads/image.jpg)"
+                              className="w-full rounded-xl border border-border bg-white px-3 py-2 text-[10px] outline-none focus:border-gold"
+                              dir="ltr"
+                            />
+                            {formImageUrl && (
+                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 flex h-2 w-2 rounded-full bg-emerald-500" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Image Preview Area */}
+                        <div className="md:col-span-4 flex items-center justify-center">
+                          {formImageUrl ? (
+                            <div className="relative group rounded-xl border border-border overflow-hidden bg-slate-50 w-full aspect-video flex items-center justify-center">
+                              <img
+                                src={formImageUrl}
+                                alt="پیش‌نمایش تصویر خدمت"
+                                className="object-cover w-full h-full"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                                <a
+                                  href={formImageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] bg-white text-navy font-bold rounded-lg px-2.5 py-1 transition-all"
+                                >
+                                  مشاهده اندازه اصلی
+                                </a>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="rounded-xl border border-dashed border-border bg-slate-50/50 w-full aspect-video flex flex-col items-center justify-center text-center p-2">
+                              <svg className="w-6 h-6 text-muted-foreground/40 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-[9px] text-muted-foreground/60">تصویری آپلود نشده است</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-[9px] text-muted-foreground">اگر عکس خدمت آپلود شود، به صورت خودکار در فضای ابری/سرور ذخیره شده و بنر لنداسکیپ در بالای مودال نمایش داده خواهد شد.</p>
                     </div>
                   </div>
                 </div>
