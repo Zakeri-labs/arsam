@@ -55,7 +55,7 @@ const localizations = {
     successDesc: 'با تشکر از شما. کارشناسان ما به زودی با شما تماس خواهند گرفت.',
     requiredField: 'این فیلد الزامی است',
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
-    serviceFeeLabel: 'هزینه خدمات:',
+    serviceFeeLabel: 'دستمزد خدمات:',
     govtFeeLabel: 'هزینه‌های دولتی:',
     workingDaysLabel: 'روز کاری',
     uploadLabel: 'آپلود مدارک (اختیاری)',
@@ -233,19 +233,19 @@ export function ServiceDetailModal({
 
                   {/* Service pricing & timeline details */}
                   <div className="mb-5 flex flex-col gap-2.5">
-                    {service.serviceFee && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{t.serviceFeeLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
-                          {service.serviceFee}
-                        </span>
-                      </div>
-                    )}
                     {service.governmentFees && (
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>{t.govtFeeLabel}</span>
                         <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
                           {service.governmentFees}
+                        </span>
+                      </div>
+                    )}
+                    {service.serviceFee && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{t.serviceFeeLabel}</span>
+                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                          {service.serviceFee}
                         </span>
                       </div>
                     )}
