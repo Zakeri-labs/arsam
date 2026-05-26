@@ -270,16 +270,16 @@ export function ServiceDetailModal({
             )}
 
             {/* Main Content Area (Form / Details) */}
-            <div className={hasImage ? "flex-1 p-6 overflow-y-auto flex flex-col justify-between relative" : "relative w-full"}>
+            <div className={hasImage ? "flex-1 p-4.5 overflow-y-auto flex flex-col justify-between relative" : "relative w-full"}>
               {/* Close button */}
               <button
                 onClick={onClose}
                 className={hasImage 
-                  ? "absolute end-4 top-4 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-30 bg-white/80 backdrop-blur-sm shadow-sm border border-border/20" 
+                  ? "absolute end-3 top-3 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-30 bg-white/80 backdrop-blur-sm shadow-sm border border-border/20" 
                   : "absolute end-0 top-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-10"
                 }
               >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -292,45 +292,45 @@ export function ServiceDetailModal({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isRtl ? -15 : 15 }}
                   transition={{ duration: 0.2 }}
-                  className="pt-4 md:pt-0 text-start flex flex-col justify-between"
+                  className="pt-2 md:pt-0 text-start flex flex-col justify-between"
                 >
-                  <div className="flex items-center gap-3.5 mb-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
-                      <FileText className="h-6 w-6" />
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
+                      <FileText className="h-5 w-5" />
                     </div>
-                    <h2 className="text-xl font-bold text-foreground leading-tight">
+                    <h2 className="text-lg font-bold text-foreground leading-tight">
                       {service.title}
                     </h2>
                   </div>
 
                   {/* Service pricing & timeline details */}
-                  <div className="mb-5 flex flex-col gap-2.5">
+                  <div className="mb-3.5 flex flex-col gap-1.5">
                     {service.governmentFees && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{t.govtFeeLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                        <span className="font-semibold text-foreground bg-secondary/80 px-2.5 py-0.5 rounded-full text-[11px] border border-border/40">
                           {service.governmentFees}
                         </span>
                       </div>
                     )}
                     {service.serviceFee && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{t.serviceFeeLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                        <span className="font-semibold text-foreground bg-secondary/80 px-2.5 py-0.5 rounded-full text-[11px] border border-border/40">
                           {service.serviceFee}
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{t.systemRegLabel}</span>
-                      <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-3 py-0.5 rounded-full text-[12px] border border-emerald-200/40">
+                      <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-200/40">
                         {t.systemRegVal}
                       </span>
                     </div>
                     {service.workingDays && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{t.finalIssueLabel}</span>
-                        <span className="font-semibold bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-3 py-0.5 rounded-full text-[12px] border border-amber-200/40">
+                        <span className="font-semibold bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-2.5 py-0.5 rounded-full text-[11px] border border-amber-200/40">
                           {service.workingDays}
                         </span>
                       </div>
@@ -339,9 +339,9 @@ export function ServiceDetailModal({
 
                   {/* Requirements List (slate-coloured bullet points) */}
                   {service.requirements && service.requirements.length > 0 && (
-                    <div className="mb-5 border-t border-border/50 pt-4 text-start">
-                      <h4 className="text-xs font-bold text-navy mb-2 block">{t.requirementsLabel}</h4>
-                      <ul className="flex flex-col gap-2 text-[13px] text-slate-600 dark:text-slate-400 font-medium">
+                    <div className="mb-3.5 border-t border-border/50 pt-3 text-start">
+                      <h4 className="text-[11px] font-bold text-navy mb-1.5 block">{t.requirementsLabel}</h4>
+                      <ul className="flex flex-col gap-1 text-[12px] text-slate-600 dark:text-slate-400 font-medium">
                         {service.requirements.map((req, idx) => (
                           <li key={idx} className="flex items-start gap-1.5 leading-relaxed">
                             <span className="shrink-0 text-slate-400">-</span>
@@ -353,26 +353,26 @@ export function ServiceDetailModal({
                   )}
 
                   {/* Long text description */}
-                  <p className="mb-6 leading-relaxed text-muted-foreground text-sm border-t border-border/50 pt-4">
+                  <p className="mb-4.5 leading-relaxed text-muted-foreground text-xs border-t border-border/50 pt-3">
                     {service.description}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {/* WhatsApp CTA */}
                     <button
                       onClick={handleWhatsAppRequest}
-                      className="flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-3 py-3.5 text-xs font-bold text-white shadow-md shadow-[#25D366]/20 transition-transform active:scale-98 hover:brightness-105"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-[#25D366] px-2.5 py-2.5 text-xs font-bold text-white shadow-md shadow-[#25D366]/20 transition-transform active:scale-98 hover:brightness-105"
                     >
-                      <MessageSquare className="h-4.5 w-4.5 fill-current shrink-0" />
+                      <MessageSquare className="h-4 w-4 fill-current shrink-0" />
                       <span className="truncate">{t.whatsappBtn}</span>
                     </button>
 
                     {/* Form Request CTA */}
                     <button
                       onClick={() => setView('form')}
-                      className="flex items-center justify-center gap-2 rounded-2xl bg-navy px-3 py-3.5 text-xs font-bold text-white transition-transform active:scale-98 hover:bg-navy-light shadow-md shadow-navy/15"
+                      className="flex items-center justify-center gap-1.5 rounded-xl bg-navy px-2.5 py-2.5 text-xs font-bold text-white transition-transform active:scale-98 hover:bg-navy-light shadow-md shadow-navy/15"
                     >
-                      <FileText className="h-4.5 w-4.5 shrink-0" />
+                      <FileText className="h-4 w-4 shrink-0" />
                       <span className="truncate">{t.formBtn}</span>
                     </button>
                   </div>
