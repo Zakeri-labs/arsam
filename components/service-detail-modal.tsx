@@ -46,7 +46,8 @@ const localizations = {
     whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
     serviceFeeLabel: 'Service Fee:',
     govtFeeLabel: 'Government Fees:',
-    systemRegLabel: 'System Registration 30 Mins',
+    systemRegLabel: 'System Registration:',
+    systemRegVal: '30 Mins',
     finalIssueLabel: 'Final Issuance:',
     requirementsLabel: 'Required Documents:',
     workingDaysLabel: 'Working Days',
@@ -73,7 +74,8 @@ const localizations = {
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
     serviceFeeLabel: 'دستمزد خدمات:',
     govtFeeLabel: 'هزینه‌های دولتی:',
-    systemRegLabel: 'ثبت درخواست ۳۰ دقیقه',
+    systemRegLabel: 'ثبت درخواست:',
+    systemRegVal: '۳۰ دقیقه',
     finalIssueLabel: 'صدور نهایی:',
     requirementsLabel: 'مدارک مورد نیاز :',
     workingDaysLabel: 'روز کاری',
@@ -100,7 +102,8 @@ const localizations = {
     whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
     serviceFeeLabel: 'رسوم الخدمة:',
     govtFeeLabel: 'الرسوم الحكومية:',
-    systemRegLabel: 'تسجيل الطلب ٣٠ دقيقة',
+    systemRegLabel: 'تسجيل الطلب:',
+    systemRegVal: '٣٠ دقيقة',
     finalIssueLabel: 'الإصدار النهائي:',
     requirementsLabel: 'المستندات المطلوبة:',
     workingDaysLabel: 'أيام عمل',
@@ -322,15 +325,17 @@ export function ServiceDetailModal({
                         </span>
                       </div>
                     )}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span>{t.systemRegLabel}</span>
+                      <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                        {t.systemRegVal}
+                      </span>
+                    </div>
                     {service.workingDays && (
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200/30">
-                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                          <span>{t.systemRegLabel}</span>
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-3 py-1 rounded-full text-xs font-bold border border-amber-200/25">
-                          <Clock className="h-3.5 w-3.5 shrink-0" />
-                          <span>{t.finalIssueLabel} {service.workingDays}</span>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span>{t.finalIssueLabel}</span>
+                        <span className="font-semibold text-foreground bg-secondary/80 px-3 py-0.5 rounded-full text-[12px] border border-border/40">
+                          {service.workingDays}
                         </span>
                       </div>
                     )}
