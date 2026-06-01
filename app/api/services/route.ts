@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const success = saveServicesDB(dbData);
+    const success = await saveServicesDB(dbData);
     if (success) {
       return NextResponse.json({ success: true });
     } else {

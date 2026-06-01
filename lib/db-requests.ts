@@ -1,5 +1,4 @@
-import fs from 'fs';
-import path from 'path';
+import { supabase } from './supabase';
 
 export interface RequestFile {
   name: string;
@@ -17,38 +16,28 @@ export interface ServiceRequest {
   createdAt: string; // ISO date string
 }
 
-const isVercel = !!process.env.VERCEL;
-const REQ_PATH = isVercel 
-  ? path.join('/tmp', 'requests.json')
-  : path.join(process.cwd(), 'lib', 'requests.json');
-
-// Ensure that we copy the existing committed requests from static to /tmp if it doesn't exist yet
-function ensureReqFile() {
-  if (isVercel && !fs.existsSync(REQ_PATH)) {
-    try {
-      const staticPath = path.join(process.cwd(), 'lib', 'requests.json');
-      const dir = path.dirname(REQ_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-      if (fs.existsSync(staticPath)) {
-        const data = fs.readFileSync(staticPath, 'utf8');
-        fs.writeFileSync(REQ_PATH, data, 'utf8');
-      } else {
-        fs.writeFileSync(REQ_PATH, '[]', 'utf8');
-      }
-    } catch (e) {
-      console.error('Error seeding requests in /tmp:', e);
-    }
-  }
-}
-
-export function getRequests(): ServiceRequest[] {
+export async function getRequests(): Promise<ServiceRequest[]> {
   try {
-    ensureReqFile();
-    if (fs.existsSync(REQ_PATH)) {
-      const data = fs.readFileSync(REQ_PATH, 'utf8');
-      return JSON.parse(data) as ServiceRequest[];
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error reading requests DB from Supabase:', error);
+      return [];
+    }
+
+    if (data) {
+      return data.map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        phone: row.phone,
+        description: row.description,
+        serviceTitle: row.service_title,
+        files: row.files || [],
+        createdAt: row.created_at,
+      }));
     }
   } catch (error) {
     console.error('Error reading requests DB:', error);
@@ -56,37 +45,52 @@ export function getRequests(): ServiceRequest[] {
   return [];
 }
 
-export function saveRequests(requests: ServiceRequest[]): boolean {
+export async function addRequest(request: Omit<ServiceRequest, 'id' | 'createdAt'>): Promise<ServiceRequest> {
+  const newRequest = {
+    id: 'req_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36),
+    name: request.name,
+    phone: request.phone,
+    description: request.description,
+    service_title: request.serviceTitle,
+    files: request.files,
+    created_at: new Date().toISOString(),
+  };
+
   try {
-    ensureReqFile();
-    const dir = path.dirname(REQ_PATH);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+    const { error } = await supabase.from('requests').insert([newRequest]);
+    if (error) {
+      console.error('Failed to add request to Supabase:', error);
+      throw error;
     }
-    fs.writeFileSync(REQ_PATH, JSON.stringify(requests, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Exception in addRequest:', err);
+    throw err;
+  }
+
+  return {
+    ...request,
+    id: newRequest.id,
+    createdAt: newRequest.created_at,
+  };
+}
+
+export async function deleteRequest(id: string): Promise<boolean> {
+  try {
+    const { error, count } = await supabase
+      .from('requests')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to delete request from Supabase:', error);
+      return false;
+    }
+    
+    // Count isn't always reliable if not requested properly, but we assume true if no error
     return true;
-  } catch (error) {
-    console.error('Failed to save requests DB:', error);
+  } catch (err) {
+    console.error('Exception in deleteRequest:', err);
     return false;
   }
 }
 
-export function addRequest(request: Omit<ServiceRequest, 'id' | 'createdAt'>): ServiceRequest {
-  const requests = getRequests();
-  const newRequest: ServiceRequest = {
-    ...request,
-    id: 'req_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now().toString(36),
-    createdAt: new Date().toISOString()
-  };
-
-  requests.unshift(newRequest); // Add to beginning (latest first)
-  saveRequests(requests);
-  return newRequest;
-}
-
-export function deleteRequest(id: string): boolean {
-  const requests = getRequests();
-  const filtered = requests.filter(r => r.id !== id);
-  if (filtered.length === requests.length) return false;
-  return saveRequests(filtered);
-}

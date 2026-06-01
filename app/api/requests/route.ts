@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getRequests, addRequest, deleteRequest } from '@/lib/db-requests';
-import fs from 'fs';
+import { supabase } from '@/lib/supabase';
 import path from 'path';
 
 // POST (Public) - Submit a new request from landing page form with physical file uploads
@@ -20,43 +20,47 @@ export async function POST(request: Request) {
       );
     }
 
-    // Process and save physical files
+    // Process and save physical files to Supabase Storage
     const fileObjects = formData.getAll('files') as File[];
     const uploadedFilesMetadata = [];
-
-    const isVercel = !!process.env.VERCEL;
-    const uploadDir = isVercel
-      ? path.join('/tmp', 'uploads')
-      : path.join(process.cwd(), 'public', 'uploads');
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
 
     for (const file of fileObjects) {
       if (!file || typeof file === 'string' || !file.name || !file.size) continue;
 
       try {
-        const buffer = Buffer.from(await file.arrayBuffer());
+        const buffer = await file.arrayBuffer();
         const fileExt = path.extname(file.name) || '';
         const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
         const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
         const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
 
-        const filePath = path.join(uploadDir, safeFileName);
-        fs.writeFileSync(filePath, buffer);
+        const { data, error } = await supabase.storage
+          .from('uploads')
+          .upload(safeFileName, buffer, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: false
+          });
+
+        if (error) {
+          console.error('Failed to upload file to Supabase:', file.name, error);
+          continue;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from('uploads')
+          .getPublicUrl(safeFileName);
 
         uploadedFilesMetadata.push({
           name: file.name,
           size: file.size,
-          url: `/uploads/${safeFileName}` // Public URL that can be directly accessed/downloaded
+          url: publicUrlData.publicUrl
         });
       } catch (fileErr) {
         console.error('Failed to save file:', file.name, fileErr);
       }
     }
 
-    const newRequest = addRequest({
+    const newRequest = await addRequest({
       name: name.trim(),
       phone: phone.trim(),
       description: (description || '').trim(),
@@ -87,7 +91,7 @@ export async function GET() {
       );
     }
 
-    const requests = getRequests();
+    const requests = await getRequests();
     return NextResponse.json(requests);
   } catch (error) {
     console.error('Error getting requests:', error);
@@ -121,7 +125,7 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const success = deleteRequest(id);
+    const success = await deleteRequest(id);
     if (success) {
       return NextResponse.json({ success: true });
     } else {
