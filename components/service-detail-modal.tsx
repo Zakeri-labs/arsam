@@ -32,17 +32,17 @@ const localizations = {
     formBtn: 'Order Form',
     formTitle: 'Request Service',
     nameLabel: 'Full Name',
-    namePlaceholder: 'Enter name',
+    namePlaceholder: 'Enter your full name',
     phoneLabel: 'Phone Number',
-    phonePlaceholder: 'e.g., +971...',
+    phonePlaceholder: 'e.g., +971 50 000 0000',
     descLabel: 'Description (Optional)',
-    descPlaceholder: 'Any specific requests...',
+    descPlaceholder: 'Any specific requests or notes...',
     submitBtn: 'Send Request',
     backBtn: 'Back',
     closeBtn: 'Close',
     successTitle: 'Request Submitted!',
     successDesc: 'Your request has been successfully submitted. We will contact you shortly.',
-    requiredField: 'Required',
+    requiredField: 'This field is required',
     whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
     serviceFeeLabel: 'Service Fee:',
     govtFeeLabel: 'Government Fees:',
@@ -55,9 +55,9 @@ const localizations = {
     dragDropText: 'Drag & drop or click to browse',
     maxSizeText: 'PDF, JPG, PNG',
     requirementsUploadTitle: 'Upload Documents (Optional)',
-    otherDocsLabel: 'Other Documents',
-    chooseFile: 'Attach',
-    noFileChosen: 'No file',
+    otherDocsLabel: 'Other / Additional Documents',
+    chooseFile: 'Attach File',
+    noFileChosen: 'No file selected',
     otherDocPrefix: 'Other Doc'
   },
   fa: {
@@ -69,13 +69,13 @@ const localizations = {
     phoneLabel: 'شماره تماس',
     phonePlaceholder: 'مثال: ۰۹۱۲۳۴۵۶۷۸۹',
     descLabel: 'توضیحات (اختیاری)',
-    descPlaceholder: 'درخواست خاص یا توضیحات...',
+    descPlaceholder: 'درخواست خاص یا توضیحات بیشتر...',
     submitBtn: 'ارسال درخواست',
     backBtn: 'بازگشت',
     closeBtn: 'بستن',
     successTitle: 'درخواست شما ثبت شد!',
     successDesc: 'درخواست شما با موفقیت ثبت شد. به‌زودی با شما ارتباط خواهیم گرفت.',
-    requiredField: 'الزامی',
+    requiredField: 'این فیلد الزامی است',
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
     serviceFeeLabel: 'دستمزد خدمات:',
     govtFeeLabel: 'هزینه‌های دولتی:',
@@ -98,17 +98,17 @@ const localizations = {
     formBtn: 'نموذج الطلب',
     formTitle: 'طلب خدمة',
     nameLabel: 'الاسم الكامل',
-    namePlaceholder: 'أدخل اسمك',
+    namePlaceholder: 'أدخل اسمك الكامل',
     phoneLabel: 'رقم الهاتف',
-    phonePlaceholder: 'مثال: +971...',
+    phonePlaceholder: 'مثال: +971 50 000 0000',
     descLabel: 'تفاصيل إضافية (اختياري)',
-    descPlaceholder: 'أي ملاحظات خاصّة...',
+    descPlaceholder: 'أي ملاحظات خاصة...',
     submitBtn: 'إرسال الطلب',
     backBtn: 'العودة',
     closeBtn: 'إغلاق',
     successTitle: 'تم تقديم الطلب بنجاح!',
     successDesc: 'تم تسجيل طلبك بنجاح. سنتواصل معك قريباً.',
-    requiredField: 'مطلوب',
+    requiredField: 'هذا الحقل مطلوب',
     whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
     serviceFeeLabel: 'رسوم الخدمة:',
     govtFeeLabel: 'الرسوم الحكومية:',
@@ -122,7 +122,7 @@ const localizations = {
     maxSizeText: 'PDF, JPG, PNG',
     requirementsUploadTitle: 'تحميل المستندات (اختياري)',
     otherDocsLabel: 'مستندات أخرى أو إضافية',
-    chooseFile: 'إرفاق',
+    chooseFile: 'إرفاق ملف',
     noFileChosen: 'لم يتم الاختيار',
     otherDocPrefix: 'مستندات أخرى'
   }
@@ -304,7 +304,7 @@ export function ServiceDetailModal({
             )}
 
             {/* Main Content Area */}
-            <div className={hasImage ? "flex-1 p-4 overflow-y-auto flex flex-col justify-between relative" : "relative w-full"}>
+            <div className={hasImage ? "flex-1 p-4.5 overflow-y-auto flex flex-col justify-between relative" : "relative w-full"}>
               {/* Close button */}
               <button
                 onClick={onClose}
@@ -338,11 +338,11 @@ export function ServiceDetailModal({
                   </div>
 
                   {/* Service pricing & timeline details */}
-                  <div className="mb-3 flex flex-col gap-1 text-[11px]">
+                  <div className="mb-3 flex flex-col gap-1 text-xs">
                     {service.governmentFees && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{t.govtFeeLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-2 py-0.5 rounded-full text-[10px] border border-border/40">
+                        <span className="font-semibold text-foreground bg-secondary/80 px-2.5 py-0.5 rounded-full text-[11px] border border-border/40">
                           {service.governmentFees}
                         </span>
                       </div>
@@ -350,21 +350,21 @@ export function ServiceDetailModal({
                     {service.serviceFee && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{t.serviceFeeLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-2 py-0.5 rounded-full text-[10px] border border-border/40">
+                        <span className="font-semibold text-foreground bg-secondary/80 px-2.5 py-0.5 rounded-full text-[11px] border border-border/40">
                           {service.serviceFee}
                         </span>
                       </div>
                     )}
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span>{t.systemRegLabel}</span>
-                      <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[10px] border border-emerald-200/40">
+                      <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-200/40">
                         {t.systemRegVal}
                       </span>
                     </div>
                     {service.workingDays && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{t.finalIssueLabel}</span>
-                        <span className="font-semibold bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-2 py-0.5 rounded-full text-[10px] border border-amber-200/40">
+                        <span className="font-semibold bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-2.5 py-0.5 rounded-full text-[11px] border border-amber-200/40">
                           {service.workingDays}
                         </span>
                       </div>
@@ -374,8 +374,8 @@ export function ServiceDetailModal({
                   {/* Requirements List */}
                   {service.requirements && service.requirements.length > 0 && (
                     <div className="mb-3 border-t border-border/50 pt-2 text-start">
-                      <h4 className="text-[11px] font-bold text-navy mb-1 block">{t.requirementsLabel}</h4>
-                      <ul className="flex flex-col gap-1 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
+                      <h4 className="text-xs font-bold text-navy mb-1 block">{t.requirementsLabel}</h4>
+                      <ul className="flex flex-col gap-1 text-xs text-slate-600 dark:text-slate-400 font-medium">
                         {service.requirements.map((req, idx) => (
                           <li key={idx} className="flex items-start gap-1.5 leading-snug">
                             <span className="shrink-0 text-slate-400">-</span>
@@ -387,11 +387,11 @@ export function ServiceDetailModal({
                   )}
 
                   {/* Long text description */}
-                  <p className="mb-4 leading-relaxed text-muted-foreground text-[11px] border-t border-border/50 pt-2.5">
+                  <p className="mb-4 leading-relaxed text-muted-foreground text-xs border-t border-border/50 pt-2.5">
                     {service.description}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {/* WhatsApp CTA */}
                     <button
                       onClick={handleWhatsAppRequest}
@@ -423,7 +423,7 @@ export function ServiceDetailModal({
                   className="pt-1 text-start"
                 >
                   {/* Header with Back button */}
-                  <div className="flex items-center gap-2 mb-2.5">
+                  <div className="flex items-center gap-2 mb-3">
                     <button
                       onClick={() => setView('details')}
                       className="rounded-xl p-1 hover:bg-secondary text-muted-foreground transition-colors"
@@ -437,67 +437,64 @@ export function ServiceDetailModal({
                   </div>
 
                   {/* Form Service Indicator */}
-                  <div className="mb-3 rounded-xl bg-secondary/50 px-3 py-2 border border-border/50 flex items-center justify-between">
+                  <div className="mb-3.5 rounded-xl bg-secondary/50 px-3.5 py-2.5 border border-border/50 flex items-center justify-between">
                     <span className="text-[10px] font-bold text-gold uppercase tracking-wider">
                       {t.formTitle}
                     </span>
-                    <span className="text-xs font-extrabold text-foreground truncate max-w-[200px]">
+                    <span className="text-xs font-extrabold text-foreground truncate max-w-[210px]">
                       {service.title}
                     </span>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
-                    {/* Name & Phone in ONE row (2 columns) */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Name field */}
-                      <div className="flex flex-col gap-1 text-start">
-                        <label className="text-[11px] font-semibold text-foreground px-0.5">
-                          {t.nameLabel} <span className="text-destructive">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => {
-                            setName(e.target.value);
-                            if (errors.name) setErrors(prev => ({ ...prev, name: false }));
-                          }}
-                          placeholder={t.namePlaceholder}
-                          className={`w-full rounded-xl border bg-card px-3 py-2 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                            errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                          }`}
-                        />
-                        {errors.name && (
-                          <span className="text-[9px] text-destructive px-0.5">{t.requiredField}</span>
-                        )}
-                      </div>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                    {/* Name field */}
+                    <div className="flex flex-col gap-1 text-start">
+                      <label className="text-xs font-bold text-foreground px-0.5">
+                        {t.nameLabel} <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          if (errors.name) setErrors(prev => ({ ...prev, name: false }));
+                        }}
+                        placeholder={t.namePlaceholder}
+                        className={`w-full rounded-xl border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
+                          errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
+                        }`}
+                      />
+                      {errors.name && (
+                        <span className="text-[10px] text-destructive px-0.5">{t.requiredField}</span>
+                      )}
+                    </div>
 
-                      {/* Phone field */}
-                      <div className="flex flex-col gap-1 text-start">
-                        <label className="text-[11px] font-semibold text-foreground px-0.5">
-                          {t.phoneLabel} <span className="text-destructive">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => {
-                            setPhone(e.target.value);
-                            if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
-                          }}
-                          placeholder={t.phonePlaceholder}
-                          className={`w-full rounded-xl border bg-card px-3 py-2 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                            errors.phone ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                          }`}
-                          dir="ltr"
-                        />
-                        {errors.phone && (
-                          <span className="text-[9px] text-destructive px-0.5">{t.requiredField}</span>
-                        )}
-                      </div>
+                    {/* Phone field */}
+                    <div className="flex flex-col gap-1 text-start">
+                      <label className="text-xs font-bold text-foreground px-0.5">
+                        {t.phoneLabel} <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
+                        }}
+                        placeholder={t.phonePlaceholder}
+                        className={`w-full rounded-xl border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
+                          errors.phone ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
+                        }`}
+                        dir="ltr"
+                      />
+                      {errors.phone && (
+                        <span className="text-[10px] text-destructive px-0.5">{t.requiredField}</span>
+                      )}
                     </div>
 
                     {/* Description field */}
                     <div className="flex flex-col gap-1 text-start">
-                      <label className="text-[11px] font-semibold text-foreground px-0.5">
+                      <label className="text-xs font-bold text-foreground px-0.5">
                         {t.descLabel}
                       </label>
                       <textarea
@@ -505,47 +502,47 @@ export function ServiceDetailModal({
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder={t.descPlaceholder}
                         rows={2}
-                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground outline-none transition-all focus:border-gold placeholder:text-muted-foreground/60 resize-none"
+                        className="w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none transition-all focus:border-gold placeholder:text-muted-foreground/60 resize-none"
                       />
                     </div>
 
-                    {/* Minimalist Document Upload Section */}
-                    <div className="flex flex-col gap-2 text-start border-t border-border/40 pt-2 mt-0.5">
-                      <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
-                        <Paperclip className="h-3 w-3 text-gold shrink-0" />
+                    {/* Document Upload Section */}
+                    <div className="flex flex-col gap-2.5 text-start border-t border-border/50 pt-3">
+                      <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
                         <span>{t.requirementsUploadTitle}</span>
                       </label>
 
-                      {/* Minimal horizontal / single-line slots for requirements */}
+                      {/* Requirement upload rows */}
                       {service.requirements && service.requirements.length > 0 && (
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-2">
                           {service.requirements.map((req, idx) => {
                             const slotFile = slotFiles[idx];
                             return (
                               <div 
                                 key={idx} 
-                                className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-secondary/30 px-3 py-1.5 text-xs transition-all hover:border-gold/50"
+                                className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-secondary/30 px-3.5 py-2.5 text-xs transition-all hover:border-gold/50"
                               >
-                                <span className="truncate font-medium text-foreground/90 text-[11px] flex items-center gap-1.5 min-w-0">
+                                <span className="truncate font-semibold text-foreground/90 text-xs flex items-center gap-2 min-w-0">
                                   <span className="h-1.5 w-1.5 rounded-full bg-gold shrink-0"></span>
                                   <span className="truncate">{req}</span>
                                 </span>
 
                                 {slotFile ? (
-                                  <div className="flex items-center gap-1.5 bg-card px-2 py-1 rounded-lg border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                                    <span className="truncate max-w-[100px]">{slotFile.name}</span>
+                                  <div className="flex items-center gap-1.5 bg-card px-2.5 py-1.5 rounded-lg border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-bold shrink-0">
+                                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                                    <span className="truncate max-w-[110px]">{slotFile.name}</span>
                                     <button
                                       type="button"
                                       onClick={() => removeSlotFile(idx)}
                                       className="rounded-full p-0.5 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
                                     >
-                                      <X className="h-3 w-3" />
+                                      <X className="h-3.5 w-3.5" />
                                     </button>
                                   </div>
                                 ) : (
-                                  <label className="flex items-center gap-1 rounded-lg bg-card border border-border/80 px-2.5 py-1 text-[10px] font-bold text-navy dark:text-gold hover:border-gold cursor-pointer transition-colors shadow-2xs shrink-0">
-                                    <UploadCloud className="h-3 w-3 text-gold shrink-0" />
+                                  <label className="flex items-center gap-1.5 rounded-xl bg-card border border-border/90 px-3 py-1.5 text-xs font-bold text-navy dark:text-gold hover:border-gold cursor-pointer transition-all shadow-2xs shrink-0 active:scale-95">
+                                    <UploadCloud className="h-3.5 w-3.5 text-gold shrink-0" />
                                     <span>{t.chooseFile}</span>
                                     <input
                                       type="file"
@@ -561,15 +558,15 @@ export function ServiceDetailModal({
                         </div>
                       )}
 
-                      {/* Extra / Other Documents Minimalist Slot */}
-                      <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-border/80 bg-secondary/20 px-3 py-1.5 text-xs">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="font-medium text-foreground/80 text-[11px] flex items-center gap-1.5">
-                            <Paperclip className="h-3 w-3 text-gold shrink-0" />
+                      {/* Extra / Other Documents Slot */}
+                      <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border/90 bg-secondary/20 px-3.5 py-2.5 text-xs">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-semibold text-foreground/80 text-xs flex items-center gap-2">
+                            <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
                             <span>{t.otherDocsLabel}</span>
                           </span>
-                          <label className="flex items-center gap-1 rounded-lg bg-card border border-border/80 px-2.5 py-1 text-[10px] font-bold text-navy dark:text-gold hover:border-gold cursor-pointer transition-colors shadow-2xs shrink-0">
-                            <UploadCloud className="h-3 w-3 text-gold shrink-0" />
+                          <label className="flex items-center gap-1.5 rounded-xl bg-card border border-border/90 px-3 py-1.5 text-xs font-bold text-navy dark:text-gold hover:border-gold cursor-pointer transition-all shadow-2xs shrink-0 active:scale-95">
+                            <UploadCloud className="h-3.5 w-3.5 text-gold shrink-0" />
                             <span>{t.chooseFile}</span>
                             <input
                               type="file"
@@ -581,16 +578,16 @@ export function ServiceDetailModal({
                           </label>
                         </div>
 
-                        {/* Extra Files Chips */}
+                        {/* Extra Files list */}
                         {extraFiles.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
+                          <div className="flex flex-wrap gap-1.5 mt-1">
                             {extraFiles.map((file, idx) => (
                               <div
                                 key={idx}
-                                className="flex items-center gap-1.5 rounded-lg bg-card border border-border/40 px-2 py-0.5 text-[10px] shadow-2xs"
+                                className="flex items-center gap-1.5 rounded-lg bg-card border border-border/50 px-2.5 py-1 text-xs shadow-2xs"
                               >
-                                <Paperclip className="h-3 w-3 text-gold shrink-0" />
-                                <span className="truncate max-w-[110px] font-medium text-foreground">
+                                <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
+                                <span className="truncate max-w-[120px] font-medium text-foreground">
                                   {file.name}
                                 </span>
                                 <button
@@ -598,7 +595,7 @@ export function ServiceDetailModal({
                                   onClick={() => removeExtraFile(idx)}
                                   className="rounded-full hover:text-destructive text-muted-foreground transition-colors shrink-0"
                                 >
-                                  <X className="h-3 w-3" />
+                                  <X className="h-3.5 w-3.5" />
                                 </button>
                               </div>
                             ))}
@@ -611,13 +608,13 @@ export function ServiceDetailModal({
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="mt-1 flex items-center justify-center gap-2 rounded-xl bg-navy px-5 py-2.5 text-xs font-bold text-white transition-transform active:scale-98 hover:bg-navy-light disabled:opacity-50 cursor-pointer shadow-md shadow-navy/15"
+                      className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-navy px-6 py-3 text-sm font-bold text-white transition-transform active:scale-98 hover:bg-navy-light disabled:opacity-50 cursor-pointer shadow-md shadow-navy/15"
                     >
                       {isSubmitting ? (
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       ) : (
                         <>
-                          <Send className="h-3.5 w-3.5" />
+                          <Send className="h-4 w-4" />
                           <span>{t.submitBtn}</span>
                         </>
                       )}
@@ -633,9 +630,9 @@ export function ServiceDetailModal({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center text-center pt-4 pb-2 select-none animate-fadeIn"
+                  className="flex flex-col items-center text-center pt-5 pb-2 select-none animate-fadeIn"
                 >
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-md border-2 border-emerald-100/50 animate-bounce">
+                  <div className="mb-4 flex h-18 w-18 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-md border-2 border-emerald-100/50 animate-bounce">
                     <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                   </div>
 
