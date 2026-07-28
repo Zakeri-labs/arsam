@@ -66,14 +66,14 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 15 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="px-4 pb-3 pt-4"
+      className="px-3.5 pt-1 pb-1"
     >
-      <div className="flex items-center gap-3.5 sm:gap-5">
-        {/* Sleek, proportional logo container without negative margin bleed */}
-        <div className="logo-shimmer-container relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0">
+      <div className="flex items-center gap-3 sm:gap-5">
+        {/* Larger prominent logo with minimal vertical padding */}
+        <div className="logo-shimmer-container relative h-28 w-28 sm:h-32 sm:w-32 flex-shrink-0">
           <Image
             src="/logo.png"
             alt="ARSAM"
@@ -91,7 +91,7 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
           <h1 className="mt-0.5 text-lg sm:text-2xl font-black leading-tight text-foreground">
             {getFormattedTagline()}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm font-medium leading-relaxed text-muted-foreground">
+          <p className="mt-0.5 text-xs sm:text-sm font-medium leading-relaxed text-muted-foreground">
             {subtitle}
           </p>
         </div>
