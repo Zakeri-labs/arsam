@@ -53,7 +53,12 @@ const localizations = {
     workingDaysLabel: 'Working Days',
     uploadLabel: 'Upload Documents (Optional)',
     dragDropText: 'Drag & drop files here or click to browse',
-    maxSizeText: 'Support multiple files (PDF, JPG, PNG)'
+    maxSizeText: 'Support PDF, JPG, PNG formats',
+    requirementsUploadTitle: 'Required Document Uploads (Optional)',
+    otherDocsLabel: 'Other / Additional Documents (Optional)',
+    chooseFile: 'Choose File',
+    noFileChosen: 'No file selected',
+    otherDocPrefix: 'Other Doc'
   },
   fa: {
     whatsappBtn: 'واتساپ',
@@ -81,7 +86,12 @@ const localizations = {
     workingDaysLabel: 'روز کاری',
     uploadLabel: 'آپلود مدارک (اختیاری)',
     dragDropText: 'فایل‌ها را بکشید و رها کنید یا کلیک کنید',
-    maxSizeText: 'پشتیبانی از چندین فایل (PDF، JPG، PNG)'
+    maxSizeText: 'پشتیبانی از چندین فایل (PDF، JPG، PNG)',
+    requirementsUploadTitle: 'آپلود مدارک مربوطه (اختیاری)',
+    otherDocsLabel: 'آپلود سایر مدارک یا فایل‌های اضافی (اختیاری)',
+    chooseFile: 'انتخاب فایل',
+    noFileChosen: 'فایلی انتخاب نشده',
+    otherDocPrefix: 'سایر مدارک'
   },
   ar: {
     whatsappBtn: 'واتساب',
@@ -109,7 +119,12 @@ const localizations = {
     workingDaysLabel: 'أيام عمل',
     uploadLabel: 'تحميل المستندات (اختياري)',
     dragDropText: 'اسحب وأسقط الملفات هنا أو انقر للتصفح',
-    maxSizeText: 'دعم ملفات متعددة (PDF, JPG, PNG)'
+    maxSizeText: 'دعم ملفات متعددة (PDF, JPG, PNG)',
+    requirementsUploadTitle: 'تحميل المستندات المطلوبة (اختياري)',
+    otherDocsLabel: 'تحميل مستندات أخرى أو إضافية (اختياري)',
+    chooseFile: 'اختيار الملف',
+    noFileChosen: 'لم يتم اختيار ملف',
+    otherDocPrefix: 'مستندات أخرى'
   }
 };
 
@@ -130,7 +145,10 @@ export function ServiceDetailModal({
   const [phone, setPhone] = useState('');
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean }>({});
-  const [files, setFiles] = useState<File[]>([]);
+  
+  // Dedicated slots for requirements + extra files array
+  const [slotFiles, setSlotFiles] = useState<Record<number, File>>({});
+  const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -142,7 +160,8 @@ export function ServiceDetailModal({
       setPhone('');
       setDescription('');
       setErrors({});
-      setFiles([]);
+      setSlotFiles({});
+      setExtraFiles([]);
       setIsDragging(false);
       setIsSubmitting(false);
     }
@@ -155,6 +174,32 @@ export function ServiceDetailModal({
     const encodedText = encodeURIComponent(template);
     const whatsappUrl = `https://wa.me/971552554688?text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
+  };
+
+  const handleSlotFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setSlotFiles(prev => ({ ...prev, [index]: file }));
+    }
+  };
+
+  const removeSlotFile = (index: number) => {
+    setSlotFiles(prev => {
+      const copy = { ...prev };
+      delete copy[index];
+      return copy;
+    });
+  };
+
+  const handleExtraFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setExtraFiles(prev => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeExtraFile = (index: number) => {
+    setExtraFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -171,19 +216,8 @@ export function ServiceDetailModal({
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const newFiles = Array.from(e.dataTransfer.files);
-      setFiles(prev => [...prev, ...newFiles]);
+      setExtraFiles(prev => [...prev, ...newFiles]);
     }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...newFiles]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -205,7 +239,27 @@ export function ServiceDetailModal({
       formData.append('description', description.trim());
       formData.append('serviceTitle', service.title);
       
-      files.forEach(file => {
+      const allFilesToUpload: File[] = [];
+
+      // Requirement slot files
+      if (service.requirements && service.requirements.length > 0) {
+        service.requirements.forEach((req, idx) => {
+          const file = slotFiles[idx];
+          if (file) {
+            const cleanReqName = req.replace(/[/\\?%*:|"<>]/g, '').trim().substring(0, 30);
+            const renamedFile = new File([file], `[${cleanReqName}] ${file.name}`, { type: file.type });
+            allFilesToUpload.push(renamedFile);
+          }
+        });
+      }
+
+      // Extra files
+      extraFiles.forEach(file => {
+        const renamedFile = new File([file], `[${t.otherDocPrefix}] ${file.name}`, { type: file.type });
+        allFilesToUpload.push(renamedFile);
+      });
+
+      allFilesToUpload.forEach(file => {
         formData.append('files', file);
       });
 
@@ -255,7 +309,7 @@ export function ServiceDetailModal({
             }`}
             dir={isRtl ? 'rtl' : 'ltr'}
           >
-            {/* Landscape Image Banner (Desktop & Mobile, completely clean without text) */}
+            {/* Landscape Image Banner */}
             {hasImage && (
               <div className="relative h-44 w-full overflow-hidden shrink-0 border-b border-border/40 bg-navy/5">
                 <Image 
@@ -269,7 +323,7 @@ export function ServiceDetailModal({
               </div>
             )}
 
-            {/* Main Content Area (Form / Details) */}
+            {/* Main Content Area */}
             <div className={hasImage ? "flex-1 p-4.5 overflow-y-auto flex flex-col justify-between relative" : "relative w-full"}>
               {/* Close button */}
               <button
@@ -337,7 +391,7 @@ export function ServiceDetailModal({
                     )}
                   </div>
 
-                  {/* Requirements List (slate-coloured bullet points) */}
+                  {/* Requirements List */}
                   {service.requirements && service.requirements.length > 0 && (
                     <div className="mb-3.5 border-t border-border/50 pt-3 text-start">
                       <h4 className="text-[11px] font-bold text-navy mb-1.5 block">{t.requirementsLabel}</h4>
@@ -472,65 +526,137 @@ export function ServiceDetailModal({
                       />
                     </div>
 
-                    {/* Premium Drag and Drop File Upload Field */}
-                    <div className="flex flex-col gap-1.5 text-start">
-                      <label className="text-xs font-semibold text-foreground px-1">
-                        {t.uploadLabel}
-                      </label>
-                      <div
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={handleDrop}
-                        className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-5 text-center transition-all cursor-pointer ${
-                          isDragging
-                            ? 'border-gold bg-secondary bg-opacity-70 scale-[0.99]'
-                            : 'border-border/80 bg-secondary/30 hover:border-gold/50 hover:bg-secondary/40'
-                        }`}
-                      >
-                        <input
-                          type="file"
-                          multiple
-                          onChange={handleFileChange}
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                          accept=".pdf,.jpg,.jpeg,.png"
-                        />
-                        <UploadCloud className={`h-8 w-8 mb-2 transition-transform duration-300 text-gold ${isDragging ? 'scale-110' : ''}`} />
-                        <p className="text-xs font-bold text-foreground">
-                          {t.dragDropText}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {t.maxSizeText}
-                        </p>
+                    {/* Dynamic Document Upload Section */}
+                    <div className="flex flex-col gap-3 text-start border-t border-border/40 pt-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
+                          <span>{t.requirementsUploadTitle}</span>
+                        </label>
                       </div>
 
-                      {/* Selected files list with size and removal trigger */}
-                      {files.length > 0 && (
-                        <div className="mt-3 flex flex-col gap-1.5 max-h-[150px] overflow-y-auto pr-1">
-                          {files.map((file, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center justify-between rounded-xl bg-secondary/50 border border-border/40 px-3 py-2 text-xs"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
-                                <span className="truncate font-semibold text-foreground max-w-[200px]">
-                                  {file.name}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground shrink-0">
-                                  ({(file.size / 1024).toFixed(1)} KB)
-                                </span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => removeFile(idx)}
-                                className="rounded-full p-1 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                      {/* Dedicated slot for each requirement if available */}
+                      {service.requirements && service.requirements.length > 0 && (
+                        <div className="flex flex-col gap-2.5">
+                          {service.requirements.map((req, idx) => {
+                            const slotFile = slotFiles[idx];
+                            return (
+                              <div 
+                                key={idx} 
+                                className="flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-secondary/20 p-3 transition-all hover:border-gold/50"
                               >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ))}
+                                <span className="text-xs font-semibold text-foreground/90 flex items-center gap-1.5">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-gold shrink-0"></span>
+                                  <span>{req}</span>
+                                </span>
+
+                                {slotFile ? (
+                                  <div className="flex items-center justify-between rounded-xl bg-card border border-emerald-500/30 px-3 py-2 text-xs shadow-sm">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                                      <span className="truncate font-semibold text-foreground max-w-[180px]">
+                                        {slotFile.name}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground shrink-0">
+                                        ({(slotFile.size / 1024).toFixed(1)} KB)
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeSlotFile(idx)}
+                                      className="rounded-full p-1 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <label className="relative flex items-center justify-between rounded-xl border border-dashed border-border bg-card/70 px-3 py-2 text-xs text-muted-foreground hover:bg-card hover:border-gold/60 cursor-pointer transition-colors">
+                                    <span className="text-[11px] font-medium text-muted-foreground/70">
+                                      {t.noFileChosen}
+                                    </span>
+                                    <span className="flex items-center gap-1 text-[11px] font-bold text-navy bg-secondary/80 px-2.5 py-1 rounded-lg border border-border/50">
+                                      <UploadCloud className="h-3.5 w-3.5 text-gold shrink-0" />
+                                      {t.chooseFile}
+                                    </span>
+                                    <input
+                                      type="file"
+                                      onChange={(e) => handleSlotFileChange(idx, e)}
+                                      className="hidden"
+                                      accept=".pdf,.jpg,.jpeg,.png"
+                                    />
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
+
+                      {/* Slot for Extra / Other Files */}
+                      <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-secondary/20 p-3 transition-all hover:border-gold/50">
+                        <span className="text-xs font-semibold text-foreground/90 flex items-center gap-1.5">
+                          <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
+                          <span>{t.otherDocsLabel}</span>
+                        </span>
+
+                        {/* Drag & Drop or Browse Extra Files */}
+                        <div
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={handleDrop}
+                          className={`relative flex flex-col items-center justify-center rounded-xl border border-dashed p-3 text-center transition-all cursor-pointer ${
+                            isDragging
+                              ? 'border-gold bg-secondary bg-opacity-70 scale-[0.99]'
+                              : 'border-border/80 bg-card/70 hover:border-gold/50 hover:bg-card'
+                          }`}
+                        >
+                          <input
+                            type="file"
+                            multiple
+                            onChange={handleExtraFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                          />
+                          <div className="flex items-center gap-2">
+                            <UploadCloud className="h-4 w-4 text-gold shrink-0" />
+                            <span className="text-[11px] font-bold text-foreground">
+                              {t.dragDropText}
+                            </span>
+                          </div>
+                          <p className="text-[9px] text-muted-foreground mt-0.5">
+                            {t.maxSizeText}
+                          </p>
+                        </div>
+
+                        {/* Extra Files List */}
+                        {extraFiles.length > 0 && (
+                          <div className="flex flex-col gap-1.5 mt-1 max-h-[120px] overflow-y-auto">
+                            {extraFiles.map((file, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between rounded-xl bg-card border border-border/40 px-3 py-1.5 text-xs shadow-sm"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
+                                  <span className="truncate font-semibold text-foreground max-w-[180px]">
+                                    {file.name}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground shrink-0">
+                                    ({(file.size / 1024).toFixed(1)} KB)
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeExtraFile(idx)}
+                                  className="rounded-full p-1 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Submit Button */}
