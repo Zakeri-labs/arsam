@@ -32,17 +32,17 @@ const localizations = {
     formBtn: 'Order Form',
     formTitle: 'Request Service',
     nameLabel: 'Full Name',
-    namePlaceholder: 'Enter your full name',
+    namePlaceholder: 'Enter name',
     phoneLabel: 'Phone Number',
-    phonePlaceholder: 'e.g., +971 50 000 0000',
-    descLabel: 'Additional Description (Optional)',
-    descPlaceholder: 'Any specific requests or notes...',
+    phonePlaceholder: 'e.g., +971...',
+    descLabel: 'Description (Optional)',
+    descPlaceholder: 'Any specific requests...',
     submitBtn: 'Send Request',
     backBtn: 'Back',
     closeBtn: 'Close',
     successTitle: 'Request Submitted!',
     successDesc: 'Your request has been successfully submitted. We will contact you shortly.',
-    requiredField: 'This field is required',
+    requiredField: 'Required',
     whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
     serviceFeeLabel: 'Service Fee:',
     govtFeeLabel: 'Government Fees:',
@@ -52,12 +52,12 @@ const localizations = {
     requirementsLabel: 'Required Documents:',
     workingDaysLabel: 'Working Days',
     uploadLabel: 'Upload Documents (Optional)',
-    dragDropText: 'Drag & drop files here or click to browse',
-    maxSizeText: 'Support PDF, JPG, PNG formats',
-    requirementsUploadTitle: 'Required Document Uploads (Optional)',
-    otherDocsLabel: 'Other / Additional Documents (Optional)',
-    chooseFile: 'Choose File',
-    noFileChosen: 'No file selected',
+    dragDropText: 'Drag & drop or click to browse',
+    maxSizeText: 'PDF, JPG, PNG',
+    requirementsUploadTitle: 'Upload Documents (Optional)',
+    otherDocsLabel: 'Other Documents',
+    chooseFile: 'Attach',
+    noFileChosen: 'No file',
     otherDocPrefix: 'Other Doc'
   },
   fa: {
@@ -69,13 +69,13 @@ const localizations = {
     phoneLabel: 'شماره تماس',
     phonePlaceholder: 'مثال: ۰۹۱۲۳۴۵۶۷۸۹',
     descLabel: 'توضیحات (اختیاری)',
-    descPlaceholder: 'درخواست خاص یا توضیحات بیشتر...',
+    descPlaceholder: 'درخواست خاص یا توضیحات...',
     submitBtn: 'ارسال درخواست',
     backBtn: 'بازگشت',
     closeBtn: 'بستن',
     successTitle: 'درخواست شما ثبت شد!',
     successDesc: 'درخواست شما با موفقیت ثبت شد. به‌زودی با شما ارتباط خواهیم گرفت.',
-    requiredField: 'این فیلد الزامی است',
+    requiredField: 'الزامی',
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
     serviceFeeLabel: 'دستمزد خدمات:',
     govtFeeLabel: 'هزینه‌های دولتی:',
@@ -85,12 +85,12 @@ const localizations = {
     requirementsLabel: 'مدارک مورد نیاز :',
     workingDaysLabel: 'روز کاری',
     uploadLabel: 'آپلود مدارک (اختیاری)',
-    dragDropText: 'فایل‌ها را بکشید و رها کنید یا کلیک کنید',
-    maxSizeText: 'پشتیبانی از چندین فایل (PDF، JPG، PNG)',
-    requirementsUploadTitle: 'آپلود مدارک مربوطه (اختیاری)',
-    otherDocsLabel: 'آپلود سایر مدارک یا فایل‌های اضافی (اختیاری)',
-    chooseFile: 'انتخاب فایل',
-    noFileChosen: 'فایلی انتخاب نشده',
+    dragDropText: 'انتخاب فایل یا رهاسازی',
+    maxSizeText: 'فرمت‌های PDF، JPG، PNG',
+    requirementsUploadTitle: 'آپلود مدارک (اختیاری)',
+    otherDocsLabel: 'سایر مدارک یا فایل اضافی',
+    chooseFile: 'پیوست فایل',
+    noFileChosen: 'انتخاب نشده',
     otherDocPrefix: 'سایر مدارک'
   },
   ar: {
@@ -98,17 +98,17 @@ const localizations = {
     formBtn: 'نموذج الطلب',
     formTitle: 'طلب خدمة',
     nameLabel: 'الاسم الكامل',
-    namePlaceholder: 'أدخل اسمك الكامل',
+    namePlaceholder: 'أدخل اسمك',
     phoneLabel: 'رقم الهاتف',
-    phonePlaceholder: 'مثال: +971 50 000 0000',
+    phonePlaceholder: 'مثال: +971...',
     descLabel: 'تفاصيل إضافية (اختياري)',
-    descPlaceholder: 'أي طلبات خاصة أو ملاحظات...',
+    descPlaceholder: 'أي ملاحظات خاصّة...',
     submitBtn: 'إرسال الطلب',
     backBtn: 'العودة',
     closeBtn: 'إغلاق',
     successTitle: 'تم تقديم الطلب بنجاح!',
     successDesc: 'تم تسجيل طلبك بنجاح. سنتواصل معك قريباً.',
-    requiredField: 'هذا الحقل مطلوب',
+    requiredField: 'مطلوب',
     whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
     serviceFeeLabel: 'رسوم الخدمة:',
     govtFeeLabel: 'الرسوم الحكومية:',
@@ -118,12 +118,12 @@ const localizations = {
     requirementsLabel: 'المستندات المطلوبة:',
     workingDaysLabel: 'أيام عمل',
     uploadLabel: 'تحميل المستندات (اختياري)',
-    dragDropText: 'اسحب وأسقط الملفات هنا أو انقر للتصفح',
-    maxSizeText: 'دعم ملفات متعددة (PDF, JPG, PNG)',
-    requirementsUploadTitle: 'تحميل المستندات المطلوبة (اختياري)',
-    otherDocsLabel: 'تحميل مستندات أخرى أو إضافية (اختياري)',
-    chooseFile: 'اختيار الملف',
-    noFileChosen: 'لم يتم اختيار ملف',
+    dragDropText: 'اختر الملف أو اسحبه هنا',
+    maxSizeText: 'PDF, JPG, PNG',
+    requirementsUploadTitle: 'تحميل المستندات (اختياري)',
+    otherDocsLabel: 'مستندات أخرى أو إضافية',
+    chooseFile: 'إرفاق',
+    noFileChosen: 'لم يتم الاختيار',
     otherDocPrefix: 'مستندات أخرى'
   }
 };
@@ -149,7 +149,6 @@ export function ServiceDetailModal({
   // Dedicated slots for requirements + extra files array
   const [slotFiles, setSlotFiles] = useState<Record<number, File>>({});
   const [extraFiles, setExtraFiles] = useState<File[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Reset form state when modal closes/opens
@@ -162,7 +161,6 @@ export function ServiceDetailModal({
       setErrors({});
       setSlotFiles({});
       setExtraFiles([]);
-      setIsDragging(false);
       setIsSubmitting(false);
     }
   }, [isOpen]);
@@ -200,24 +198,6 @@ export function ServiceDetailModal({
 
   const removeExtraFile = (index: number) => {
     setExtraFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const newFiles = Array.from(e.dataTransfer.files);
-      setExtraFiles(prev => [...prev, ...newFiles]);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -305,13 +285,13 @@ export function ServiceDetailModal({
             exit={{ opacity: 0, scale: 0.95, x: '-50%', y: '-45%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={`fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-md rounded-3xl border border-border bg-card shadow-2xl overflow-hidden flex flex-col ${
-              hasImage ? 'max-h-[90vh]' : 'p-6 max-h-[90vh] overflow-y-auto'
+              hasImage ? 'max-h-[92vh]' : 'p-5 max-h-[92vh] overflow-y-auto'
             }`}
             dir={isRtl ? 'rtl' : 'ltr'}
           >
             {/* Landscape Image Banner */}
             {hasImage && (
-              <div className="relative h-44 w-full overflow-hidden shrink-0 border-b border-border/40 bg-navy/5">
+              <div className="relative h-36 w-full overflow-hidden shrink-0 border-b border-border/40 bg-navy/5">
                 <Image 
                   src={portraitUrl} 
                   alt={service.title} 
@@ -324,16 +304,16 @@ export function ServiceDetailModal({
             )}
 
             {/* Main Content Area */}
-            <div className={hasImage ? "flex-1 p-4.5 overflow-y-auto flex flex-col justify-between relative" : "relative w-full"}>
+            <div className={hasImage ? "flex-1 p-4 overflow-y-auto flex flex-col justify-between relative" : "relative w-full"}>
               {/* Close button */}
               <button
                 onClick={onClose}
                 className={hasImage 
-                  ? "absolute end-3 top-3 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-30 bg-white/80 backdrop-blur-sm shadow-sm border border-border/20" 
-                  : "absolute end-0 top-0 rounded-full p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-10"
+                  ? "absolute end-3 top-3 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-30 bg-white/80 backdrop-blur-sm shadow-sm border border-border/20" 
+                  : "absolute end-0 top-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground z-10"
                 }
               >
-                <svg className="h-4.5 w-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -346,45 +326,45 @@ export function ServiceDetailModal({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isRtl ? -15 : 15 }}
                   transition={{ duration: 0.2 }}
-                  className="pt-2 md:pt-0 text-start flex flex-col justify-between"
+                  className="pt-1 text-start flex flex-col justify-between"
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
-                      <FileText className="h-5 w-5" />
+                  <div className="flex items-center gap-2.5 mb-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-gold" style={{ backgroundColor: '#fdf0d0' }}>
+                      <FileText className="h-4.5 w-4.5" />
                     </div>
-                    <h2 className="text-lg font-bold text-foreground leading-tight">
+                    <h2 className="text-base font-bold text-foreground leading-tight">
                       {service.title}
                     </h2>
                   </div>
 
                   {/* Service pricing & timeline details */}
-                  <div className="mb-3.5 flex flex-col gap-1.5">
+                  <div className="mb-3 flex flex-col gap-1 text-[11px]">
                     {service.governmentFees && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{t.govtFeeLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-2.5 py-0.5 rounded-full text-[11px] border border-border/40">
+                        <span className="font-semibold text-foreground bg-secondary/80 px-2 py-0.5 rounded-full text-[10px] border border-border/40">
                           {service.governmentFees}
                         </span>
                       </div>
                     )}
                     {service.serviceFee && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{t.serviceFeeLabel}</span>
-                        <span className="font-semibold text-foreground bg-secondary/80 px-2.5 py-0.5 rounded-full text-[11px] border border-border/40">
+                        <span className="font-semibold text-foreground bg-secondary/80 px-2 py-0.5 rounded-full text-[10px] border border-border/40">
                           {service.serviceFee}
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-muted-foreground">
                       <span>{t.systemRegLabel}</span>
-                      <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-200/40">
+                      <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2 py-0.5 rounded-full text-[10px] border border-emerald-200/40">
                         {t.systemRegVal}
                       </span>
                     </div>
                     {service.workingDays && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{t.finalIssueLabel}</span>
-                        <span className="font-semibold bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-2.5 py-0.5 rounded-full text-[11px] border border-amber-200/40">
+                        <span className="font-semibold bg-[#fdf0d0] text-[#a05e2b] dark:bg-amber-950/40 dark:text-amber-300 px-2 py-0.5 rounded-full text-[10px] border border-amber-200/40">
                           {service.workingDays}
                         </span>
                       </div>
@@ -393,11 +373,11 @@ export function ServiceDetailModal({
 
                   {/* Requirements List */}
                   {service.requirements && service.requirements.length > 0 && (
-                    <div className="mb-3.5 border-t border-border/50 pt-3 text-start">
-                      <h4 className="text-[11px] font-bold text-navy mb-1.5 block">{t.requirementsLabel}</h4>
-                      <ul className="flex flex-col gap-1 text-[12px] text-slate-600 dark:text-slate-400 font-medium">
+                    <div className="mb-3 border-t border-border/50 pt-2 text-start">
+                      <h4 className="text-[11px] font-bold text-navy mb-1 block">{t.requirementsLabel}</h4>
+                      <ul className="flex flex-col gap-1 text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                         {service.requirements.map((req, idx) => (
-                          <li key={idx} className="flex items-start gap-1.5 leading-relaxed">
+                          <li key={idx} className="flex items-start gap-1.5 leading-snug">
                             <span className="shrink-0 text-slate-400">-</span>
                             <span>{req}</span>
                           </li>
@@ -407,11 +387,11 @@ export function ServiceDetailModal({
                   )}
 
                   {/* Long text description */}
-                  <p className="mb-4.5 leading-relaxed text-muted-foreground text-xs border-t border-border/50 pt-3">
+                  <p className="mb-4 leading-relaxed text-muted-foreground text-[11px] border-t border-border/50 pt-2.5">
                     {service.description}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2.5">
+                  <div className="grid grid-cols-2 gap-2">
                     {/* WhatsApp CTA */}
                     <button
                       onClick={handleWhatsAppRequest}
@@ -440,144 +420,133 @@ export function ServiceDetailModal({
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: isRtl ? 15 : -15 }}
                   transition={{ duration: 0.2 }}
-                  className="pt-4"
+                  className="pt-1 text-start"
                 >
                   {/* Header with Back button */}
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-2 mb-2.5">
                     <button
                       onClick={() => setView('details')}
-                      className="rounded-xl p-1.5 hover:bg-secondary text-muted-foreground transition-colors"
+                      className="rounded-xl p-1 hover:bg-secondary text-muted-foreground transition-colors"
                       aria-label="Back"
                     >
-                      <ArrowLeft className={`h-5 w-5 ${isRtl ? 'rotate-180' : ''}`} />
+                      <ArrowLeft className={`h-4.5 w-4.5 ${isRtl ? 'rotate-180' : ''}`} />
                     </button>
-                    <h2 className="text-lg font-bold text-foreground">
+                    <h2 className="text-base font-bold text-foreground">
                       {t.formTitle}
                     </h2>
                   </div>
 
                   {/* Form Service Indicator */}
-                  <div className="mb-4 rounded-2xl bg-secondary/60 px-4 py-3 border border-border">
-                    <span className="text-[10px] font-bold text-gold uppercase tracking-wider block mb-0.5">
+                  <div className="mb-3 rounded-xl bg-secondary/50 px-3 py-2 border border-border/50 flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-gold uppercase tracking-wider">
                       {t.formTitle}
                     </span>
-                    <span className="text-sm font-bold text-foreground">
+                    <span className="text-xs font-extrabold text-foreground truncate max-w-[200px]">
                       {service.title}
                     </span>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    {/* Name field */}
-                    <div className="flex flex-col gap-1.5 text-start">
-                      <label className="text-xs font-semibold text-foreground px-1">
-                        {t.nameLabel} <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => {
-                          setName(e.target.value);
-                          if (errors.name) setErrors(prev => ({ ...prev, name: false }));
-                        }}
-                        placeholder={t.namePlaceholder}
-                        className={`w-full rounded-2xl border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                          errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                        }`}
-                      />
-                      {errors.name && (
-                        <span className="text-[10px] text-destructive px-1">{t.requiredField}</span>
-                      )}
-                    </div>
+                  <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+                    {/* Name & Phone in ONE row (2 columns) */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Name field */}
+                      <div className="flex flex-col gap-1 text-start">
+                        <label className="text-[11px] font-semibold text-foreground px-0.5">
+                          {t.nameLabel} <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => {
+                            setName(e.target.value);
+                            if (errors.name) setErrors(prev => ({ ...prev, name: false }));
+                          }}
+                          placeholder={t.namePlaceholder}
+                          className={`w-full rounded-xl border bg-card px-3 py-2 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
+                            errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
+                          }`}
+                        />
+                        {errors.name && (
+                          <span className="text-[9px] text-destructive px-0.5">{t.requiredField}</span>
+                        )}
+                      </div>
 
-                    {/* Phone field */}
-                    <div className="flex flex-col gap-1.5 text-start">
-                      <label className="text-xs font-semibold text-foreground px-1">
-                        {t.phoneLabel} <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => {
-                          setPhone(e.target.value);
-                          if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
-                        }}
-                        placeholder={t.phonePlaceholder}
-                        className={`w-full rounded-2xl border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                          errors.phone ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                        }`}
-                        dir="ltr"
-                      />
-                      {errors.phone && (
-                        <span className="text-[10px] text-destructive px-1">{t.requiredField}</span>
-                      )}
+                      {/* Phone field */}
+                      <div className="flex flex-col gap-1 text-start">
+                        <label className="text-[11px] font-semibold text-foreground px-0.5">
+                          {t.phoneLabel} <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value);
+                            if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
+                          }}
+                          placeholder={t.phonePlaceholder}
+                          className={`w-full rounded-xl border bg-card px-3 py-2 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
+                            errors.phone ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
+                          }`}
+                          dir="ltr"
+                        />
+                        {errors.phone && (
+                          <span className="text-[9px] text-destructive px-0.5">{t.requiredField}</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Description field */}
-                    <div className="flex flex-col gap-1.5 text-start">
-                      <label className="text-xs font-semibold text-foreground px-1">
+                    <div className="flex flex-col gap-1 text-start">
+                      <label className="text-[11px] font-semibold text-foreground px-0.5">
                         {t.descLabel}
                       </label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder={t.descPlaceholder}
-                        rows={3}
-                        className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition-all focus:border-gold placeholder:text-muted-foreground/60 resize-none"
+                        rows={2}
+                        className="w-full rounded-xl border border-border bg-card px-3 py-2 text-xs text-foreground outline-none transition-all focus:border-gold placeholder:text-muted-foreground/60 resize-none"
                       />
                     </div>
 
-                    {/* Dynamic Document Upload Section */}
-                    <div className="flex flex-col gap-3 text-start border-t border-border/40 pt-3">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
-                          <span>{t.requirementsUploadTitle}</span>
-                        </label>
-                      </div>
+                    {/* Minimalist Document Upload Section */}
+                    <div className="flex flex-col gap-2 text-start border-t border-border/40 pt-2 mt-0.5">
+                      <label className="text-[11px] font-bold text-foreground flex items-center gap-1">
+                        <Paperclip className="h-3 w-3 text-gold shrink-0" />
+                        <span>{t.requirementsUploadTitle}</span>
+                      </label>
 
-                      {/* Dedicated slot for each requirement if available */}
+                      {/* Minimal horizontal / single-line slots for requirements */}
                       {service.requirements && service.requirements.length > 0 && (
-                        <div className="flex flex-col gap-2.5">
+                        <div className="flex flex-col gap-1.5">
                           {service.requirements.map((req, idx) => {
                             const slotFile = slotFiles[idx];
                             return (
                               <div 
                                 key={idx} 
-                                className="flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-secondary/20 p-3 transition-all hover:border-gold/50"
+                                className="flex items-center justify-between gap-2 rounded-xl border border-border/60 bg-secondary/30 px-3 py-1.5 text-xs transition-all hover:border-gold/50"
                               >
-                                <span className="text-xs font-semibold text-foreground/90 flex items-center gap-1.5">
+                                <span className="truncate font-medium text-foreground/90 text-[11px] flex items-center gap-1.5 min-w-0">
                                   <span className="h-1.5 w-1.5 rounded-full bg-gold shrink-0"></span>
-                                  <span>{req}</span>
+                                  <span className="truncate">{req}</span>
                                 </span>
 
                                 {slotFile ? (
-                                  <div className="flex items-center justify-between rounded-xl bg-card border border-emerald-500/30 px-3 py-2 text-xs shadow-sm">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
-                                      <span className="truncate font-semibold text-foreground max-w-[180px]">
-                                        {slotFile.name}
-                                      </span>
-                                      <span className="text-[10px] text-muted-foreground shrink-0">
-                                        ({(slotFile.size / 1024).toFixed(1)} KB)
-                                      </span>
-                                    </div>
+                                  <div className="flex items-center gap-1.5 bg-card px-2 py-1 rounded-lg border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold shrink-0">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                                    <span className="truncate max-w-[100px]">{slotFile.name}</span>
                                     <button
                                       type="button"
                                       onClick={() => removeSlotFile(idx)}
-                                      className="rounded-full p-1 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                      className="rounded-full p-0.5 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
                                     >
-                                      <X className="h-3.5 w-3.5" />
+                                      <X className="h-3 w-3" />
                                     </button>
                                   </div>
                                 ) : (
-                                  <label className="relative flex items-center justify-between rounded-xl border border-dashed border-border bg-card/70 px-3 py-2 text-xs text-muted-foreground hover:bg-card hover:border-gold/60 cursor-pointer transition-colors">
-                                    <span className="text-[11px] font-medium text-muted-foreground/70">
-                                      {t.noFileChosen}
-                                    </span>
-                                    <span className="flex items-center gap-1 text-[11px] font-bold text-navy bg-secondary/80 px-2.5 py-1 rounded-lg border border-border/50">
-                                      <UploadCloud className="h-3.5 w-3.5 text-gold shrink-0" />
-                                      {t.chooseFile}
-                                    </span>
+                                  <label className="flex items-center gap-1 rounded-lg bg-card border border-border/80 px-2.5 py-1 text-[10px] font-bold text-navy dark:text-gold hover:border-gold cursor-pointer transition-colors shadow-2xs shrink-0">
+                                    <UploadCloud className="h-3 w-3 text-gold shrink-0" />
+                                    <span>{t.chooseFile}</span>
                                     <input
                                       type="file"
                                       onChange={(e) => handleSlotFileChange(idx, e)}
@@ -592,65 +561,44 @@ export function ServiceDetailModal({
                         </div>
                       )}
 
-                      {/* Slot for Extra / Other Files */}
-                      <div className="flex flex-col gap-2 rounded-2xl border border-border/70 bg-secondary/20 p-3 transition-all hover:border-gold/50">
-                        <span className="text-xs font-semibold text-foreground/90 flex items-center gap-1.5">
-                          <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
-                          <span>{t.otherDocsLabel}</span>
-                        </span>
-
-                        {/* Drag & Drop or Browse Extra Files */}
-                        <div
-                          onDragOver={handleDragOver}
-                          onDragLeave={handleDragLeave}
-                          onDrop={handleDrop}
-                          className={`relative flex flex-col items-center justify-center rounded-xl border border-dashed p-3 text-center transition-all cursor-pointer ${
-                            isDragging
-                              ? 'border-gold bg-secondary bg-opacity-70 scale-[0.99]'
-                              : 'border-border/80 bg-card/70 hover:border-gold/50 hover:bg-card'
-                          }`}
-                        >
-                          <input
-                            type="file"
-                            multiple
-                            onChange={handleExtraFileChange}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            accept=".pdf,.jpg,.jpeg,.png"
-                          />
-                          <div className="flex items-center gap-2">
-                            <UploadCloud className="h-4 w-4 text-gold shrink-0" />
-                            <span className="text-[11px] font-bold text-foreground">
-                              {t.dragDropText}
-                            </span>
-                          </div>
-                          <p className="text-[9px] text-muted-foreground mt-0.5">
-                            {t.maxSizeText}
-                          </p>
+                      {/* Extra / Other Documents Minimalist Slot */}
+                      <div className="flex flex-col gap-1.5 rounded-xl border border-dashed border-border/80 bg-secondary/20 px-3 py-1.5 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-medium text-foreground/80 text-[11px] flex items-center gap-1.5">
+                            <Paperclip className="h-3 w-3 text-gold shrink-0" />
+                            <span>{t.otherDocsLabel}</span>
+                          </span>
+                          <label className="flex items-center gap-1 rounded-lg bg-card border border-border/80 px-2.5 py-1 text-[10px] font-bold text-navy dark:text-gold hover:border-gold cursor-pointer transition-colors shadow-2xs shrink-0">
+                            <UploadCloud className="h-3 w-3 text-gold shrink-0" />
+                            <span>{t.chooseFile}</span>
+                            <input
+                              type="file"
+                              multiple
+                              onChange={handleExtraFileChange}
+                              className="hidden"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                            />
+                          </label>
                         </div>
 
-                        {/* Extra Files List */}
+                        {/* Extra Files Chips */}
                         {extraFiles.length > 0 && (
-                          <div className="flex flex-col gap-1.5 mt-1 max-h-[120px] overflow-y-auto">
+                          <div className="flex flex-wrap gap-1 mt-1">
                             {extraFiles.map((file, idx) => (
                               <div
                                 key={idx}
-                                className="flex items-center justify-between rounded-xl bg-card border border-border/40 px-3 py-1.5 text-xs shadow-sm"
+                                className="flex items-center gap-1.5 rounded-lg bg-card border border-border/40 px-2 py-0.5 text-[10px] shadow-2xs"
                               >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
-                                  <span className="truncate font-semibold text-foreground max-w-[180px]">
-                                    {file.name}
-                                  </span>
-                                  <span className="text-[10px] text-muted-foreground shrink-0">
-                                    ({(file.size / 1024).toFixed(1)} KB)
-                                  </span>
-                                </div>
+                                <Paperclip className="h-3 w-3 text-gold shrink-0" />
+                                <span className="truncate max-w-[110px] font-medium text-foreground">
+                                  {file.name}
+                                </span>
                                 <button
                                   type="button"
                                   onClick={() => removeExtraFile(idx)}
-                                  className="rounded-full p-1 hover:bg-secondary text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                  className="rounded-full hover:text-destructive text-muted-foreground transition-colors shrink-0"
                                 >
-                                  <X className="h-3.5 w-3.5" />
+                                  <X className="h-3 w-3" />
                                 </button>
                               </div>
                             ))}
@@ -663,13 +611,13 @@ export function ServiceDetailModal({
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-navy px-6 py-3.5 text-sm font-semibold text-white transition-transform active:scale-98 hover:bg-navy-light disabled:opacity-50 cursor-pointer"
+                      className="mt-1 flex items-center justify-center gap-2 rounded-xl bg-navy px-5 py-2.5 text-xs font-bold text-white transition-transform active:scale-98 hover:bg-navy-light disabled:opacity-50 cursor-pointer shadow-md shadow-navy/15"
                     >
                       {isSubmitting ? (
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                       ) : (
                         <>
-                          <Send className="h-4 w-4" />
+                          <Send className="h-3.5 w-3.5" />
                           <span>{t.submitBtn}</span>
                         </>
                       )}
@@ -685,23 +633,23 @@ export function ServiceDetailModal({
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center text-center pt-6 pb-2 select-none animate-fadeIn"
+                  className="flex flex-col items-center text-center pt-4 pb-2 select-none animate-fadeIn"
                 >
-                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-md border-2 border-emerald-100/50 animate-bounce">
-                    <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-emerald-500 shadow-md border-2 border-emerald-100/50 animate-bounce">
+                    <CheckCircle2 className="h-10 w-10 text-emerald-500" />
                   </div>
 
-                  <h2 className="mb-3 text-xl font-black text-foreground">
+                  <h2 className="mb-2 text-lg font-black text-foreground">
                     {t.successTitle}
                   </h2>
 
-                  <p className="mb-6 text-xs text-muted-foreground leading-relaxed max-w-[280px] font-bold">
+                  <p className="mb-5 text-xs text-muted-foreground leading-relaxed max-w-[260px] font-bold">
                     {t.successDesc}
                   </p>
 
                   <button
                     onClick={onClose}
-                    className="w-full rounded-2xl bg-secondary px-6 py-3 text-xs font-black text-foreground transition-colors hover:bg-secondary/85 active:scale-98 border border-border/40 shadow-sm cursor-pointer"
+                    className="w-full rounded-xl bg-secondary px-5 py-2.5 text-xs font-black text-foreground transition-colors hover:bg-secondary/85 active:scale-98 border border-border/40 shadow-sm cursor-pointer"
                   >
                     {t.closeBtn}
                   </button>
