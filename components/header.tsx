@@ -66,32 +66,32 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
 
   return (
     <motion.section
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="px-4 pb-4 pt-6"
+      className="px-4 pb-3 pt-4"
     >
-      <div className="flex items-stretch gap-4">
-        {/* Logo — left side, negative top margin to extend higher, wider to make logo larger */}
-        <div className="logo-shimmer-container relative self-stretch flex-shrink-0" style={{ minWidth: '115px', marginLeft: '-16px', marginRight: '-4px', marginTop: '-16px' }}>
+      <div className="flex items-center gap-3.5 sm:gap-5">
+        {/* Sleek, proportional logo container without negative margin bleed */}
+        <div className="logo-shimmer-container relative h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0">
           <Image
             src="/logo.png"
             alt="ARSAM"
             fill
-            className="object-contain object-top"
+            className="object-contain"
             priority
           />
         </div>
 
-        {/* Text block — top padding added to push text down, removed justify-end */}
-        <div className="flex flex-col pt-5">
-          <span className="text-xs font-bold uppercase tracking-wider text-gold">
+        {/* Text block */}
+        <div className="flex flex-col justify-center min-w-0 flex-1">
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-gold">
             {language === 'fa' || language === 'ar' ? 'آرسام' : 'ARSAM'}
           </span>
-          <h1 className="mt-0.5 text-2xl font-bold leading-[1.1] text-foreground">
+          <h1 className="mt-0.5 text-lg sm:text-2xl font-black leading-tight text-foreground">
             {getFormattedTagline()}
           </h1>
-          <p className="mt-1 text-sm leading-snug text-muted-foreground">
+          <p className="mt-1 text-xs sm:text-sm font-medium leading-relaxed text-muted-foreground">
             {subtitle}
           </p>
         </div>
