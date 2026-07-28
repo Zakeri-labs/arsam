@@ -69,7 +69,7 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.1 }}
-      className="px-3.5 pt-1 pb-1"
+      className="px-4 py-5"
     >
       <div className="flex items-center gap-3 sm:gap-5">
         {/* Larger prominent logo with minimal vertical padding */}

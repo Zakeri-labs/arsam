@@ -382,16 +382,7 @@ export default function Home() {
                 </motion.div>
               ) : currentContent && (
                 <>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="mb-4"
-                  >
-                    <h2 className="text-lg font-bold text-foreground">
-                      {currentContent.services.title}
-                    </h2>
-                  </motion.div>
+                  {/* Services Header temporarily hidden as requested */}
 
                   {/* Horizontal Scrollable Category Tabs */}
                   <motion.div
