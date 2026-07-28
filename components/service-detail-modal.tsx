@@ -547,11 +547,11 @@ export function ServiceDetailModal({
                   </div>
 
                   {/* Form Service Indicator */}
-                  <div className="mb-3.5 rounded-xl bg-secondary/50 px-3.5 py-2.5 border border-border/50 flex items-center justify-between">
+                  <div className="mb-3.5 rounded-xl bg-secondary/60 px-3.5 py-2.5 border border-border/50 flex flex-col gap-0.5">
                     <span className="text-[10px] font-bold text-gold uppercase tracking-wider">
                       {t.formTitle}
                     </span>
-                    <span className="text-xs font-extrabold text-foreground truncate max-w-[210px]">
+                    <span className="text-xs font-extrabold text-foreground leading-snug break-words">
                       {service.title}
                     </span>
                   </div>
@@ -637,9 +637,9 @@ export function ServiceDetailModal({
                                 key={idx} 
                                 className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-secondary/30 px-3.5 py-2.5 text-xs transition-all hover:border-gold/50"
                               >
-                                <span className="truncate font-semibold text-foreground/90 text-xs flex items-center gap-2 min-w-0">
+                                <span className="font-semibold text-foreground/90 text-xs flex items-center gap-2 min-w-0 leading-tight">
                                   <span className="h-1.5 w-1.5 rounded-full bg-gold shrink-0"></span>
-                                  <span className="truncate">{req}</span>
+                                  <span className="leading-snug break-words">{req}</span>
                                 </span>
 
                                 {slotFile ? (
