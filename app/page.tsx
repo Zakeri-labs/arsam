@@ -66,7 +66,7 @@ const categoryTranslations: Record<Language, Record<string, string>> = {
 export default function Home() {
   const [showModal, setShowModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<Language | null>('en');
-  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>('oman');
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
