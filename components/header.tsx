@@ -32,25 +32,33 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
     : (country === 'uae' ? 'دبي' : 'عُمان');
 
   const getFormattedTagline = () => {
+    const targetCity = !country
+      ? (language === 'en' ? 'Muscat' : language === 'fa' ? 'مسقط' : 'مسقط')
+      : language === 'en' 
+      ? (country === 'uae' ? 'Dubai' : 'Muscat')
+      : language === 'fa'
+      ? (country === 'uae' ? 'دبی' : 'مسقط')
+      : (country === 'uae' ? 'دبي' : 'مسقط');
+
     if (language === 'en') {
       return (
         <>
           Turn the Engine of<br />Your Business On in{' '}
-          <span className="text-primary">Dubai and Muscat</span>
+          <span className="text-primary">{targetCity}</span>
         </>
       );
     } else if (language === 'fa') {
       return (
         <>
           موتور کسب‌وکار خود را<br />در{' '}
-          <span className="text-primary">دبی و مسقط</span> روشن کنید
+          <span className="text-primary">{targetCity}</span> روشن کنید
         </>
       );
     } else {
       return (
         <>
           أطلق محرك أعمالك<br />في{' '}
-          <span className="text-primary">دبي ومسقط</span>
+          <span className="text-primary">{targetCity}</span>
         </>
       );
     }

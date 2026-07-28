@@ -1854,7 +1854,7 @@ export const content: Record<Language, Record<Country, Content>> = {
     uae: {
       header: {
         title: 'ARSAM',
-        subtitle: 'Under the management of Reza Amareh | Your Trusted Partner for Starting, Managing, and Growing Your Business in UAE',
+        subtitle: 'Managed by Reza Amareh | Your Trusted Partner in UAE',
         tagline: 'Turn the Engine of Your Business On in Dubai',
       },
       services: {
@@ -1872,7 +1872,7 @@ export const content: Record<Language, Record<Country, Content>> = {
     oman: {
       header: {
         title: 'ARSAM',
-        subtitle: 'Under the management of Reza Amareh | Your Trusted Partner for Starting, Managing, and Growing Your Business in Oman',
+        subtitle: 'Managed by Reza Amareh | Your Trusted Partner in Oman',
         tagline: 'Build Your Success in the Sultanate of Oman',
       },
       services: {
@@ -1892,7 +1892,7 @@ export const content: Record<Language, Record<Country, Content>> = {
     uae: {
       header: {
         title: 'آرسام',
-        subtitle: 'با مدیریت رضا اماره | همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار در امارات',
+        subtitle: 'با مدیریت رضا اماره | همراه مطمئن شما در امارات',
         tagline: 'موتور کسب‌وکار خود را در دبی روشن کنید',
       },
       services: {
@@ -1910,7 +1910,7 @@ export const content: Record<Language, Record<Country, Content>> = {
     oman: {
       header: {
         title: 'آرسام',
-        subtitle: 'با مدیریت رضا اماره | همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار در عمان',
+        subtitle: 'با مدیریت رضا اماره | همراه مطمئن شما در عمان',
         tagline: 'موفقیت خود را در سلطان‌نشین عمان بسازید',
       },
       services: {
@@ -1930,7 +1930,7 @@ export const content: Record<Language, Record<Country, Content>> = {
     uae: {
       header: {
         title: 'آرسام',
-        subtitle: 'بإدارة رضا أمارة | شريكك الموثوق لبدء وإدارة وتنمية أعمالك في الإمارات',
+        subtitle: 'بإدارة رضا أمارة | شريكك الموثوق في الإمارات',
         tagline: 'أطلق محرك أعمالك في دبي',
       },
       services: {
@@ -1948,7 +1948,7 @@ export const content: Record<Language, Record<Country, Content>> = {
     oman: {
       header: {
         title: 'آرسام',
-        subtitle: 'بإدارة رضا أمارة | شريكك الموثوق لبدء وإدارة وتنمية أعمالك في عمان',
+        subtitle: 'بإدارة رضا أمارة | شريكك الموثوق في عمان',
         tagline: 'ابنِ نجاحك في سلطنة عمان',
       },
       services: {
