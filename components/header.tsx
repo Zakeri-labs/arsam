@@ -77,8 +77,8 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
 
         {/* Text block — top padding added to push text down, removed justify-end */}
         <div className="flex flex-col pt-5">
-          <span className="text-xs font-semibold uppercase tracking-wider text-gold">
-            Shiny Horizon
+          <span className="text-xs font-bold uppercase tracking-wider text-gold">
+            {language === 'fa' || language === 'ar' ? 'آرسام' : 'ARSAM'}
           </span>
           <h1 className="mt-0.5 text-2xl font-bold leading-[1.1] text-foreground">
             {getFormattedTagline()}

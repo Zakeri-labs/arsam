@@ -14,22 +14,22 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://ofogh.zakeri.dev'),
-  title: 'AL UFUQ AL DAHABI | Business Setup & Corporate Services',
+  title: 'آرسام | Arsam Corporate Services & Business Setup',
   description: 'Your premium partner for company formation, corporate residency, license renewal, VAT registration, and business setup services in the UAE and Oman. Professional support in English, Persian, and Arabic.',
   manifest: '/manifest.json',
-  keywords: ['company registration UAE', 'business setup Dubai', 'Oman company formation', 'residency UAE', 'VAT registration', 'الافق الذهبی', 'ثبت شرکت امارات', 'ثبت شرکت عمان'],
-  authors: [{ name: 'AL UFUQ AL DAHABI' }],
+  keywords: ['company registration UAE', 'business setup Dubai', 'Oman company formation', 'residency UAE', 'VAT registration', 'آرسام', 'ثبت شرکت امارات', 'ثبت شرکت عمان'],
+  authors: [{ name: 'آرسام - Arsam' }],
   openGraph: {
-    title: 'AL UFUQ AL DAHABI | Business Setup & Corporate Services',
+    title: 'آرسام | Arsam Corporate Services',
     description: 'Your premium partner for company formation, corporate residency, license renewal, VAT registration, and business setup services in the UAE and Oman.',
     url: 'https://ofogh.zakeri.dev',
-    siteName: 'AL UFUQ AL DAHABI',
+    siteName: 'آرسام - Arsam',
     images: [
       {
         url: '/logo.png',
         width: 800,
         height: 1000,
-        alt: 'AL UFUQ AL DAHABI - SHINY HORIZON Logo',
+        alt: 'آرسام - Arsam Logo',
       }
     ],
     locale: 'en_US',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AL UFUQ AL DAHABI | Business Setup & Corporate Services',
+    title: 'آرسام | Arsam Corporate Services',
     description: 'Your premium partner for company formation, corporate residency, and business setup in the UAE and Oman.',
     images: ['/logo.png'],
   },
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'AL UFUQ',
+    title: 'آرسام',
   },
   other: {
     'mobile-web-app-capable': 'yes',

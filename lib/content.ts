@@ -1853,7 +1853,7 @@ export const content: Record<Language, Record<Country, Content>> = {
   en: {
     uae: {
       header: {
-        title: 'AL UFUQ AL DAHABI',
+        title: 'ARSAM',
         subtitle: 'Your Trusted Partner for Starting, Managing, and Growing Your Business in UAE',
         tagline: 'Turn the Engine of Your Business On in Dubai',
       },
@@ -1866,12 +1866,12 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'Contact Us Today',
       },
       footer: {
-        copyright: '© 2024 AL UFUQ AL DAHABI. All rights reserved.',
+        copyright: '© 2026 ARSAM. All rights reserved.',
       },
     },
     oman: {
       header: {
-        title: 'AL UFUQ AL DAHABI',
+        title: 'ARSAM',
         subtitle: 'Your Trusted Partner for Starting, Managing, and Growing Your Business in Oman',
         tagline: 'Build Your Success in the Sultanate of Oman',
       },
@@ -1884,14 +1884,14 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'Contact Us Today',
       },
       footer: {
-        copyright: '© 2024 AL UFUQ AL DAHABI. All rights reserved.',
+        copyright: '© 2026 ARSAM. All rights reserved.',
       },
     },
   },
   fa: {
     uae: {
       header: {
-        title: 'الافق الذهبی',
+        title: 'آرسام',
         subtitle: 'همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار در امارات',
         tagline: 'موتور کسب‌وکار خود را در دبی روشن کنید',
       },
@@ -1904,12 +1904,12 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'همین امروز تماس بگیرید',
       },
       footer: {
-        copyright: '© ۲۰۲۴ الافق الذهبی. تمامی حقوق محفوظ است.',
+        copyright: '© ۲۰۲۶ آرسام. تمامی حقوق محفوظ است.',
       },
     },
     oman: {
       header: {
-        title: 'الافق الذهبی',
+        title: 'آرسام',
         subtitle: 'همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار در عمان',
         tagline: 'موفقیت خود را در سلطان‌نشین عمان بسازید',
       },
@@ -1922,14 +1922,14 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'همین امروز تماس بگیرید',
       },
       footer: {
-        copyright: '© ۲۰۲۴ الافق الذهبی. تمامی حقوق محفوظ است.',
+        copyright: '© ۲۰۲۶ آرسام. تمامی حقوق محفوظ است.',
       },
     },
   },
   ar: {
     uae: {
       header: {
-        title: 'الأفق الذهبي',
+        title: 'آرسام',
         subtitle: 'شريكك الموثوق لبدء وإدارة وتنمية أعمالك في الإمارات',
         tagline: 'أطلق محرك أعمالك في دبي',
       },
@@ -1942,12 +1942,12 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'تواصل معنا اليوم',
       },
       footer: {
-        copyright: '© 2024 الأفق الذهبي. جميع الحقوق محفوظة.',
+        copyright: '© 2026 آرسام. جميع الحقوق محفوظة.',
       },
     },
     oman: {
       header: {
-        title: 'الأفق الذهبي',
+        title: 'آرسام',
         subtitle: 'شريكك الموثوق لبدء وإدارة وتنمية أعمالك في عمان',
         tagline: 'ابنِ نجاحك في سلطنة عمان',
       },
@@ -1960,7 +1960,7 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'تواصل معنا اليوم',
       },
       footer: {
-        copyright: '© 2024 الأفق الذهبي. جميع الحقوق محفوظة.',
+        copyright: '© 2026 آرسام. جميع الحقوق محفوظة.',
       },
     },
   },
