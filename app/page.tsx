@@ -335,10 +335,10 @@ export default function Home() {
                     <div className={`absolute top-0 ${isRtl ? 'right-0' : 'left-0'} w-1 h-full bg-gold`}></div>
                     <p className="text-[14px] leading-relaxed text-foreground/80 text-justify relative z-10">
                       {selectedLanguage === 'fa' 
-                        ? 'الافق الذهبی همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار است. ما مسیر راه‌اندازی و توسعه شرکت شما را در کشورهای حوزه خلیج فارس ساده، سریع و امن می‌کنیم. لطفاً برای مشاهده خدمات، کشور مورد نظر خود را انتخاب کنید.'
+                        ? 'آرسام با مدیریت رضا اماره، همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار است. ما مسیر راه‌اندازی و توسعه شرکت شما را در کشورهای حوزه خلیج فارس ساده، سریع و امن می‌کنیم. لطفاً برای مشاهده خدمات، کشور مورد نظر خود را انتخاب کنید.'
                         : selectedLanguage === 'ar'
-                        ? 'الأفق الذهبي هو شريكك الموثوق لبدء وإدارة وتطوير أعمالك. نحن نجعل عملية تأسيس وتطوير شركتك في دول الخليج بسيطة وسريعة وآمنة. يرجى تحديد الدولة المطلوبة لعرض خدماتنا.'
-                        : 'AL UFUQ AL DAHABI is your trusted partner for starting, managing, and growing your business. We make the process of setting up and expanding your company in the Gulf region simple, fast, and secure. Please select your desired country to view our services.'}
+                        ? 'آرسام بإدارة رضا أمارة، هو شريكك الموثوق لبدء وإدارة وتطوير أعمالك. نحن نجعل عملية تأسيس وتطوير شركتك في دول الخليج بسيطة وسريعة وآمنة. يرجى تحديد الدولة المطلوبة لعرض خدماتنا.'
+                        : 'ARSAM, managed by Reza Amareh, is your trusted partner for starting, managing, and growing your business. We make the process of setting up and expanding your company in the Gulf region simple, fast, and secure. Please select your desired country to view our services.'}
                     </p>
                   </div>
                   
@@ -361,7 +361,7 @@ export default function Home() {
                         <Image src="/UAEFlag.gif" alt="UAE Flag" fill className="object-contain" unoptimized />
                       </div>
                       <span className="font-extrabold text-[13px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
-                        {selectedLanguage ? content[selectedLanguage].uae.header.title === 'الافق الذهبی' ? 'امارات متحده عربی' : content[selectedLanguage].uae.header.title === 'الأفق الذهبي' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates' : 'UAE'}
+                        {selectedLanguage === 'fa' ? 'امارات متحده عربی' : selectedLanguage === 'ar' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates'}
                       </span>
                     </button>
 
@@ -375,7 +375,7 @@ export default function Home() {
                         <Image src="/OmanFlag.gif" alt="Oman Flag" fill className="object-contain" unoptimized />
                       </div>
                       <span className="font-extrabold text-[13px] text-foreground group-hover:text-gold transition-colors duration-300 relative z-10">
-                        {selectedLanguage ? content[selectedLanguage].oman.header.title === 'الافق الذهبی' ? 'سلطان‌نشین عمان' : content[selectedLanguage].oman.header.title === 'الأفق الذهبي' ? 'سلطنة عُمان' : 'Sultanate of Oman' : 'Oman'}
+                        {selectedLanguage === 'fa' ? 'سلطان‌نشین عمان' : selectedLanguage === 'ar' ? 'سلطنة عُمان' : 'Sultanate of Oman'}
                       </span>
                     </button>
                   </div>

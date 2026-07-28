@@ -34,8 +34,8 @@ interface AboutContent {
 const aboutContent: Record<Language, AboutContent> = {
   en: {
     title: 'ARSAM',
-    subtitle: 'Your Trusted Partner for Starting, Managing, and Growing Your Business in UAE & Oman',
-    p1: 'At ARSAM, we don\'t just provide administrative services; we make the process of setting up and managing your business simpler, faster, and more secure. With hands-on experience in company registration, corporate residency, license renewal, residency renewal, corporate taxation, corporate bank accounts, and business development services, we help business owners, investors, and individuals starting in the UAE and Oman to launch and manage their operations with a clear vision and correct legal pathways.',
+    subtitle: 'Under the management of Reza Amareh | Your Trusted Partner for Starting, Managing, and Growing Your Business in UAE & Oman',
+    p1: 'At ARSAM, managed by Reza Amareh, we don\'t just provide administrative services; we make the process of setting up and managing your business simpler, faster, and more secure. With hands-on experience in company registration, corporate residency, license renewal, residency renewal, corporate taxation, corporate bank accounts, and business development services, we help business owners, investors, and individuals starting in the UAE and Oman to launch and manage their operations with a clear vision and correct legal pathways.',
     p2: 'From the very first step of selecting your activities and registering your company, to subsequent phases like obtaining residency, preparing documents, tracking renewals, managing tax filings, and structuring your business for growth, our team is by your side to ensure you move forward without confusion, wasted time, or costly mistakes. Over the years, we have successfully managed and completed hundreds of corporate cases in company formation, residency, license renewals, tax advisory, and business operations, earning the trust and high satisfaction of our corporate clients.',
     p3: 'At ARSAM, our ultimate goal is to let you focus on growing your business instead of getting caught up in administrative, legal, and tax complexities. We handle the rest of the journey with precision, dedication, and expertise.',
     whyHeader: 'Why ARSAM?',
@@ -53,8 +53,8 @@ const aboutContent: Record<Language, AboutContent> = {
   },
   fa: {
     title: 'گروه آرسام (ARSAM)',
-    subtitle: 'همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار در امارات و عمان',
-    p1: 'در آرسام ما فقط خدمات اداری ارائه نمی‌دهیم؛ ما مسیر راه‌اندازی و مدیریت کسب‌وکار شما را ساده‌تر، سریع‌تر و مطمئن‌تر می‌کنیم. با تجربه‌ای عملی در حوزه ثبت شرکت، اخذ اقامت، تمدید لایسنس، تمدید اقامت، امور مالیاتی، افتتاح حساب شرکتی و خدمات مربوط به توسعه کسب‌وکار، ما به صاحبان بیزینس، سرمایه‌گذاران و افرادی که قصد شروع فعالیت در امارات و عمان را دارند کمک می‌کنیم تا با دیدی روشن و مسیر قانونی درست، کار خود را آغاز و مدیریت کنند.',
+    subtitle: 'با مدیریت رضا اماره | همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار در امارات و عمان',
+    p1: 'در آرسام با مدیریت رضا اماره، ما فقط خدمات اداری ارائه نمی‌دهیم؛ ما مسیر راه‌اندازی و مدیریت کسب‌وکار شما را ساده‌تر، سریع‌تر و مطمئن‌تر می‌کنیم. با تجربه‌ای عملی در حوزه ثبت شرکت، اخذ اقامت، تمدید لایسنس، تمدید اقامت، امور مالیاتی، افتتاح حساب شرکتی و خدمات مربوط به توسعه کسب‌وکار، ما به صاحبان بیزینس، سرمایه‌گذاران و افرادی که قصد شروع فعالیت در امارات و عمان را دارند کمک می‌کنیم تا با دیدی روشن و مسیر قانونی درست، کار خود را آغاز و مدیریت کنند.',
     p2: 'از اولین قدم، یعنی انتخاب نوع فعالیت و ثبت شرکت، تا مراحل بعدی مانند دریافت اقامت، آماده‌سازی مدارک، پیگیری تمدیدها، انجام امور مالیاتی و ساختاردهی بهتر به کسب‌وکار، تیم ما در کنار شماست تا بدون سردرگمی، اتلاف وقت و اشتباهات پرهزینه جلو بروید. ما طی این مدت موفق شده‌ایم پرونده‌های متعددی را در زمینه ثبت شرکت، اقامت، تمدید لایسنس، خدمات مالیاتی و امور بیزینسی با موفقیت انجام دهیم و رضایت مشتریان خود را به دست آوریم. تا امروز، بیش از صدها پرونده موفق توسط تیم ما مدیریت و تکمیل شده است؛ عددی که برای ما فقط یک آمار نیست، بلکه نشان‌دهنده اعتماد مشتریانی است که مسیر مهم کاری و مهاجرتی خود را به ما سپرده‌اند.',
     p3: 'در آرسام هدف ما این است که شما به جای درگیر شدن با پیچیدگی‌های اداری، قانونی و مالیاتی، روی رشد کسب‌وکار خود تمرکز کنید. باقی مسیر را ما با دقت، پیگیری و تجربه جلو می‌بریم.',
     whyHeader: 'چرا آرسام؟',
@@ -72,8 +72,8 @@ const aboutContent: Record<Language, AboutContent> = {
   },
   ar: {
     title: 'مجموعة آرسام (ARSAM)',
-    subtitle: 'شريكك الموثوق لتأسيس وإدارة وتنمية أعمالك في الإمارات وعمان',
-    p1: 'في آرسام، نحن لا نقدم فقط الخدمات الإدارية؛ بل نجعل مسار تأسيس وإدارة أعمالك أسهل، أسرع، وأكثر أماناً. من خلال خبرتنا العملية في مجالات تأسيس الشركات، الحصول على الإقامة، تجديد التراخيص التجارية، تجديد الإقامات، المعاملات الضريبية، فتح الحسابات البنكية للشركات، وخدمات تطوير الأعمال، نساعد أصحاب المشاريع، المستثمرين، والأفراد الراغبين في بدء نشاطهم في دولة الإمارات وسلطنة عمان على بدء وإدارة أعمالهم برؤية واضحة ومسار قانوني صحيح.',
+    subtitle: 'بإدارة رضا أمارة | شريكك الموثوق لتأسيس وإدارة وتنمية أعمالك في الإمارات وعمان',
+    p1: 'في آرسام بإدارة رضا أمارة، نحن لا نقدم فقط الخدمات الإدارية؛ بل نجعل مسار تأسيس وإدارة أعمالك أسهل، أسرع، وأكثر أماناً. من خلال خبرتنا العملية في مجالات تأسيس الشركات، الحصول على الإقامة، تجديد التراخيص التجارية، تجديد الإقامات، المعاملات الضريبية، فتح الحسابات البنكية للشركات، وخدمات تطوير الأعمال، نساعد أصحاب المشاريع، المستثمرين، والأفراد الراغبين في بدء نشاطهم في دولة الإمارات وسلطنة عمان على بدء وإدارة أعمالهم برؤية واضحة ومسار قانوني صحيح.',
     p2: 'من الخطوة الأولى المتمثلة في اختيار نوع النشاط وتأسيس الشركة، إلى المراحل التالية مثل الحصول على الإقامة، إعداد المستندات، متابعة التجديدات، تقديم الإقرارات الضريبية، وهيكلة أعمالك للنمو، يقف فريقنا بجانبك لضمان تقدمك دون حيرة، هدر للوقت، أو أخطاء مكلفة. لقد نجحنا على مدار السنوات الماضية في إدارة وإتمام مئات الملفات بنجاح في مجالات تأسيس الشركات، الإقامات، تجديد التراخيص، الاستشارات الضريبية، والأعمال التجارية، كاسبين ثقة ورضا عملائنا الكرام.',
     p3: 'في آرسام، هدفنا هو تمكينك من التركيز على نمو أعمالك بدلاً من الانشغال بالتعقيدات الإدارية، القانونية، والضريبية. نحن نتولى بقية المسار بدقة، متابعة مستمرة، وخبرة واسعة.',
     whyHeader: 'لماذا آرسام؟',
@@ -127,7 +127,7 @@ export function AboutModal({ isOpen, onClose, language }: AboutModalProps) {
               <div className="logo-shimmer-container mb-4">
                 <Image
                   src="/logo.png"
-                  alt="Shiny Horizon"
+                  alt="ARSAM"
                   width={150}
                   height={180}
                   className="h-auto w-28 object-contain"
