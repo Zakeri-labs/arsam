@@ -18,6 +18,88 @@ const categoryImages: Record<string, string> = {
   'General Government Services': 'https://images.unsplash.com/photo-1529101091764-c301647b7e38?q=80&w=600&auto=format&fit=crop',
 };
 
+// Convert Persian/Arabic digits to English digits
+function toEnglishDigits(str: string): string {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+  return str
+    .split('')
+    .map(c => {
+      const pIdx = persianDigits.indexOf(c);
+      if (pIdx > -1) return pIdx.toString();
+      const aIdx = arabicDigits.indexOf(c);
+      if (aIdx > -1) return aIdx.toString();
+      return c;
+    })
+    .join('');
+}
+
+function normalizePhoneNumber(phoneStr: string): { normalized: string; isValid: boolean } {
+  const cleaned = toEnglishDigits(phoneStr).trim();
+  if (!cleaned) return { normalized: '', isValid: false };
+
+  // Remove spaces, dashes, dots, parentheses
+  const digitsOnly = cleaned.replace(/[\s\-\(\)\.]/g, '');
+
+  // 1. Iran numbers:
+  // 09123456789 (11 digits starting with 09) -> +989123456789
+  if (/^09\d{9}$/.test(digitsOnly)) {
+    return { normalized: '+98' + digitsOnly.substring(1), isValid: true };
+  }
+  // 989123456789 (12 digits starting with 989) -> +989123456789
+  if (/^989\d{9}$/.test(digitsOnly)) {
+    return { normalized: '+' + digitsOnly, isValid: true };
+  }
+  // +989123456789
+  if (/^\+989\d{9}$/.test(digitsOnly)) {
+    return { normalized: digitsOnly, isValid: true };
+  }
+
+  // 2. UAE numbers:
+  // 0501234567 or 055... or 058... (10 digits starting with 05) -> +971501234567
+  if (/^05\d{8}$/.test(digitsOnly)) {
+    return { normalized: '+971' + digitsOnly.substring(1), isValid: true };
+  }
+  // 971501234567 or 9715... (12 digits) -> +971501234567
+  if (/^9715\d{8}$/.test(digitsOnly)) {
+    return { normalized: '+' + digitsOnly, isValid: true };
+  }
+  // +9715...
+  if (/^\+9715\d{8}$/.test(digitsOnly)) {
+    return { normalized: digitsOnly, isValid: true };
+  }
+
+  // 3. Oman numbers:
+  // 8 digits starting with 7 or 9 (e.g. 71713238 or 91234567) -> +96871713238
+  if (/^[79]\d{7}$/.test(digitsOnly)) {
+    return { normalized: '+968' + digitsOnly, isValid: true };
+  }
+  // 07... or 09... (9 digits) -> +96871713238
+  if (/^0[79]\d{7}$/.test(digitsOnly)) {
+    return { normalized: '+968' + digitsOnly.substring(1), isValid: true };
+  }
+  // 96871713238 or 9689... (11 digits) -> +96871713238
+  if (/^968[79]\d{7}$/.test(digitsOnly)) {
+    return { normalized: '+' + digitsOnly, isValid: true };
+  }
+  // +96871713238
+  if (/^\+968[79]\d{7}$/.test(digitsOnly)) {
+    return { normalized: digitsOnly, isValid: true };
+  }
+
+  // 4. Any international number starting with '+' followed by 8 to 15 digits
+  if (/^\+\d{8,15}$/.test(digitsOnly)) {
+    return { normalized: digitsOnly, isValid: true };
+  }
+
+  // 5. If starts with 00 (e.g. 00971... or 0098...)
+  if (/^00\d{8,15}$/.test(digitsOnly)) {
+    return { normalized: '+' + digitsOnly.substring(2), isValid: true };
+  }
+
+  return { normalized: cleaned, isValid: false };
+}
+
 interface ServiceDetailModalProps {
   service: Service | null;
   isOpen: boolean;
@@ -32,17 +114,18 @@ const localizations = {
     formBtn: 'Order Form',
     formTitle: 'Request Service',
     nameLabel: 'Full Name',
-    namePlaceholder: 'Enter your full name',
+    namePlaceholder: 'Full name',
     phoneLabel: 'Phone Number',
-    phonePlaceholder: 'e.g., +971 50 000 0000',
+    phonePlaceholder: 'e.g., +971...',
     descLabel: 'Description (Optional)',
-    descPlaceholder: 'Any specific requests or notes...',
+    descPlaceholder: 'Any specific requests...',
     submitBtn: 'Send Request',
     backBtn: 'Back',
     closeBtn: 'Close',
     successTitle: 'Request Submitted!',
     successDesc: 'Your request has been successfully submitted. We will contact you shortly.',
-    requiredField: 'This field is required',
+    requiredField: 'Required',
+    phoneErrorInvalid: 'Include country code (+971, +98, +968...)',
     whatsappTemplate: 'Hello, I am interested in the "%SERVICE_NAME%" service. Please provide more details.',
     serviceFeeLabel: 'Service Fee:',
     govtFeeLabel: 'Government Fees:',
@@ -65,9 +148,9 @@ const localizations = {
     formBtn: 'فرم درخواست',
     formTitle: 'درخواست خدمت',
     nameLabel: 'نام و نام خانوادگی',
-    namePlaceholder: 'نام خود را وارد کنید',
+    namePlaceholder: 'نام کامل خود را وارد کنید',
     phoneLabel: 'شماره تماس',
-    phonePlaceholder: 'مثال: ۰۹۱۲۳۴۵۶۷۸۹',
+    phonePlaceholder: 'مثال: ۰۹۱۲۳۴۵۶۷۸۹ یا +۹۷۱',
     descLabel: 'توضیحات (اختیاری)',
     descPlaceholder: 'درخواست خاص یا توضیحات بیشتر...',
     submitBtn: 'ارسال درخواست',
@@ -75,7 +158,8 @@ const localizations = {
     closeBtn: 'بستن',
     successTitle: 'درخواست شما ثبت شد!',
     successDesc: 'درخواست شما با موفقیت ثبت شد. به‌زودی با شما ارتباط خواهیم گرفت.',
-    requiredField: 'این فیلد الزامی است',
+    requiredField: 'الزامی',
+    phoneErrorInvalid: 'لطفاً همراه پیش‌شماره (+98 / +971 / +968) وارد کنید',
     whatsappTemplate: 'سلام، من علاقه‌مند به دریافت خدمات "%SERVICE_NAME%" هستم. لطفاً اطلاعات بیشتری ارسال کنید.',
     serviceFeeLabel: 'دستمزد خدمات:',
     govtFeeLabel: 'هزینه‌های دولتی:',
@@ -98,9 +182,9 @@ const localizations = {
     formBtn: 'نموذج الطلب',
     formTitle: 'طلب خدمة',
     nameLabel: 'الاسم الكامل',
-    namePlaceholder: 'أدخل اسمك الكامل',
+    namePlaceholder: 'الاسم الكامل',
     phoneLabel: 'رقم الهاتف',
-    phonePlaceholder: 'مثال: +971 50 000 0000',
+    phonePlaceholder: 'مثال: +971...',
     descLabel: 'تفاصيل إضافية (اختياري)',
     descPlaceholder: 'أي ملاحظات خاصة...',
     submitBtn: 'إرسال الطلب',
@@ -108,7 +192,8 @@ const localizations = {
     closeBtn: 'إغلاق',
     successTitle: 'تم تقديم الطلب بنجاح!',
     successDesc: 'تم تسجيل طلبك بنجاح. سنتواصل معك قريباً.',
-    requiredField: 'هذا الحقل مطلوب',
+    requiredField: 'مطلوب',
+    phoneErrorInvalid: 'يرجى إدخال رقم الهاتف مع رمز الدولة (+971, +98...)',
     whatsappTemplate: 'مرحباً، أنا مهتم بالحصول على خدمة "%SERVICE_NAME%". يرجى تزويدي بمزيد من التفاصيل.',
     serviceFeeLabel: 'رسوم الخدمة:',
     govtFeeLabel: 'الرسوم الحكومية:',
@@ -145,7 +230,8 @@ export function ServiceDetailModal({
   const [phone, setPhone] = useState('');
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<{ name?: boolean; phone?: boolean }>({});
-  
+  const [phoneErrorMsg, setPhoneErrorMsg] = useState<string>('');
+
   // Dedicated slots for requirements + extra files array
   const [slotFiles, setSlotFiles] = useState<Record<number, File>>({});
   const [extraFiles, setExtraFiles] = useState<File[]>([]);
@@ -159,6 +245,7 @@ export function ServiceDetailModal({
       setPhone('');
       setDescription('');
       setErrors({});
+      setPhoneErrorMsg('');
       setSlotFiles({});
       setExtraFiles([]);
       setIsSubmitting(false);
@@ -200,11 +287,34 @@ export function ServiceDetailModal({
     setExtraFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handlePhoneBlur = () => {
+    if (phone.trim()) {
+      const res = normalizePhoneNumber(phone);
+      if (res.isValid) {
+        setPhone(res.normalized);
+        setErrors(prev => ({ ...prev, phone: false }));
+        setPhoneErrorMsg('');
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { name?: boolean; phone?: boolean } = {};
-    if (!name.trim()) newErrors.name = true;
-    if (!phone.trim()) newErrors.phone = true;
+    
+    if (!name.trim()) {
+      newErrors.name = true;
+    }
+
+    // Smart Phone Validation & Normalization
+    const phoneRes = normalizePhoneNumber(phone);
+    if (!phone.trim()) {
+      newErrors.phone = true;
+      setPhoneErrorMsg(t.requiredField);
+    } else if (!phoneRes.isValid) {
+      newErrors.phone = true;
+      setPhoneErrorMsg(t.phoneErrorInvalid);
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -215,7 +325,7 @@ export function ServiceDetailModal({
     try {
       const formData = new FormData();
       formData.append('name', name.trim());
-      formData.append('phone', phone.trim());
+      formData.append('phone', phoneRes.normalized);
       formData.append('description', description.trim());
       formData.append('serviceTitle', service.title);
       
@@ -447,49 +557,53 @@ export function ServiceDetailModal({
                   </div>
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                    {/* Name field */}
-                    <div className="flex flex-col gap-1 text-start">
-                      <label className="text-xs font-bold text-foreground px-0.5">
-                        {t.nameLabel} <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => {
-                          setName(e.target.value);
-                          if (errors.name) setErrors(prev => ({ ...prev, name: false }));
-                        }}
-                        placeholder={t.namePlaceholder}
-                        className={`w-full rounded-xl border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                          errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                        }`}
-                      />
-                      {errors.name && (
-                        <span className="text-[10px] text-destructive px-0.5">{t.requiredField}</span>
-                      )}
-                    </div>
+                    {/* Name & Phone side-by-side in ONE row (2 columns) */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* Name field */}
+                      <div className="flex flex-col gap-1 text-start">
+                        <label className="text-xs font-bold text-foreground px-0.5">
+                          {t.nameLabel} <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => {
+                            setName(e.target.value);
+                            if (errors.name) setErrors(prev => ({ ...prev, name: false }));
+                          }}
+                          placeholder={t.namePlaceholder}
+                          className={`w-full rounded-xl border bg-card px-3 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
+                            errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
+                          }`}
+                        />
+                        {errors.name && (
+                          <span className="text-[10px] text-destructive px-0.5">{t.requiredField}</span>
+                        )}
+                      </div>
 
-                    {/* Phone field */}
-                    <div className="flex flex-col gap-1 text-start">
-                      <label className="text-xs font-bold text-foreground px-0.5">
-                        {t.phoneLabel} <span className="text-destructive">*</span>
-                      </label>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => {
-                          setPhone(e.target.value);
-                          if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
-                        }}
-                        placeholder={t.phonePlaceholder}
-                        className={`w-full rounded-xl border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                          errors.phone ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                        }`}
-                        dir="ltr"
-                      />
-                      {errors.phone && (
-                        <span className="text-[10px] text-destructive px-0.5">{t.requiredField}</span>
-                      )}
+                      {/* Phone field */}
+                      <div className="flex flex-col gap-1 text-start">
+                        <label className="text-xs font-bold text-foreground px-0.5">
+                          {t.phoneLabel} <span className="text-destructive">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value);
+                            if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
+                          }}
+                          onBlur={handlePhoneBlur}
+                          placeholder={t.phonePlaceholder}
+                          className={`w-full rounded-xl border bg-card px-3 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
+                            errors.phone ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
+                          }`}
+                          dir="ltr"
+                        />
+                        {errors.phone && (
+                          <span className="text-[9px] text-destructive px-0.5 leading-tight">{phoneErrorMsg || t.requiredField}</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Description field */}
