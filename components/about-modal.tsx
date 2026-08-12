@@ -205,7 +205,7 @@ export function AboutModal({ isOpen, onClose, language }: AboutModalProps) {
               <div className="space-y-4 text-sm">
                 {/* Phone & WhatsApp */}
                 <a
-                  href="https://wa.me/971552554688"
+                  href="https://wa.me/96894521746"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between rounded-xl p-3 transition-colors hover:bg-slate-50 active:bg-slate-100 group"
@@ -216,7 +216,7 @@ export function AboutModal({ isOpen, onClose, language }: AboutModalProps) {
                     </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground">{t.phoneLabel}</p>
-                      <p className="font-semibold text-foreground dir-ltr">+971 55 255 4688</p>
+                      <p className="font-semibold text-foreground dir-ltr">+968 9452 1746</p>
                     </div>
                   </div>
                   <span className="text-xs font-medium text-gold group-hover:underline">

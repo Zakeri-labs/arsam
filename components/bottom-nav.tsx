@@ -23,7 +23,7 @@ export function BottomNav({ language, onChangeSettings, onAboutClick }: BottomNa
   };
 
   const handleWhatsApp = () => {
-    window.open('https://wa.me/971552554688', '_blank');
+    window.open('https://wa.me/96894521746', '_blank');
   };
 
   return (

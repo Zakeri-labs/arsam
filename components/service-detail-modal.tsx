@@ -257,7 +257,7 @@ export function ServiceDetailModal({
   const handleWhatsAppRequest = () => {
     const template = t.whatsappTemplate.replace('%SERVICE_NAME%', service.title);
     const encodedText = encodeURIComponent(template);
-    const whatsappUrl = `https://wa.me/971552554688?text=${encodedText}`;
+    const whatsappUrl = `https://wa.me/96894521746?text=${encodedText}`;
     window.open(whatsappUrl, '_blank');
   };
 
