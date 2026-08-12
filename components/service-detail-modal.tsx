@@ -447,8 +447,9 @@ export function ServiceDetailModal({
                     </h2>
                   </div>
 
-                  {/* Service pricing & timeline details */}
+                  {/* Service pricing & timeline details (Prices temporarily hidden) */}
                   <div className="mb-3 flex flex-col gap-1 text-xs">
+                    {/* Temporarily hidden prices
                     {service.governmentFees && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <span>{t.govtFeeLabel}</span>
@@ -465,6 +466,7 @@ export function ServiceDetailModal({
                         </span>
                       </div>
                     )}
+                    */}
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <span>{t.systemRegLabel}</span>
                       <span className="font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-200/40">
