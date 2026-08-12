@@ -731,7 +731,7 @@ export default function AdminPage() {
         >
           {/* Brand Logo & Name */}
           <div className="mb-8 flex flex-col items-center">
-            <h2 className="text-2xl font-black text-white tracking-wide mb-1">آرسام</h2>
+            <h2 className="text-2xl font-black text-white tracking-wide mb-1">ابوآرسام</h2>
             <p className="text-xs text-white/60">ورود به پنل مدیریت کل خدمات</p>
           </div>
 
@@ -810,7 +810,7 @@ export default function AdminPage() {
     <div className="flex flex-col h-full bg-navy text-white text-right" dir="rtl">
       {/* Brand Header */}
       <div className="p-6 border-b border-white/10 flex flex-col items-center select-none">
-        <h2 className="text-base font-extrabold text-gold leading-none">آرسام</h2>
+        <h2 className="text-base font-extrabold text-gold leading-none">ابوآرسام</h2>
         <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1.5">پنل مدیریت ادمین</span>
       </div>
 
@@ -1732,7 +1732,7 @@ export default function AdminPage() {
 
             <div className="flex flex-col items-end select-none">
               <h1 className="text-[13px] font-black text-navy leading-none">پنل مدیریت</h1>
-              <span className="text-[9px] font-bold text-gold tracking-wide mt-1.5">آرسام</span>
+              <span className="text-[9px] font-bold text-gold tracking-wide mt-1.5">ابوآرسام</span>
             </div>
           </header>
 
@@ -1749,7 +1749,7 @@ export default function AdminPage() {
               </div>
               
               <div className="text-[10px] text-gold font-bold tracking-widest bg-secondary px-3 py-1.5 rounded-full border border-border/60">
-                ARSAM SERVICES
+                ABU ARSAM SERVICES
               </div>
             </div>
           </header>

@@ -76,7 +76,7 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
         <div className="logo-shimmer-container relative h-28 w-28 sm:h-32 sm:w-32 flex-shrink-0">
           <Image
             src="/logo.png"
-            alt="ARSAM"
+            alt="ABU ARSAM"
             fill
             className="object-contain"
             priority
@@ -86,7 +86,7 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
         {/* Text block */}
         <div className="flex flex-col justify-center min-w-0 flex-1">
           <span className="text-[11px] font-extrabold uppercase tracking-widest text-gold">
-            {language === 'fa' || language === 'ar' ? 'آرسام' : 'ARSAM'}
+            {language === 'fa' || language === 'ar' ? 'ابوآرسام' : 'ABU ARSAM'}
           </span>
           <h1 className="mt-0.5 text-lg sm:text-2xl font-black leading-tight text-foreground">
             {getFormattedTagline()}

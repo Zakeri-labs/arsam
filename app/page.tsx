@@ -335,10 +335,10 @@ export default function Home() {
                     <div className={`absolute top-0 ${isRtl ? 'right-0' : 'left-0'} w-1 h-full bg-gold`}></div>
                     <p className="text-[14px] leading-relaxed text-foreground/80 text-justify relative z-10">
                       {selectedLanguage === 'fa' 
-                        ? 'آرسام با مدیریت رضا اماره، همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار است. ما مسیر راه‌اندازی و توسعه شرکت شما را در کشورهای حوزه خلیج فارس ساده، سریع و امن می‌کنیم. لطفاً برای مشاهده خدمات، کشور مورد نظر خود را انتخاب کنید.'
+                        ? 'ابوآرسام با مدیریت رضا اماره، همراه مطمئن شما برای شروع، مدیریت و توسعه کسب‌وکار است. ما مسیر راه‌اندازی و توسعه شرکت شما را در کشورهای حوزه خلیج فارس ساده، سریع و امن می‌کنیم. لطفاً برای مشاهده خدمات، کشور مورد نظر خود را انتخاب کنید.'
                         : selectedLanguage === 'ar'
-                        ? 'آرسام بإدارة رضا أمارة، هو شريكك الموثوق لبدء وإدارة وتطوير أعمالك. نحن نجعل عملية تأسيس وتطوير شركتك في دول الخليج بسيطة وسريعة وآمنة. يرجى تحديد الدولة المطلوبة لعرض خدماتنا.'
-                        : 'ARSAM, managed by Reza Amareh, is your trusted partner for starting, managing, and growing your business. We make the process of setting up and expanding your company in the Gulf region simple, fast, and secure. Please select your desired country to view our services.'}
+                        ? 'ابوآرسام بإدارة رضا أمارة، هو شريكك الموثوق لبدء وإدارة وتطوير أعمالك. نحن نجعل عملية تأسيس وتطوير شركتك في دول الخليج بسيطة وسريعة وآمنة. يرجى تحديد الدولة المطلوبة لعرض خدماتنا.'
+                        : 'ABU ARSAM, managed by Reza Amareh, is your trusted partner for starting, managing, and growing your business. We make the process of setting up and expanding your company in the Gulf region simple, fast, and secure. Please select your desired country to view our services.'}
                     </p>
                   </div>
                   

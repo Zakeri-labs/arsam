@@ -1853,7 +1853,7 @@ export const content: Record<Language, Record<Country, Content>> = {
   en: {
     uae: {
       header: {
-        title: 'ARSAM',
+        title: 'ABU ARSAM',
         subtitle: 'Managed by Reza Amareh | Your Trusted Partner in UAE',
         tagline: 'Turn the Engine of Your Business On in Dubai',
       },
@@ -1866,12 +1866,12 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'Contact Us Today',
       },
       footer: {
-        copyright: '© 2026 ARSAM. All rights reserved.',
+        copyright: '© 2026 ABU ARSAM. All rights reserved.',
       },
     },
     oman: {
       header: {
-        title: 'ARSAM',
+        title: 'ABU ARSAM',
         subtitle: 'Managed by Reza Amareh | Your Trusted Partner in Oman',
         tagline: 'Build Your Success in the Sultanate of Oman',
       },
@@ -1884,14 +1884,14 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'Contact Us Today',
       },
       footer: {
-        copyright: '© 2026 ARSAM. All rights reserved.',
+        copyright: '© 2026 ABU ARSAM. All rights reserved.',
       },
     },
   },
   fa: {
     uae: {
       header: {
-        title: 'آرسام',
+        title: 'ابوآرسام',
         subtitle: 'با مدیریت رضا اماره | همراه مطمئن شما در امارات',
         tagline: 'موتور کسب‌وکار خود را در دبی روشن کنید',
       },
@@ -1904,12 +1904,12 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'همین امروز تماس بگیرید',
       },
       footer: {
-        copyright: '© ۲۰۲۶ آرسام. تمامی حقوق محفوظ است.',
+        copyright: '© ۲۰۲۶ ابوآرسام. تمامی حقوق محفوظ است.',
       },
     },
     oman: {
       header: {
-        title: 'آرسام',
+        title: 'ابوآرسام',
         subtitle: 'با مدیریت رضا اماره | همراه مطمئن شما در عمان',
         tagline: 'موفقیت خود را در سلطان‌نشین عمان بسازید',
       },
@@ -1922,14 +1922,14 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'همین امروز تماس بگیرید',
       },
       footer: {
-        copyright: '© ۲۰۲۶ آرسام. تمامی حقوق محفوظ است.',
+        copyright: '© ۲۰۲۶ ابوآرسام. تمامی حقوق محفوظ است.',
       },
     },
   },
   ar: {
     uae: {
       header: {
-        title: 'آرسام',
+        title: 'ابوآرسام',
         subtitle: 'بإدارة رضا أمارة | شريكك الموثوق في الإمارات',
         tagline: 'أطلق محرك أعمالك في دبي',
       },
@@ -1942,12 +1942,12 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'تواصل معنا اليوم',
       },
       footer: {
-        copyright: '© 2026 آرسام. جميع الحقوق محفوظة.',
+        copyright: '© 2026 ابوآرسام. جميع الحقوق محفوظة.',
       },
     },
     oman: {
       header: {
-        title: 'آرسام',
+        title: 'ابوآرسام',
         subtitle: 'بإدارة رضا أمارة | شريكك الموثوق في عمان',
         tagline: 'ابنِ نجاحك في سلطنة عمان',
       },
@@ -1960,7 +1960,7 @@ export const content: Record<Language, Record<Country, Content>> = {
         button: 'تواصل معنا اليوم',
       },
       footer: {
-        copyright: '© 2026 آرسام. جميع الحقوق محفوظة.',
+        copyright: '© 2026 ابوآرسام. جميع الحقوق محفوظة.',
       },
     },
   },

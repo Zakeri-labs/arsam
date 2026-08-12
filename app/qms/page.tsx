@@ -40,7 +40,7 @@ const TRANSLATIONS: Record<Lang, {
   serverError: string;
 }> = {
   fa: {
-    brandTitle: 'آرسام',
+    brandTitle: 'ابوآرسام',
     subtitle: 'سامانه نوبت‌دهی هوشمند',
     selectCategory: 'دسته‌بندی خدمت مورد نظر خود را انتخاب کنید',
     selectService: 'خدمت مورد نظر را انتخاب کنید',
@@ -59,7 +59,7 @@ const TRANSLATIONS: Record<Lang, {
     serverError: 'خطا در ثبت نوبت. لطفاً دوباره تلاش کنید.',
   },
   en: {
-    brandTitle: 'ARSAM',
+    brandTitle: 'ABU ARSAM',
     subtitle: 'Queue Management System',
     selectCategory: 'Select your required service category',
     selectService: 'Select a service',
@@ -78,7 +78,7 @@ const TRANSLATIONS: Record<Lang, {
     serverError: 'Failed to issue ticket. Please try again.',
   },
   ar: {
-    brandTitle: 'آرسام',
+    brandTitle: 'ابوآرسام',
     subtitle: 'نظام إدارة الدور الذكي',
     selectCategory: 'اختر فئة الخدمة المطلوبة',
     selectService: 'اختر الخدمة المطلوبة',
@@ -680,7 +680,7 @@ export default function QMSPage() {
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer className="text-center py-3.5 text-white/15 text-xs border-t border-white/4 shrink-0">
-        ARSAM Business Services — Muscat, Oman
+        ABU ARSAM Business Services — Muscat, Oman
       </footer>
     </div>
   );
