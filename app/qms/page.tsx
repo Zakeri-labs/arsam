@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import {
-  ChevronRight, Delete, CheckCircle2, RotateCcw,
+  ChevronRight, Delete, CheckCircle2, RotateCcw, X, AlertCircle,
   Building2, RefreshCw, FileText, Landmark, BarChart3,
   Plane, PenLine, XCircle, ScrollText, type LucideIcon
 } from 'lucide-react';
@@ -15,7 +15,7 @@ const OMAN_PREFIX = '+968';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Step = 'categories' | 'services' | 'phone' | 'confirmed';
+type Step = 'categories' | 'services' | 'phone';
 
 interface Category { id: string; fa: string; Icon: LucideIcon }
 interface ServiceItem { id: string; title: string }
@@ -64,7 +64,7 @@ function NumPad({ value, onChange }: { value: string; onChange: (v: string) => v
   const rows = [['1','2','3'],['4','5','6'],['7','8','9'],['C','0','⌫']];
 
   return (
-    <div className="grid gap-2.5">
+    <div className="grid gap-2.5 w-full">
       {rows.map((row, r) => (
         <div key={r} className="grid grid-cols-3 gap-2.5">
           {row.map(k => {
@@ -75,7 +75,7 @@ function NumPad({ value, onChange }: { value: string; onChange: (v: string) => v
                 onClick={() => press(k)}
                 className={`
                   h-16 rounded-2xl flex items-center justify-center text-xl font-black
-                  transition-all duration-100 active:scale-90 select-none
+                  transition-all duration-100 active:scale-90 select-none cursor-pointer
                   ${special
                     ? 'bg-white/5 text-white/50 hover:bg-white/10'
                     : 'bg-white/10 text-white hover:bg-white/15 active:bg-gold/20'
@@ -96,15 +96,17 @@ function NumPad({ value, onChange }: { value: string; onChange: (v: string) => v
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function QMSPage() {
-  const [step,   setStep]   = useState<Step>('categories');
-  const [cat,    setCat]    = useState<Category | null>(null);
-  const [svcs,   setSvcs]   = useState<ServiceItem[]>([]);
-  const [svc,    setSvc]    = useState<ServiceItem | null>(null);
-  const [loading,setLoading]= useState(false);
-  const [phone,  setPhone]  = useState('');
-  const [busy,   setBusy]   = useState(false);
-  const [ticket, setTicket] = useState<number | null>(null);
-  const [cd,     setCd]     = useState(12);
+  const [step,       setStep]       = useState<Step>('categories');
+  const [cat,        setCat]        = useState<Category | null>(null);
+  const [svcs,       setSvcs]       = useState<ServiceItem[]>([]);
+  const [svc,        setSvc]        = useState<ServiceItem | null>(null);
+  const [loading,    setLoading]    = useState(false);
+  const [phone,      setPhone]      = useState('');
+  const [busy,       setBusy]       = useState(false);
+  const [ticket,     setTicket]     = useState<number | null>(null);
+  const [showModal,  setShowModal]  = useState(false);
+  const [errorMsg,   setErrorMsg]   = useState<string | null>(null);
+  const [cd,         setCd]         = useState(15);
 
   // Fetch services when category selected
   useEffect(() => {
@@ -121,36 +123,43 @@ export default function QMSPage() {
       .finally(() => setLoading(false));
   }, [cat]);
 
-  // Auto-reset countdown after confirmation
+  // Countdown timer for Modal reset
   useEffect(() => {
-    if (step !== 'confirmed') return;
-    setCd(12);
+    if (!showModal) return;
+    setCd(15);
     const t = setInterval(() => setCd(p => {
-      if (p <= 1) { clearInterval(t); reset(); return 0; }
+      if (p <= 1) {
+        clearInterval(t);
+        closeModalAndReset();
+        return 0;
+      }
       return p - 1;
     }), 1000);
     return () => clearInterval(t);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [showModal]);
 
-  const reset = useCallback(() => {
+  const closeModalAndReset = useCallback(() => {
+    setShowModal(false);
+    setTicket(null);
     setStep('categories');
     setCat(null);
     setSvc(null);
     setPhone('');
-    setTicket(null);
     setSvcs([]);
   }, []);
 
   const submit = async () => {
     if (phone.length < 8) return;
     setBusy(true);
+    setErrorMsg(null);
     try {
+      const formattedPhone = `${OMAN_PREFIX} ${phone}`;
       const res = await fetch('/api/qms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          phone: `${OMAN_PREFIX}${phone}`,
+          phone: formattedPhone,
           serviceTitle: svc?.title || '',
           serviceId: svc?.id || '',
         }),
@@ -158,12 +167,12 @@ export default function QMSPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setTicket(data.queueNumber);
-        setStep('confirmed');
+        setShowModal(true);
       } else {
-        alert(data.error || 'خطا در ثبت نوبت');
+        setErrorMsg(data.error || 'خطا در ثبت نوبت. لطفاً دوباره تلاش کنید.');
       }
     } catch {
-      alert('خطا در ارتباط با سرور');
+      setErrorMsg('خطا در برقراری ارتباط با سرور.');
     } finally {
       setBusy(false);
     }
@@ -178,7 +187,7 @@ export default function QMSPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col font-sans"
+      className="min-h-screen flex flex-col font-sans relative"
       style={{ background: 'linear-gradient(160deg,#07111f 0%,#0f1e37 55%,#091526 100%)' }}
       dir="rtl"
     >
@@ -199,7 +208,7 @@ export default function QMSPage() {
       {/* ── Step dots ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-center gap-2 pt-5 pb-1 shrink-0">
         {(['categories','services','phone'] as const).map((s, i) => {
-          const passed  = (step === 'services' && i === 0) || (step === 'phone' && i < 2) || step === 'confirmed';
+          const passed  = (step === 'services' && i === 0) || (step === 'phone' && i < 2);
           const current = step === s;
           return (
             <div key={s} className={`rounded-full transition-all duration-400 ${
@@ -231,7 +240,7 @@ export default function QMSPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => { setCat(c); setStep('services'); }}
-                      className="group relative flex flex-col items-center justify-center gap-3.5 py-8 px-4 rounded-2xl text-center transition-all duration-200 active:scale-97 overflow-hidden"
+                      className="group relative flex flex-col items-center justify-center gap-3.5 py-8 px-4 rounded-2xl text-center transition-all duration-200 active:scale-97 overflow-hidden cursor-pointer"
                       style={{
                         background: 'rgba(255,255,255,0.04)',
                         border: '1px solid rgba(255,255,255,0.08)',
@@ -270,7 +279,7 @@ export default function QMSPage() {
               <div className="flex items-center gap-3 mb-5">
                 <button
                   onClick={() => setStep('categories')}
-                  className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm font-bold transition-colors"
+                  className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm font-bold transition-colors cursor-pointer"
                 >
                   <ChevronRight size={16} />
                   بازگشت
@@ -304,7 +313,7 @@ export default function QMSPage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => { setSvc(s); setPhone(''); setStep('phone'); }}
-                      className="group flex items-center justify-between px-5 py-4 rounded-xl text-right transition-all active:scale-98"
+                      className="group flex items-center justify-between px-5 py-4 rounded-xl text-right transition-all active:scale-98 cursor-pointer"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
                     >
                       <div className="flex items-center gap-3">
@@ -329,7 +338,7 @@ export default function QMSPage() {
             <motion.div key="phone" {...slide} className="w-full max-w-xs">
               <button
                 onClick={() => setStep('services')}
-                className="flex items-center gap-1.5 text-white/35 hover:text-white text-sm font-bold transition-colors mb-5"
+                className="flex items-center gap-1.5 text-white/35 hover:text-white text-sm font-bold transition-colors mb-5 cursor-pointer"
               >
                 <ChevronRight size={16} />
                 بازگشت
@@ -358,12 +367,24 @@ export default function QMSPage() {
                 </div>
               </div>
 
+              {/* Error Alert Box */}
+              {errorMsg && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center flex items-center justify-center gap-2"
+                >
+                  <AlertCircle size={15} />
+                  <span>{errorMsg}</span>
+                </motion.div>
+              )}
+
               <NumPad value={phone} onChange={setPhone} />
 
               <button
                 onClick={submit}
                 disabled={phone.length < 8 || busy}
-                className="mt-4 w-full py-4 rounded-2xl font-black text-base transition-all active:scale-98 disabled:opacity-30"
+                className="mt-4 w-full py-4 rounded-2xl font-black text-base transition-all active:scale-98 disabled:opacity-30 cursor-pointer"
                 style={{
                   background: phone.length >= 8
                     ? 'linear-gradient(135deg, #c9a227 0%, #e4bc3c 100%)'
@@ -379,68 +400,130 @@ export default function QMSPage() {
             </motion.div>
           )}
 
-          {/* Step 4 — Confirmed */}
-          {step === 'confirmed' && (
-            <motion.div
-              key="done"
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.92 }}
-              transition={{ type: 'spring', stiffness: 220, damping: 22 }}
-              className="flex flex-col items-center text-center"
-            >
-              <CheckCircle2 className="text-emerald-400 mb-4" size={48} strokeWidth={1.5} />
-              <p className="text-white/50 text-base font-medium mb-1">نوبت شما با موفقیت ثبت شد</p>
-              <p className="text-white/25 text-sm mb-8">{svc?.title}</p>
+        </AnimatePresence>
+      </main>
 
-              {/* Ticket */}
+      {/* ─── ANIMATED TICKET MODAL ───────────────────────────────────────── */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeModalAndReset}
+              className="absolute inset-0 bg-black/75 backdrop-blur-md"
+            />
+
+            {/* Modal Box */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85, y: 25 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 25 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+              className="relative z-10 w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl overflow-hidden"
+              style={{
+                background: 'linear-gradient(160deg, #0d1b30 0%, #081324 100%)',
+                border: '1px solid rgba(201,162,39,0.35)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(201,162,39,0.15)',
+              }}
+              dir="rtl"
+            >
+              {/* Close X */}
+              <button
+                onClick={closeModalAndReset}
+                className="absolute top-5 left-5 text-white/30 hover:text-white p-1 rounded-full hover:bg-white/10 transition-all cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+
+              {/* Animated Success Icon */}
               <motion.div
-                initial={{ scale: 0.6, opacity: 0 }}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}
+                className="flex items-center justify-center mb-3"
+              >
+                <div className="p-3 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                  <CheckCircle2 size={36} strokeWidth={2} />
+                </div>
+              </motion.div>
+
+              <h3 className="text-white font-black text-lg mb-1">نوبت شما صادر شد</h3>
+              <p className="text-white/40 text-xs mb-6 font-medium">لطفاً تا فراخوانی شماره منتظر بمانید</p>
+
+              {/* Glowing Ticket Circle */}
+              <motion.div
+                initial={{ scale: 0.7, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.15, type: 'spring', stiffness: 240, damping: 20 }}
-                className="relative flex items-center justify-center mb-8"
+                transition={{ type: 'spring', stiffness: 220, delay: 0.2 }}
+                className="relative flex items-center justify-center mx-auto mb-6"
               >
                 <div
-                  className="absolute inset-0 rounded-full blur-3xl"
-                  style={{ background: 'rgba(201,162,39,0.12)', transform: 'scale(1.5)' }}
+                  className="absolute inset-0 rounded-full blur-2xl opacity-40"
+                  style={{ background: 'rgba(201,162,39,0.4)', transform: 'scale(1.2)' }}
                 />
                 <div
-                  className="relative flex flex-col items-center justify-center w-44 h-44 rounded-full"
+                  className="relative flex flex-col items-center justify-center w-40 h-40 rounded-full"
                   style={{
-                    border: '1.5px solid rgba(201,162,39,0.4)',
-                    background: 'linear-gradient(145deg, rgba(201,162,39,0.1), rgba(201,162,39,0.03))',
+                    border: '2px solid rgba(201,162,39,0.6)',
+                    background: 'radial-gradient(circle, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.03) 100%)',
+                    boxShadow: 'inset 0 0 20px rgba(201,162,39,0.2)',
                   }}
                 >
-                  <span className="text-gold/50 text-xs font-bold mb-1 tracking-wide">شماره نوبت</span>
-                  <span className="text-gold font-black leading-none" style={{ fontSize: '72px' }}>
+                  <span className="text-gold/60 text-[10px] font-extrabold tracking-wider mb-0.5">شماره نوبت</span>
+                  <span className="text-gold font-black leading-none tracking-tighter" style={{ fontSize: '64px' }}>
                     {ticket}
                   </span>
                 </div>
               </motion.div>
 
-              {/* Countdown */}
-              <div className="w-36 h-px rounded-full bg-white/8 overflow-hidden mb-3">
+              {/* User & Service Details Card */}
+              <div
+                className="rounded-2xl p-3.5 mb-6 text-right space-y-2 text-xs"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-white/40">شماره همراه:</span>
+                  <span className="text-white font-mono font-bold tracking-wider" dir="ltr">
+                    {OMAN_PREFIX} {phone}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                  <span className="text-white/40">خدمت درخواستی:</span>
+                  <span className="text-gold/90 font-bold truncate max-w-[180px]">{svc?.title}</span>
+                </div>
+              </div>
+
+              {/* Countdown Bar */}
+              <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden mb-2">
                 <motion.div
-                  className="h-full rounded-full bg-gold/40"
+                  className="h-full rounded-full bg-gold"
                   initial={{ width: '100%' }}
                   animate={{ width: '0%' }}
-                  transition={{ duration: 12, ease: 'linear' }}
+                  transition={{ duration: 15, ease: 'linear' }}
                 />
               </div>
-              <p className="text-white/20 text-xs mb-6">بازگشت خودکار در {cd} ثانیه</p>
+              <p className="text-white/25 text-[11px] mb-5">بستن خودکار در {cd} ثانیه</p>
 
+              {/* Action Button */}
               <button
-                onClick={reset}
-                className="flex items-center gap-2 text-white/30 hover:text-white/70 text-sm font-bold transition-colors"
+                onClick={closeModalAndReset}
+                className="w-full py-3.5 rounded-xl font-extrabold text-sm transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                style={{
+                  background: 'linear-gradient(135deg, #c9a227 0%, #e4bc3c 100%)',
+                  color: '#0f1e37',
+                  boxShadow: '0 6px 20px rgba(201,162,39,0.3)',
+                }}
               >
-                <RotateCcw size={14} />
-                نوبت جدید
+                <span>تأیید و بازگشت به ابتدا</span>
+                <RotateCcw size={15} />
               </button>
             </motion.div>
-          )}
-
-        </AnimatePresence>
-      </main>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
       <footer className="text-center py-3 text-white/12 text-[11px] border-t border-white/4 shrink-0">
