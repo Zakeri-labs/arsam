@@ -133,15 +133,17 @@ function LiveClock({ lang }: { lang: Lang }) {
     return () => clearInterval(t);
   }, []);
 
-  const locale = lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-OM' : 'en-US';
+  // Gregorian (Miladi) calendar date formatting for all languages
+  const dateLocale = lang === 'fa' ? 'fa-IR-u-ca-gregory' : lang === 'ar' ? 'ar-OM-u-ca-gregory' : 'en-US';
+  const timeLocale = lang === 'fa' ? 'fa-IR' : lang === 'ar' ? 'ar-OM' : 'en-US';
 
   return (
     <div className="flex flex-col items-end">
       <span className="text-white font-black text-2xl sm:text-3xl tabular-nums tracking-tight">
-        {now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        {now.toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </span>
       <span className="text-white/40 text-xs font-medium mt-0.5">
-        {now.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}
+        {now.toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
       </span>
     </div>
   );
