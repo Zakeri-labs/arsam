@@ -14,8 +14,10 @@ export async function POST(request: Request) {
       );
     }
 
-    // Determine next queue number
-    let queueNumber = 1;
+    // Daily queue number starts at 111 (e.g. 111, 112, 113...)
+    const START_NUMBER = 111;
+    let queueNumber = START_NUMBER;
+
     try {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
@@ -27,16 +29,16 @@ export async function POST(request: Request) {
         .gte('created_at', todayStart.toISOString());
 
       if (!countError && typeof count === 'number') {
-        queueNumber = count + 1;
+        queueNumber = START_NUMBER + count;
       } else {
         const { count: totalCount } = await supabase
           .from('requests')
           .select('*', { count: 'exact', head: true });
-        queueNumber = (totalCount || 0) + 1;
+        queueNumber = START_NUMBER + (totalCount || 0);
       }
     } catch (e) {
       console.error('Queue count fallback:', e);
-      queueNumber = Math.floor(Math.random() * 30) + 1;
+      queueNumber = START_NUMBER;
     }
 
     const requestId = 'qms_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
@@ -57,7 +59,6 @@ export async function POST(request: Request) {
 
     if (insertError) {
       console.error('Primary insert error, attempting fallback insert:', insertError);
-      // Fallback insert without extra columns if DB schema on host differs
       const fallbackRequest = {
         id: requestId,
         name: phone,

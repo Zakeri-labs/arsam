@@ -137,17 +137,17 @@ function LiveClock({ lang }: { lang: Lang }) {
 
   return (
     <div className="flex flex-col items-end">
-      <span className="text-white font-black text-xl sm:text-2xl tabular-nums tracking-tight">
+      <span className="text-white font-black text-2xl sm:text-3xl tabular-nums tracking-tight">
         {now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </span>
-      <span className="text-white/40 text-[11px] font-medium mt-0.5">
+      <span className="text-white/40 text-xs font-medium mt-0.5">
         {now.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })}
       </span>
     </div>
   );
 }
 
-// ─── Number Pad ──────────────────────────────────────────────────────────────
+// ─── Number Pad (Enlarged Touch Targets) ─────────────────────────────────────
 
 function NumPad({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const press = (k: string) => {
@@ -159,9 +159,9 @@ function NumPad({ value, onChange }: { value: string; onChange: (v: string) => v
   const rows = [['1','2','3'],['4','5','6'],['7','8','9'],['C','0','⌫']];
 
   return (
-    <div className="grid gap-2.5 w-full">
+    <div className="grid gap-3.5 w-full">
       {rows.map((row, r) => (
-        <div key={r} className="grid grid-cols-3 gap-2.5">
+        <div key={r} className="grid grid-cols-3 gap-3.5">
           {row.map(k => {
             const special = k === '⌫' || k === 'C';
             return (
@@ -169,16 +169,16 @@ function NumPad({ value, onChange }: { value: string; onChange: (v: string) => v
                 key={k}
                 onClick={() => press(k)}
                 className={`
-                  h-16 rounded-2xl flex items-center justify-center text-xl font-black
-                  transition-all duration-100 active:scale-90 select-none cursor-pointer
+                  h-20 rounded-2xl flex items-center justify-center text-2xl font-black
+                  transition-all duration-100 active:scale-92 select-none cursor-pointer shadow-lg
                   ${special
-                    ? 'bg-white/5 text-white/50 hover:bg-white/10'
-                    : 'bg-white/10 text-white hover:bg-white/15 active:bg-gold/20'
+                    ? 'bg-white/8 text-white/50 hover:bg-white/15'
+                    : 'bg-white/12 text-white hover:bg-white/20 active:bg-gold/25'
                   }
                 `}
-                style={{ border: '1px solid rgba(255,255,255,0.07)' }}
+                style={{ border: '1px solid rgba(255,255,255,0.09)' }}
               >
-                {k === '⌫' ? <Delete size={18} /> : k}
+                {k === '⌫' ? <Delete size={22} /> : k}
               </button>
             );
           })}
@@ -290,21 +290,21 @@ export default function QMSPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col font-sans relative"
+      className="min-h-screen flex flex-col font-sans relative select-none"
       style={{ background: 'linear-gradient(160deg,#07111f 0%,#0f1e37 55%,#091526 100%)' }}
       dir={isRTL ? 'rtl' : 'ltr'}
     >
       {/* ── Header ────────────────────────────────────────────────────────── */}
-      <header className="grid grid-cols-3 items-center px-8 py-5 border-b border-white/6 shrink-0 relative">
+      <header className="grid grid-cols-3 items-center px-10 py-6 border-b border-white/6 shrink-0 relative">
         {/* Top Right (in RTL) / Top Left (in LTR): Language Selector */}
         <div className="flex items-center justify-start relative">
           <div className="relative">
             <button
               onClick={() => setShowLangDropdown(!showLangDropdown)}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/80 hover:text-white transition-all text-xs font-bold cursor-pointer"
+              className="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-white/6 border border-white/12 hover:bg-white/12 text-white/90 hover:text-white transition-all text-sm font-bold cursor-pointer shadow-md"
             >
-              <Globe size={15} className="text-gold" />
-              <span>{LANGUAGES.find(l => l.code === lang)?.flag}</span>
+              <Globe size={18} className="text-gold" />
+              <span className="text-base">{LANGUAGES.find(l => l.code === lang)?.flag}</span>
               <span>{LANGUAGES.find(l => l.code === lang)?.label}</span>
             </button>
 
@@ -314,7 +314,7 @@ export default function QMSPage() {
                   initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                  className="absolute top-full mt-2 right-0 z-30 min-w-[130px] rounded-2xl p-1.5 bg-[#0e1c33] border border-white/12 shadow-2xl backdrop-blur-xl"
+                  className="absolute top-full mt-2 right-0 z-30 min-w-[150px] rounded-2xl p-2 bg-[#0e1c33] border border-white/15 shadow-2xl backdrop-blur-xl"
                 >
                   {LANGUAGES.map(l => (
                     <button
@@ -323,14 +323,14 @@ export default function QMSPage() {
                         setLang(l.code);
                         setShowLangDropdown(false);
                       }}
-                      className={`flex items-center justify-between w-full px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`flex items-center justify-between w-full px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                         lang === l.code
                           ? 'bg-gold/20 text-gold border border-gold/30'
                           : 'text-white/70 hover:bg-white/10 hover:text-white'
                       }`}
                     >
                       <span>{l.label}</span>
-                      <span>{l.flag}</span>
+                      <span className="text-base">{l.flag}</span>
                     </button>
                   ))}
                 </motion.div>
@@ -341,10 +341,10 @@ export default function QMSPage() {
 
         {/* Center: Brand Name (Centered Text without Logo) */}
         <div className="flex flex-col items-center justify-center text-center">
-          <h1 className="text-white font-black text-2xl tracking-wider leading-none">
+          <h1 className="text-white font-black text-3xl sm:text-4xl tracking-wider leading-none">
             {t.brandTitle}
           </h1>
-          <p className="text-gold/70 text-[11px] font-semibold mt-1 tracking-wide">
+          <p className="text-gold/80 text-xs font-bold mt-1.5 tracking-wide">
             {t.subtitle}
           </p>
         </div>
@@ -356,31 +356,31 @@ export default function QMSPage() {
       </header>
 
       {/* ── Step dots ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-center gap-2 pt-5 pb-1 shrink-0">
+      <div className="flex items-center justify-center gap-3 pt-6 pb-2 shrink-0">
         {(['categories','services','phone'] as const).map((s, i) => {
           const passed  = (step === 'services' && i === 0) || (step === 'phone' && i < 2);
           const current = step === s;
           return (
             <div key={s} className={`rounded-full transition-all duration-400 ${
-              current ? 'w-6 h-2 bg-gold' :
-              passed  ? 'w-2 h-2 bg-gold/40' :
-                        'w-2 h-2 bg-white/10'
+              current ? 'w-8 h-2.5 bg-gold' :
+              passed  ? 'w-2.5 h-2.5 bg-gold/40' :
+                        'w-2.5 h-2.5 bg-white/10'
             }`} />
           );
         })}
       </div>
 
       {/* ── Main ──────────────────────────────────────────────────────────── */}
-      <main className="flex-1 flex flex-col items-center justify-center px-8 pb-8 overflow-hidden">
+      <main className="flex-1 flex flex-col items-center justify-center px-8 pb-10 overflow-hidden">
         <AnimatePresence mode="wait">
 
-          {/* Step 1 — Categories */}
+          {/* Step 1 — Categories (Enlarged Cards) */}
           {step === 'categories' && (
-            <motion.div key="cats" {...slide} className="w-full max-w-4xl">
-              <p className="text-white/35 text-sm font-medium text-center mb-7 tracking-wide">
+            <motion.div key="cats" {...slide} className="w-full max-w-5xl">
+              <p className="text-white/40 text-base font-semibold text-center mb-8 tracking-wide">
                 {t.selectCategory}
               </p>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-5">
                 {CATEGORIES.map((c, i) => {
                   const CatIcon = c.Icon;
                   const catLabel = c[lang];
@@ -391,29 +391,29 @@ export default function QMSPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => { setCat(c); setStep('services'); }}
-                      className="group relative flex flex-col items-center justify-center gap-3.5 py-8 px-4 rounded-2xl text-center transition-all duration-200 active:scale-97 overflow-hidden cursor-pointer"
+                      className="group relative flex flex-col items-center justify-center gap-4 py-10 px-6 rounded-3xl text-center transition-all duration-200 active:scale-97 overflow-hidden cursor-pointer shadow-lg"
                       style={{
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.08)',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid rgba(255,255,255,0.1)',
                       }}
                     >
                       {/* Gold hover overlay */}
                       <div
-                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
-                        style={{ background: 'rgba(201,162,39,0.07)', border: '1px solid rgba(201,162,39,0.22)' }}
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"
+                        style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.3)' }}
                       />
                       {/* Icon container */}
                       <div
-                        className="relative z-10 flex items-center justify-center w-11 h-11 rounded-xl transition-colors duration-200"
-                        style={{ background: 'rgba(201,162,39,0.1)' }}
+                        className="relative z-10 flex items-center justify-center w-14 h-14 rounded-2xl transition-colors duration-200"
+                        style={{ background: 'rgba(201,162,39,0.12)' }}
                       >
                         <CatIcon
-                          size={22}
-                          strokeWidth={1.6}
-                          className="text-gold/70 group-hover:text-gold transition-colors duration-200"
+                          size={28}
+                          strokeWidth={1.8}
+                          className="text-gold/80 group-hover:text-gold transition-colors duration-200"
                         />
                       </div>
-                      <span className="text-white/80 group-hover:text-white font-bold text-[15px] relative z-10 leading-tight transition-colors duration-200">
+                      <span className="text-white font-extrabold text-lg relative z-10 leading-tight transition-colors duration-200">
                         {catLabel}
                       </span>
                     </motion.button>
@@ -423,40 +423,40 @@ export default function QMSPage() {
             </motion.div>
           )}
 
-          {/* Step 2 — Services */}
+          {/* Step 2 — Services (Enlarged Buttons) */}
           {step === 'services' && (
-            <motion.div key="svcs" {...slide} className="w-full max-w-2xl">
+            <motion.div key="svcs" {...slide} className="w-full max-w-3xl">
               {/* Back + title */}
-              <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center gap-4 mb-6">
                 <button
                   onClick={() => setStep('categories')}
-                  className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm font-bold transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/12 text-white/60 hover:text-white text-base font-bold transition-all cursor-pointer"
                 >
-                  <ChevronRight size={16} className={isRTL ? '' : 'rotate-180'} />
+                  <ChevronRight size={18} className={isRTL ? '' : 'rotate-180'} />
                   {t.back}
                 </button>
-                <div className="h-4 w-px bg-white/10" />
+                <div className="h-5 w-px bg-white/12" />
                 {cat && (
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-3">
                     <div
-                      className="flex items-center justify-center w-8 h-8 rounded-lg"
-                      style={{ background: 'rgba(201,162,39,0.12)' }}
+                      className="flex items-center justify-center w-10 h-10 rounded-xl"
+                      style={{ background: 'rgba(201,162,39,0.14)' }}
                     >
-                      <cat.Icon size={16} strokeWidth={1.7} className="text-gold/70" />
+                      <cat.Icon size={20} strokeWidth={1.8} className="text-gold" />
                     </div>
-                    <span className="text-white font-black text-lg">{cat[lang]}</span>
+                    <span className="text-white font-black text-xl">{cat[lang]}</span>
                   </div>
                 )}
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-16">
-                  <div className="h-8 w-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+                <div className="flex justify-center py-20">
+                  <div className="h-10 w-10 rounded-full border-3 border-gold border-t-transparent animate-spin" />
                 </div>
               ) : svcs.length === 0 ? (
-                <p className="text-white/25 text-center py-16 text-sm">{t.noServices}</p>
+                <p className="text-white/30 text-center py-20 text-base font-medium">{t.noServices}</p>
               ) : (
-                <div className="flex flex-col gap-2 max-h-[58vh] overflow-y-auto pr-1">
+                <div className="flex flex-col gap-3 max-h-[60vh] overflow-y-auto pr-1">
                   {svcs.map((s, i) => (
                     <motion.button
                       key={s.id}
@@ -464,18 +464,18 @@ export default function QMSPage() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.03 }}
                       onClick={() => { setSvc(s); setPhone(''); setStep('phone'); }}
-                      className="group flex items-center justify-between px-5 py-4 rounded-xl text-right transition-all active:scale-98 cursor-pointer"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                      className="group flex items-center justify-between px-7 py-5.5 rounded-2xl text-right transition-all active:scale-98 cursor-pointer shadow-md"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="h-1.5 w-1.5 rounded-full bg-gold/40 group-hover:bg-gold transition-colors shrink-0" />
-                        <span className="text-white/75 group-hover:text-white font-semibold text-[15px] transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className="h-2 w-2 rounded-full bg-gold/50 group-hover:bg-gold transition-colors shrink-0" />
+                        <span className="text-white/85 group-hover:text-white font-bold text-base transition-colors leading-snug">
                           {s.title}
                         </span>
                       </div>
                       <ChevronRight
-                        size={15}
-                        className={`text-white/15 group-hover:text-gold/60 transition-all ${isRTL ? 'rotate-180' : ''}`}
+                        size={18}
+                        className={`text-white/20 group-hover:text-gold transition-all ${isRTL ? 'rotate-180' : ''}`}
                       />
                     </motion.button>
                   ))}
@@ -484,36 +484,36 @@ export default function QMSPage() {
             </motion.div>
           )}
 
-          {/* Step 3 — Phone */}
+          {/* Step 3 — Phone (Enlarged Container & Buttons) */}
           {step === 'phone' && (
-            <motion.div key="phone" {...slide} className="w-full max-w-xs">
+            <motion.div key="phone" {...slide} className="w-full max-w-md">
               <button
                 onClick={() => setStep('services')}
-                className="flex items-center gap-1.5 text-white/35 hover:text-white text-sm font-bold transition-colors mb-5 cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/12 text-white/50 hover:text-white text-sm font-bold transition-all mb-5 cursor-pointer"
               >
-                <ChevronRight size={16} className={isRTL ? '' : 'rotate-180'} />
+                <ChevronRight size={18} className={isRTL ? '' : 'rotate-180'} />
                 {t.back}
               </button>
 
               {/* Selected service chip */}
               <div
-                className="rounded-xl px-4 py-2.5 mb-5 text-center"
-                style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.18)' }}
+                className="rounded-2xl px-5 py-3.5 mb-5 text-center shadow-inner"
+                style={{ background: 'rgba(201,162,39,0.09)', border: '1px solid rgba(201,162,39,0.22)' }}
               >
-                <p className="text-gold/50 text-[10px] font-bold mb-0.5 tracking-wide">{t.selectedServiceLabel}</p>
-                <p className="text-white font-bold text-sm leading-snug">{svc?.title}</p>
+                <p className="text-gold/60 text-xs font-bold mb-0.5 tracking-wide">{t.selectedServiceLabel}</p>
+                <p className="text-white font-black text-base leading-snug">{svc?.title}</p>
               </div>
 
               {/* Phone display */}
               <div
-                className="rounded-2xl px-5 py-4 mb-4 text-center"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+                className="rounded-3xl px-6 py-5 mb-5 text-center shadow-lg"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
               >
-                <p className="text-white/25 text-xs mb-1.5">{t.phoneLabel}</p>
-                <div className="flex items-center justify-center gap-2" dir="ltr">
-                  <span className="text-gold/60 font-bold text-xl">{OMAN_PREFIX}</span>
-                  <span className="text-white font-black text-3xl tracking-widest min-w-[160px] text-left">
-                    {phone || <span className="text-white/12">_ _ _ _ _ _ _ _</span>}
+                <p className="text-white/30 text-xs font-bold mb-1.5">{t.phoneLabel}</p>
+                <div className="flex items-center justify-center gap-2.5" dir="ltr">
+                  <span className="text-gold font-black text-2xl">{OMAN_PREFIX}</span>
+                  <span className="text-white font-black text-4xl tracking-widest min-w-[200px] text-left">
+                    {phone || <span className="text-white/15">_ _ _ _ _ _ _ _</span>}
                   </span>
                 </div>
               </div>
@@ -523,9 +523,9 @@ export default function QMSPage() {
                 <motion.div
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center flex items-center justify-center gap-2"
+                  className="mb-4 p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center flex items-center justify-center gap-2"
                 >
-                  <AlertCircle size={15} />
+                  <AlertCircle size={16} />
                   <span>{errorMsg}</span>
                 </motion.div>
               )}
@@ -535,17 +535,17 @@ export default function QMSPage() {
               <button
                 onClick={submit}
                 disabled={phone.length < 8 || busy}
-                className="mt-4 w-full py-4 rounded-2xl font-black text-base transition-all active:scale-98 disabled:opacity-30 cursor-pointer"
+                className="mt-5 w-full py-5 rounded-2xl font-black text-xl transition-all active:scale-98 disabled:opacity-30 cursor-pointer shadow-xl"
                 style={{
                   background: phone.length >= 8
                     ? 'linear-gradient(135deg, #c9a227 0%, #e4bc3c 100%)'
-                    : 'rgba(255,255,255,0.06)',
-                  color: phone.length >= 8 ? '#0f1e37' : 'rgba(255,255,255,0.2)',
-                  boxShadow: phone.length >= 8 ? '0 6px 24px rgba(201,162,39,0.3)' : 'none',
+                    : 'rgba(255,255,255,0.08)',
+                  color: phone.length >= 8 ? '#0f1e37' : 'rgba(255,255,255,0.25)',
+                  boxShadow: phone.length >= 8 ? '0 8px 30px rgba(201,162,39,0.35)' : 'none',
                 }}
               >
                 {busy ? (
-                  <div className="h-5 w-5 rounded-full border-2 border-navy border-t-transparent animate-spin mx-auto" />
+                  <div className="h-6 w-6 rounded-full border-3 border-navy border-t-transparent animate-spin mx-auto" />
                 ) : t.confirmButton}
               </button>
             </motion.div>
@@ -573,20 +573,20 @@ export default function QMSPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.85, y: 25 }}
               transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-              className="relative z-10 w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl overflow-hidden"
+              className="relative z-10 w-full max-w-md rounded-3xl p-8 text-center shadow-2xl overflow-hidden"
               style={{
                 background: 'linear-gradient(160deg, #0d1b30 0%, #081324 100%)',
-                border: '1px solid rgba(201,162,39,0.35)',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(201,162,39,0.15)',
+                border: '1.5px solid rgba(201,162,39,0.4)',
+                boxShadow: '0 25px 70px rgba(0,0,0,0.7), 0 0 50px rgba(201,162,39,0.2)',
               }}
               dir={isRTL ? 'rtl' : 'ltr'}
             >
               {/* Close X */}
               <button
                 onClick={closeModalAndReset}
-                className={`absolute top-5 ${isRTL ? 'left-5' : 'right-5'} text-white/30 hover:text-white p-1 rounded-full hover:bg-white/10 transition-all cursor-pointer`}
+                className={`absolute top-5 ${isRTL ? 'left-5' : 'right-5'} text-white/40 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-all cursor-pointer`}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
 
               {/* Animated Success Icon */}
@@ -596,15 +596,15 @@ export default function QMSPage() {
                 transition={{ type: 'spring', stiffness: 300, delay: 0.1 }}
                 className="flex items-center justify-center mb-3"
               >
-                <div className="p-3 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
-                  <CheckCircle2 size={36} strokeWidth={2} />
+                <div className="p-3.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                  <CheckCircle2 size={40} strokeWidth={2} />
                 </div>
               </motion.div>
 
-              <h3 className="text-white font-black text-lg mb-1">{t.ticketTitle}</h3>
+              <h3 className="text-white font-black text-xl mb-1">{t.ticketTitle}</h3>
               <p className="text-white/40 text-xs mb-6 font-medium">{t.ticketSubtitle}</p>
 
-              {/* Glowing Ticket Circle */}
+              {/* Glowing Ticket Circle (Enlarged) */}
               <motion.div
                 initial={{ scale: 0.7, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -613,18 +613,18 @@ export default function QMSPage() {
               >
                 <div
                   className="absolute inset-0 rounded-full blur-2xl opacity-40"
-                  style={{ background: 'rgba(201,162,39,0.4)', transform: 'scale(1.2)' }}
+                  style={{ background: 'rgba(201,162,39,0.45)', transform: 'scale(1.3)' }}
                 />
                 <div
-                  className="relative flex flex-col items-center justify-center w-40 h-40 rounded-full"
+                  className="relative flex flex-col items-center justify-center w-48 h-48 rounded-full"
                   style={{
-                    border: '2px solid rgba(201,162,39,0.6)',
-                    background: 'radial-gradient(circle, rgba(201,162,39,0.18) 0%, rgba(201,162,39,0.03) 100%)',
-                    boxShadow: 'inset 0 0 20px rgba(201,162,39,0.2)',
+                    border: '2.5px solid rgba(201,162,39,0.7)',
+                    background: 'radial-gradient(circle, rgba(201,162,39,0.2) 0%, rgba(201,162,39,0.04) 100%)',
+                    boxShadow: 'inset 0 0 25px rgba(201,162,39,0.25)',
                   }}
                 >
-                  <span className="text-gold/60 text-[10px] font-extrabold tracking-wider mb-0.5">{t.ticketNumberLabel}</span>
-                  <span className="text-gold font-black leading-none tracking-tighter" style={{ fontSize: '64px' }}>
+                  <span className="text-gold/70 text-xs font-extrabold tracking-wider mb-1">{t.ticketNumberLabel}</span>
+                  <span className="text-gold font-black leading-none tracking-tighter" style={{ fontSize: '80px' }}>
                     {ticket}
                   </span>
                 </div>
@@ -632,23 +632,23 @@ export default function QMSPage() {
 
               {/* User & Service Details Card */}
               <div
-                className="rounded-2xl p-3.5 mb-6 text-right space-y-2 text-xs"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                className="rounded-2xl p-4 mb-6 text-right space-y-2.5 text-xs sm:text-sm"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
               >
                 <div className="flex justify-between items-center">
                   <span className="text-white/40">{t.mobileLabel}:</span>
-                  <span className="text-white font-mono font-bold tracking-wider" dir="ltr">
+                  <span className="text-white font-mono font-black tracking-wider text-sm" dir="ltr">
                     {OMAN_PREFIX} {phone}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                <div className="flex justify-between items-center pt-2.5 border-t border-white/6">
                   <span className="text-white/40">{t.serviceRequested}:</span>
-                  <span className="text-gold/90 font-bold truncate max-w-[180px]">{svc?.title}</span>
+                  <span className="text-gold font-bold truncate max-w-[200px]">{svc?.title}</span>
                 </div>
               </div>
 
               {/* Countdown Bar */}
-              <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden mb-2">
+              <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mb-2">
                 <motion.div
                   className="h-full rounded-full bg-gold"
                   initial={{ width: '100%' }}
@@ -656,22 +656,22 @@ export default function QMSPage() {
                   transition={{ duration: 15, ease: 'linear' }}
                 />
               </div>
-              <p className="text-white/25 text-[11px] mb-5">
+              <p className="text-white/30 text-xs mb-6">
                 {t.autoClose.replace('{sec}', cd.toString())}
               </p>
 
               {/* Action Button */}
               <button
                 onClick={closeModalAndReset}
-                className="w-full py-3.5 rounded-xl font-extrabold text-sm transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-2xl font-black text-base transition-all active:scale-98 cursor-pointer flex items-center justify-center gap-2 shadow-lg"
                 style={{
                   background: 'linear-gradient(135deg, #c9a227 0%, #e4bc3c 100%)',
                   color: '#0f1e37',
-                  boxShadow: '0 6px 20px rgba(201,162,39,0.3)',
+                  boxShadow: '0 6px 24px rgba(201,162,39,0.35)',
                 }}
               >
                 <span>{t.confirmReset}</span>
-                <RotateCcw size={15} />
+                <RotateCcw size={16} />
               </button>
             </motion.div>
           </div>
@@ -679,7 +679,7 @@ export default function QMSPage() {
       </AnimatePresence>
 
       {/* ── Footer ────────────────────────────────────────────────────────── */}
-      <footer className="text-center py-3 text-white/12 text-[11px] border-t border-white/4 shrink-0">
+      <footer className="text-center py-3.5 text-white/15 text-xs border-t border-white/4 shrink-0">
         ARSAM Business Services — Muscat, Oman
       </footer>
     </div>
