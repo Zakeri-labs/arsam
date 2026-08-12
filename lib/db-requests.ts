@@ -14,6 +14,8 @@ export interface ServiceRequest {
   serviceTitle: string;
   files: RequestFile[];
   createdAt: string; // ISO date string
+  queueNumber?: number | null; // Queue number for QMS requests
+  source?: string; // 'web' | 'qms'
 }
 
 export async function getRequests(): Promise<ServiceRequest[]> {
@@ -37,6 +39,8 @@ export async function getRequests(): Promise<ServiceRequest[]> {
         serviceTitle: row.service_title,
         files: row.files || [],
         createdAt: row.created_at,
+        queueNumber: row.queue_number ?? null,
+        source: row.source || 'web',
       }));
     }
   } catch (error) {

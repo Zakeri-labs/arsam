@@ -70,6 +70,8 @@ interface ServiceRequest {
   serviceTitle: string;
   files: RequestFile[];
   createdAt: string;
+  queueNumber?: number | null;
+  source?: string;
 }
 
 export default function AdminPage() {
@@ -932,17 +934,30 @@ export default function AdminPage() {
               const whatsappUrl = `https://wa.me/${cleanPhone}`;
 
               return (
-                <div key={req.id} className="rounded-2xl border border-border bg-white p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden text-right" dir="rtl">
-                  <div className="absolute top-0 right-0 h-full w-1 bg-gold"></div>
+                <div key={req.id} className={`rounded-2xl border bg-white p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden text-right ${req.source === 'qms' ? 'border-amber-300/60' : 'border-border'}`} dir="rtl">
+                  <div className={`absolute top-0 right-0 h-full w-1 ${req.source === 'qms' ? 'bg-amber-400' : 'bg-gold'}`}></div>
                   
                   {/* Row 1: User details and submitted time */}
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-border/40 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/10 text-gold border border-gold/25 font-bold text-sm">
-                        {req.name.charAt(0)}
-                      </div>
+                      {/* Queue Number Badge (QMS only) */}
+                      {req.source === 'qms' && req.queueNumber != null ? (
+                        <div className="flex flex-col items-center justify-center h-12 w-12 shrink-0 rounded-xl bg-amber-50 border-2 border-amber-400 text-amber-700">
+                          <span className="text-[9px] font-bold leading-none">نوبت</span>
+                          <span className="text-xl font-black leading-none">{req.queueNumber}</span>
+                        </div>
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gold/10 text-gold border border-gold/25 font-bold text-sm">
+                          {req.name.charAt(0)}
+                        </div>
+                      )}
                       <div>
-                        <h4 className="font-extrabold text-[#0f1e37] text-sm">{req.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-extrabold text-[#0f1e37] text-sm">{req.name}</h4>
+                          {req.source === 'qms' && (
+                            <span className="rounded-full bg-amber-100 text-amber-700 border border-amber-300 px-2 py-0.5 text-[9px] font-black">🎫 QMS</span>
+                          )}
+                        </div>
                         <span className="text-[10px] text-muted-foreground mt-0.5 inline-block">{formatRequestDate(req.createdAt)}</span>
                       </div>
                     </div>
@@ -1024,7 +1039,7 @@ export default function AdminPage() {
                   <div className="border-t border-border/40 pt-3 flex justify-between items-center">
                     <span className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1">
                       <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      آماده پیگیری و تماس
+                      {req.source === 'qms' ? 'ثبت از طریق سیستم QMS' : 'آماده پیگیری و تماس'}
                     </span>
                     
                     <button
