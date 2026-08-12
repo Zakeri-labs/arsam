@@ -40,15 +40,7 @@ CREATE TABLE IF NOT EXISTS public.services (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Create services_data table (legacy backup / compatibility)
-CREATE TABLE IF NOT EXISTS public.services_data (
-    id TEXT PRIMARY KEY,
-    data JSONB NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- 3. Create requests table
+-- 2. Create requests table
 CREATE TABLE IF NOT EXISTS public.requests (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -61,20 +53,17 @@ CREATE TABLE IF NOT EXISTS public.requests (
 
 -- Enable RLS
 ALTER TABLE public.services ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.services_data ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
 
 -- Drop existing policies if any
 DROP POLICY IF EXISTS "Allow public all access on services" ON public.services;
-DROP POLICY IF EXISTS "Allow public all access on services_data" ON public.services_data;
 DROP POLICY IF EXISTS "Allow public all access on requests" ON public.requests;
 
 -- Create policies for full access
 CREATE POLICY "Allow public all access on services" ON public.services FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public all access on services_data" ON public.services_data FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow public all access on requests" ON public.requests FOR ALL USING (true) WITH CHECK (true);
 
--- 4. Create Storage bucket for uploads
+-- 3. Create Storage bucket for uploads
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('uploads', 'uploads', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
