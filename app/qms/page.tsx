@@ -3,30 +3,34 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { ChevronRight, Delete, CheckCircle2, RotateCcw } from 'lucide-react';
+import {
+  ChevronRight, Delete, CheckCircle2, RotateCcw,
+  Building2, RefreshCw, FileText, Landmark, BarChart3,
+  Plane, PenLine, XCircle, ScrollText, type LucideIcon
+} from 'lucide-react';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const OMAN_PREFIX = '+968';
 
-const CATEGORIES = [
-  { id: 'Company Setup Services',       fa: 'ثبت شرکت',        icon: '🏢' },
-  { id: 'Renewal Services',             fa: 'تمدید خدمات',     icon: '🔄' },
-  { id: 'Ejari Registration Services',  fa: 'ایجاری / بلدیه',  icon: '📋' },
-  { id: 'Banking Services',             fa: 'خدمات بانکی',     icon: '🏦' },
-  { id: 'Tax Services',                 fa: 'امور مالیاتی',    icon: '📊' },
-  { id: 'Tourism Services',             fa: 'گردشگری',         icon: '✈️' },
-  { id: 'License Modification Services',fa: 'اصلاح لایسنس',    icon: '✏️' },
-  { id: 'Cancellation Services',        fa: 'کنسلی و انحلال',  icon: '🚫' },
-  { id: 'General Government Services',  fa: 'خدمات دولتی',    icon: '🏛️' },
-];
-
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type Step = 'categories' | 'services' | 'phone' | 'confirmed';
 
-interface Category { id: string; fa: string; icon: string }
+interface Category { id: string; fa: string; Icon: LucideIcon }
 interface ServiceItem { id: string; title: string }
+
+const CATEGORIES: Category[] = [
+  { id: 'Company Setup Services',        fa: 'ثبت شرکت',        Icon: Building2  },
+  { id: 'Renewal Services',              fa: 'تمدید خدمات',     Icon: RefreshCw  },
+  { id: 'Ejari Registration Services',   fa: 'ایجاری / بلدیه',  Icon: FileText   },
+  { id: 'Banking Services',              fa: 'خدمات بانکی',     Icon: Landmark   },
+  { id: 'Tax Services',                  fa: 'امور مالیاتی',    Icon: BarChart3  },
+  { id: 'Tourism Services',              fa: 'گردشگری',         Icon: Plane      },
+  { id: 'License Modification Services', fa: 'اصلاح لایسنس',    Icon: PenLine    },
+  { id: 'Cancellation Services',         fa: 'کنسلی و انحلال',  Icon: XCircle    },
+  { id: 'General Government Services',   fa: 'خدمات دولتی',     Icon: ScrollText },
+];
 
 // ─── Live Clock ──────────────────────────────────────────────────────────────
 
@@ -92,57 +96,79 @@ function NumPad({ value, onChange }: { value: string; onChange: (v: string) => v
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function QMSPage() {
-  const [step, setStep]   = useState<Step>('categories');
-  const [cat,  setCat]    = useState<Category | null>(null);
-  const [svcs, setSvcs]   = useState<ServiceItem[]>([]);
-  const [svc,  setSvc]    = useState<ServiceItem | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [phone, setPhone] = useState('');
-  const [busy,  setBusy]  = useState(false);
+  const [step,   setStep]   = useState<Step>('categories');
+  const [cat,    setCat]    = useState<Category | null>(null);
+  const [svcs,   setSvcs]   = useState<ServiceItem[]>([]);
+  const [svc,    setSvc]    = useState<ServiceItem | null>(null);
+  const [loading,setLoading]= useState(false);
+  const [phone,  setPhone]  = useState('');
+  const [busy,   setBusy]   = useState(false);
   const [ticket, setTicket] = useState<number | null>(null);
-  const [cd, setCd]       = useState(12);
+  const [cd,     setCd]     = useState(12);
 
-  // Fetch services on category change
+  // Fetch services when category selected
   useEffect(() => {
     if (!cat) return;
     setLoading(true);
     fetch('/api/services')
       .then(r => r.json())
-      .then(d => setSvcs((d.fa || []).filter((s: any) => s.category === cat.id).map((s: any) => ({ id: s.id, title: s.title }))))
+      .then(d => setSvcs(
+        (d.fa || [])
+          .filter((s: any) => s.category === cat.id)
+          .map((s: any) => ({ id: s.id, title: s.title }))
+      ))
       .catch(() => setSvcs([]))
       .finally(() => setLoading(false));
   }, [cat]);
 
-  // Auto-reset countdown
+  // Auto-reset countdown after confirmation
   useEffect(() => {
     if (step !== 'confirmed') return;
     setCd(12);
-    const t = setInterval(() => setCd(p => { if (p <= 1) { clearInterval(t); reset(); return 0; } return p - 1; }), 1000);
+    const t = setInterval(() => setCd(p => {
+      if (p <= 1) { clearInterval(t); reset(); return 0; }
+      return p - 1;
+    }), 1000);
     return () => clearInterval(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   const reset = useCallback(() => {
-    setStep('categories'); setCat(null); setSvc(null); setPhone(''); setTicket(null); setSvcs([]);
+    setStep('categories');
+    setCat(null);
+    setSvc(null);
+    setPhone('');
+    setTicket(null);
+    setSvcs([]);
   }, []);
 
   const submit = async () => {
     if (phone.length < 8) return;
     setBusy(true);
     try {
-      const fullPhone = `${OMAN_PREFIX}${phone}`;
       const res = await fetch('/api/qms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: fullPhone, serviceTitle: svc?.title || '', serviceId: svc?.id || '' }),
+        body: JSON.stringify({
+          phone: `${OMAN_PREFIX}${phone}`,
+          serviceTitle: svc?.title || '',
+          serviceId: svc?.id || '',
+        }),
       });
       const data = await res.json();
-      if (res.ok && data.success) { setTicket(data.queueNumber); setStep('confirmed'); }
-      else alert(data.error || 'خطا در ثبت نوبت');
-    } catch { alert('خطا در ارتباط با سرور'); }
-    finally { setBusy(false); }
+      if (res.ok && data.success) {
+        setTicket(data.queueNumber);
+        setStep('confirmed');
+      } else {
+        alert(data.error || 'خطا در ثبت نوبت');
+      }
+    } catch {
+      alert('خطا در ارتباط با سرور');
+    } finally {
+      setBusy(false);
+    }
   };
 
-  // Slide variants
   const slide = {
     initial:    { opacity: 0, y: 16 },
     animate:    { opacity: 1, y: 0 },
@@ -156,7 +182,7 @@ export default function QMSPage() {
       style={{ background: 'linear-gradient(160deg,#07111f 0%,#0f1e37 55%,#091526 100%)' }}
       dir="rtl"
     >
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+      {/* ── Header ────────────────────────────────────────────────────────── */}
       <header className="flex items-center justify-between px-10 py-5 border-b border-white/6 shrink-0">
         <div className="flex items-center gap-3">
           <div className="logo-shimmer-container">
@@ -170,9 +196,9 @@ export default function QMSPage() {
         <LiveClock />
       </header>
 
-      {/* ── Progress dots ────────────────────────────────────────────────── */}
+      {/* ── Step dots ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-center gap-2 pt-5 pb-1 shrink-0">
-        {(['categories','services','phone'] as const).map((s,i) => {
+        {(['categories','services','phone'] as const).map((s, i) => {
           const passed  = (step === 'services' && i === 0) || (step === 'phone' && i < 2) || step === 'confirmed';
           const current = step === s;
           return (
@@ -185,37 +211,54 @@ export default function QMSPage() {
         })}
       </div>
 
-      {/* ── Main ────────────────────────────────────────────────────────── */}
+      {/* ── Main ──────────────────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col items-center justify-center px-8 pb-8 overflow-hidden">
         <AnimatePresence mode="wait">
 
           {/* Step 1 — Categories */}
           {step === 'categories' && (
             <motion.div key="cats" {...slide} className="w-full max-w-4xl">
-              <p className="text-white/40 text-sm font-medium text-center mb-6 tracking-wide">
+              <p className="text-white/35 text-sm font-medium text-center mb-7 tracking-wide">
                 دسته‌بندی خدمت مورد نظر خود را انتخاب کنید
               </p>
               <div className="grid grid-cols-3 gap-4">
-                {CATEGORIES.map((c, i) => (
-                  <motion.button
-                    key={c.id}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.035 }}
-                    onClick={() => { setCat(c); setStep('services'); }}
-                    className="group relative flex flex-col items-center justify-center gap-3 py-8 px-4 rounded-2xl text-center transition-all duration-200 active:scale-97 overflow-hidden"
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                    }}
-                  >
-                    {/* hover bg */}
-                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
-                      style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.25)' }} />
-                    <span className="text-4xl relative z-10">{c.icon}</span>
-                    <span className="text-white font-bold text-base relative z-10 leading-tight">{c.fa}</span>
-                  </motion.button>
-                ))}
+                {CATEGORIES.map((c, i) => {
+                  const CatIcon = c.Icon;
+                  return (
+                    <motion.button
+                      key={c.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.03 }}
+                      onClick={() => { setCat(c); setStep('services'); }}
+                      className="group relative flex flex-col items-center justify-center gap-3.5 py-8 px-4 rounded-2xl text-center transition-all duration-200 active:scale-97 overflow-hidden"
+                      style={{
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                      }}
+                    >
+                      {/* Gold hover overlay */}
+                      <div
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
+                        style={{ background: 'rgba(201,162,39,0.07)', border: '1px solid rgba(201,162,39,0.22)' }}
+                      />
+                      {/* Icon container */}
+                      <div
+                        className="relative z-10 flex items-center justify-center w-11 h-11 rounded-xl transition-colors duration-200"
+                        style={{ background: 'rgba(201,162,39,0.1)' }}
+                      >
+                        <CatIcon
+                          size={22}
+                          strokeWidth={1.6}
+                          className="text-gold/70 group-hover:text-gold transition-colors duration-200"
+                        />
+                      </div>
+                      <span className="text-white/80 group-hover:text-white font-bold text-[15px] relative z-10 leading-tight transition-colors duration-200">
+                        {c.fa}
+                      </span>
+                    </motion.button>
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -227,16 +270,23 @@ export default function QMSPage() {
               <div className="flex items-center gap-3 mb-5">
                 <button
                   onClick={() => setStep('categories')}
-                  className="flex items-center gap-1.5 text-white/50 hover:text-white text-sm font-bold transition-colors"
+                  className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm font-bold transition-colors"
                 >
                   <ChevronRight size={16} />
                   بازگشت
                 </button>
                 <div className="h-4 w-px bg-white/10" />
-                <div className="flex items-center gap-2">
-                  <span className="text-2xl">{cat?.icon}</span>
-                  <span className="text-white font-black text-lg">{cat?.fa}</span>
-                </div>
+                {cat && (
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className="flex items-center justify-center w-8 h-8 rounded-lg"
+                      style={{ background: 'rgba(201,162,39,0.12)' }}
+                    >
+                      <cat.Icon size={16} strokeWidth={1.7} className="text-gold/70" />
+                    </div>
+                    <span className="text-white font-black text-lg">{cat.fa}</span>
+                  </div>
+                )}
               </div>
 
               {loading ? (
@@ -244,7 +294,7 @@ export default function QMSPage() {
                   <div className="h-8 w-8 rounded-full border-2 border-gold border-t-transparent animate-spin" />
                 </div>
               ) : svcs.length === 0 ? (
-                <p className="text-white/30 text-center py-16 text-sm">خدمتی در این دسته یافت نشد</p>
+                <p className="text-white/25 text-center py-16 text-sm">خدمتی در این دسته یافت نشد</p>
               ) : (
                 <div className="flex flex-col gap-2 max-h-[58vh] overflow-y-auto">
                   {svcs.map((s, i) => (
@@ -258,12 +308,15 @@ export default function QMSPage() {
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-1.5 w-1.5 rounded-full bg-gold/50 group-hover:bg-gold transition-colors shrink-0" />
-                        <span className="text-white/80 group-hover:text-white font-semibold text-[15px] transition-colors">
+                        <div className="h-1.5 w-1.5 rounded-full bg-gold/40 group-hover:bg-gold transition-colors shrink-0" />
+                        <span className="text-white/75 group-hover:text-white font-semibold text-[15px] transition-colors">
                           {s.title}
                         </span>
                       </div>
-                      <ChevronRight size={15} className="text-white/20 group-hover:text-gold rotate-180 transition-all" />
+                      <ChevronRight
+                        size={15}
+                        className="text-white/15 group-hover:text-gold/60 rotate-180 transition-all"
+                      />
                     </motion.button>
                   ))}
                 </div>
@@ -274,38 +327,39 @@ export default function QMSPage() {
           {/* Step 3 — Phone */}
           {step === 'phone' && (
             <motion.div key="phone" {...slide} className="w-full max-w-xs">
-              {/* Back */}
               <button
                 onClick={() => setStep('services')}
-                className="flex items-center gap-1.5 text-white/40 hover:text-white text-sm font-bold transition-colors mb-5"
+                className="flex items-center gap-1.5 text-white/35 hover:text-white text-sm font-bold transition-colors mb-5"
               >
                 <ChevronRight size={16} />
                 بازگشت
               </button>
 
               {/* Selected service chip */}
-              <div className="rounded-xl px-4 py-2.5 mb-5 text-center"
-                style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.2)' }}>
-                <p className="text-gold/60 text-[10px] font-bold mb-0.5">خدمت انتخاب‌شده</p>
+              <div
+                className="rounded-xl px-4 py-2.5 mb-5 text-center"
+                style={{ background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.18)' }}
+              >
+                <p className="text-gold/50 text-[10px] font-bold mb-0.5 tracking-wide">خدمت انتخاب‌شده</p>
                 <p className="text-white font-bold text-sm leading-snug">{svc?.title}</p>
               </div>
 
               {/* Phone display */}
-              <div className="rounded-2xl px-5 py-4 mb-4 text-center"
-                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <p className="text-white/30 text-xs mb-1.5">شماره موبایل</p>
+              <div
+                className="rounded-2xl px-5 py-4 mb-4 text-center"
+                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}
+              >
+                <p className="text-white/25 text-xs mb-1.5">شماره موبایل</p>
                 <div className="flex items-center justify-center gap-2" dir="ltr">
-                  <span className="text-gold/70 font-bold text-xl">{OMAN_PREFIX}</span>
-                  <span className="text-white font-black text-3xl tracking-widest min-w-[160px]">
-                    {phone || <span className="text-white/15">_ _ _ _ _ _ _ _</span>}
+                  <span className="text-gold/60 font-bold text-xl">{OMAN_PREFIX}</span>
+                  <span className="text-white font-black text-3xl tracking-widest min-w-[160px] text-left">
+                    {phone || <span className="text-white/12">_ _ _ _ _ _ _ _</span>}
                   </span>
                 </div>
               </div>
 
-              {/* Numpad */}
               <NumPad value={phone} onChange={setPhone} />
 
-              {/* Confirm */}
               <button
                 onClick={submit}
                 disabled={phone.length < 8 || busy}
@@ -313,14 +367,14 @@ export default function QMSPage() {
                 style={{
                   background: phone.length >= 8
                     ? 'linear-gradient(135deg, #c9a227 0%, #e4bc3c 100%)'
-                    : 'rgba(255,255,255,0.07)',
-                  color: phone.length >= 8 ? '#0f1e37' : 'rgba(255,255,255,0.25)',
-                  boxShadow: phone.length >= 8 ? '0 6px 24px rgba(201,162,39,0.35)' : 'none',
+                    : 'rgba(255,255,255,0.06)',
+                  color: phone.length >= 8 ? '#0f1e37' : 'rgba(255,255,255,0.2)',
+                  boxShadow: phone.length >= 8 ? '0 6px 24px rgba(201,162,39,0.3)' : 'none',
                 }}
               >
                 {busy ? (
                   <div className="h-5 w-5 rounded-full border-2 border-navy border-t-transparent animate-spin mx-auto" />
-                ) : 'دریافت نوبت ←'}
+                ) : 'دریافت نوبت'}
               </button>
             </motion.div>
           )}
@@ -335,47 +389,49 @@ export default function QMSPage() {
               transition={{ type: 'spring', stiffness: 220, damping: 22 }}
               className="flex flex-col items-center text-center"
             >
-              <CheckCircle2 className="text-emerald-400 mb-4" size={52} strokeWidth={1.5} />
+              <CheckCircle2 className="text-emerald-400 mb-4" size={48} strokeWidth={1.5} />
               <p className="text-white/50 text-base font-medium mb-1">نوبت شما با موفقیت ثبت شد</p>
-              <p className="text-white/30 text-sm mb-8">{svc?.title}</p>
+              <p className="text-white/25 text-sm mb-8">{svc?.title}</p>
 
-              {/* Ticket number */}
+              {/* Ticket */}
               <motion.div
                 initial={{ scale: 0.6, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.15, type: 'spring', stiffness: 240, damping: 20 }}
                 className="relative flex items-center justify-center mb-8"
               >
-                <div className="absolute inset-0 rounded-full blur-3xl"
-                  style={{ background: 'rgba(201,162,39,0.15)', transform: 'scale(1.5)' }} />
+                <div
+                  className="absolute inset-0 rounded-full blur-3xl"
+                  style={{ background: 'rgba(201,162,39,0.12)', transform: 'scale(1.5)' }}
+                />
                 <div
                   className="relative flex flex-col items-center justify-center w-44 h-44 rounded-full"
                   style={{
-                    border: '2px solid rgba(201,162,39,0.5)',
-                    background: 'linear-gradient(145deg, rgba(201,162,39,0.12), rgba(201,162,39,0.04))',
+                    border: '1.5px solid rgba(201,162,39,0.4)',
+                    background: 'linear-gradient(145deg, rgba(201,162,39,0.1), rgba(201,162,39,0.03))',
                   }}
                 >
-                  <span className="text-gold/60 text-xs font-bold mb-1">شماره نوبت</span>
+                  <span className="text-gold/50 text-xs font-bold mb-1 tracking-wide">شماره نوبت</span>
                   <span className="text-gold font-black leading-none" style={{ fontSize: '72px' }}>
                     {ticket}
                   </span>
                 </div>
               </motion.div>
 
-              {/* Countdown bar */}
-              <div className="w-36 h-0.5 rounded-full bg-white/8 overflow-hidden mb-3">
+              {/* Countdown */}
+              <div className="w-36 h-px rounded-full bg-white/8 overflow-hidden mb-3">
                 <motion.div
-                  className="h-full rounded-full bg-gold/50"
+                  className="h-full rounded-full bg-gold/40"
                   initial={{ width: '100%' }}
                   animate={{ width: '0%' }}
                   transition={{ duration: 12, ease: 'linear' }}
                 />
               </div>
-              <p className="text-white/25 text-xs mb-6">بازگشت خودکار در {cd} ثانیه</p>
+              <p className="text-white/20 text-xs mb-6">بازگشت خودکار در {cd} ثانیه</p>
 
               <button
                 onClick={reset}
-                className="flex items-center gap-2 text-white/40 hover:text-white text-sm font-bold transition-colors"
+                className="flex items-center gap-2 text-white/30 hover:text-white/70 text-sm font-bold transition-colors"
               >
                 <RotateCcw size={14} />
                 نوبت جدید
@@ -386,8 +442,8 @@ export default function QMSPage() {
         </AnimatePresence>
       </main>
 
-      {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="text-center py-3 text-white/15 text-[11px] border-t border-white/4 shrink-0">
+      {/* ── Footer ────────────────────────────────────────────────────────── */}
+      <footer className="text-center py-3 text-white/12 text-[11px] border-t border-white/4 shrink-0">
         ARSAM Business Services — Muscat, Oman
       </footer>
     </div>
