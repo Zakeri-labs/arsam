@@ -49,8 +49,8 @@ export const metadata: Metadata = {
     siteName: 'ابوآرسام - Abu Arsam',
     images: [
       {
-        url: `${siteUrl}/logo.png`,
-        secureUrl: `${siteUrl}/logo.png`,
+        url: `${siteUrl}/logoog.png`,
+        secureUrl: `${siteUrl}/logoog.png`,
         width: 1200,
         height: 630,
         type: 'image/png',
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'ابوآرسام (با مدیریت رضا اماره) | ثبت شرکت، اقامت و خدمات اداری عمان (مسقط)',
     description: 'گروه ابوآرسام با مدیریت رضا اماره، همراه مطمئن شما برای ثبت شرکت، اخذ و تمدید اقامت، تمدید لایسنس، امور مالیاتی، حساب بانکی و راه‌اندازی کسب‌وکار در سلطنت عمان (مسقط).',
-    images: [`${siteUrl}/logo.png`],
+    images: [`${siteUrl}/logoog.png`],
   },
   icons: {
     icon: '/favicon.png',
