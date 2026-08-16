@@ -12,8 +12,17 @@ const geistMono = Geist_Mono({
   variable: '--font-geist-mono',
 });
 
+const getSiteUrl = () => {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'https://abuarsam.vercel.app';
+};
+
+const siteUrl = getSiteUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://ofogh.zakeri.dev'),
+  metadataBase: new URL(siteUrl),
   title: 'ابوآرسام (با مدیریت رضا اماره) | ثبت شرکت و خدمات اداری امارات و عمان',
   description: 'گروه ابوآرسام با مدیریت رضا اماره، همراه مطمئن شما برای ثبت شرکت، اخذ اقامت، تمدید لایسنس، امور مالیاتی، حساب بانکی و راه‌اندازی کسب‌وکار در امارات و عمان.',
   manifest: '/manifest.json',
@@ -37,13 +46,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'ابوآرسام (با مدیریت رضا اماره) | ثبت شرکت و خدمات اداری امارات و عمان',
     description: 'گروه ابوآرسام با مدیریت رضا اماره، همراه مطمئن شما برای ثبت شرکت، اخذ اقامت، تمدید لایسنس، امور مالیاتی، افتتاح حساب شرکتی و خدمات راه‌اندازی کسب‌وکار در امارات و عمان.',
-    url: 'https://ofogh.zakeri.dev',
+    url: siteUrl,
     siteName: 'ابوآرسام - Abu Arsam',
     images: [
       {
-        url: '/og-image.png',
+        url: `${siteUrl}/og-image.png`,
+        secureUrl: `${siteUrl}/og-image.png`,
         width: 1200,
         height: 630,
+        type: 'image/png',
         alt: 'ابوآرسام | ABU ARSAM - با مدیریت رضا اماره',
       }
     ],
@@ -55,7 +66,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'ابوآرسام (با مدیریت رضا اماره) | ثبت شرکت و خدمات اداری امارات و عمان',
     description: 'گروه ابوآرسام با مدیریت رضا اماره، همراه مطمئن شما برای ثبت شرکت، اخذ اقامت، تمدید لایسنس و امور مالیاتی در امارات و عمان.',
-    images: ['/og-image.png'],
+    images: [`${siteUrl}/og-image.png`],
   },
   icons: {
     icon: '/favicon.png',
