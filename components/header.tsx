@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Menu, ChevronDown, Globe } from 'lucide-react';
 import { type Language, type Country } from '@/lib/content';
@@ -72,17 +71,6 @@ export function HeroSection({ subtitle, language, country }: HeroSectionProps) {
       className="px-4 py-5"
     >
       <div className="flex items-center gap-3 sm:gap-5">
-        {/* Larger prominent logo with minimal vertical padding */}
-        <div className="logo-shimmer-container relative h-28 w-28 sm:h-32 sm:w-32 flex-shrink-0">
-          <Image
-            src="/logo.png"
-            alt="ABU ARSAM"
-            fill
-            className="object-contain"
-            priority
-          />
-        </div>
-
         {/* Text block */}
         <div className="flex flex-col justify-center min-w-0 flex-1">
           <span className="text-[11px] font-extrabold uppercase tracking-widest text-gold">
