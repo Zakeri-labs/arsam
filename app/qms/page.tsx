@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight, Delete, CheckCircle2, RotateCcw, X, AlertCircle, Globe,
   Building2, RefreshCw, FileText, Landmark, BarChart3,
-  Plane, PenLine, XCircle, ScrollText, Car, Users, type LucideIcon
+  HelpCircle, Plane, PenLine, XCircle, ScrollText, Car, Users, type LucideIcon
 } from 'lucide-react';
 
 // ─── Constants & Languages ───────────────────────────────────────────────────
@@ -38,6 +38,10 @@ const TRANSLATIONS: Record<Lang, {
   confirmReset: string;
   noServices: string;
   serverError: string;
+  otherCategory: string;
+  otherSubtitle: string;
+  otherPlaceholder: string;
+  otherNext: string;
 }> = {
   fa: {
     brandTitle: 'ابوآرسام',
@@ -57,6 +61,10 @@ const TRANSLATIONS: Record<Lang, {
     confirmReset: 'تأیید و بازگشت به ابتدا',
     noServices: 'خدمتی در این دسته یافت نشد',
     serverError: 'خطا در ثبت نوبت. لطفاً دوباره تلاش کنید.',
+    otherCategory: 'سایر',
+    otherSubtitle: 'موضوع یا خدمت درخواستی خود را بنویسید',
+    otherPlaceholder: 'مثال: مشاوره ویژه، پیگیری پرونده خاص یا درخواست سفارشی...',
+    otherNext: 'تأیید و مرحله بعد (شماره همراه)',
   },
   en: {
     brandTitle: 'ABU ARSAM',
@@ -76,6 +84,10 @@ const TRANSLATIONS: Record<Lang, {
     confirmReset: 'Done & Return to Main',
     noServices: 'No services found in this category',
     serverError: 'Failed to issue ticket. Please try again.',
+    otherCategory: 'Other',
+    otherSubtitle: 'Enter your required service topic or description',
+    otherPlaceholder: 'e.g., Special consultation, custom inquiry...',
+    otherNext: 'Confirm & Next (Phone)',
   },
   ar: {
     brandTitle: 'ابوآرسام',
@@ -95,12 +107,16 @@ const TRANSLATIONS: Record<Lang, {
     confirmReset: 'تأكيد والعودة للبداية',
     noServices: 'لم يتم العثور على خدمات في هذه الفئة',
     serverError: 'فشل في إصدار التذكرة. يرجى المحاولة مرة أخرى.',
+    otherCategory: 'آخر',
+    otherSubtitle: 'اكتب عنوان أو تفاصيل الخدمة المطلوبة',
+    otherPlaceholder: 'مثال: استشارة خاصة، متابعة معاملة...',
+    otherNext: 'تأكيد والمتابعة (رقم الهاتف)',
   },
 };
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Step = 'categories' | 'services' | 'phone';
+type Step = 'categories' | 'services' | 'custom_input' | 'phone';
 
 interface Category {
   id: string;
@@ -121,6 +137,7 @@ const CATEGORIES: Category[] = [
   { id: 'Banking Services',                fa: 'خدمات بانکی',          en: 'Banking Services',       ar: 'الخدمات المصرفية',       Icon: Landmark   },
   { id: 'Tax Services',                    fa: 'امور مالیاتی',         en: 'Tax Services',           ar: 'الخدمات الضريبية',       Icon: BarChart3  },
   { id: 'General Government Services',     fa: 'خدمات دولتی',          en: 'Govt. Services',         ar: 'الخدمات الحكومية',      Icon: ScrollText },
+  { id: 'other',                          fa: 'سایر',                 en: 'Other',                  ar: 'آخر',                   Icon: HelpCircle },
 ];
 
 // ─── Live Clock ──────────────────────────────────────────────────────────────
@@ -197,6 +214,7 @@ export default function QMSPage() {
   const [cat,         setCat]         = useState<Category | null>(null);
   const [svcs,        setSvcs]        = useState<ServiceItem[]>([]);
   const [svc,         setSvc]         = useState<ServiceItem | null>(null);
+  const [customText,  setCustomText]  = useState('');
   const [loading,     setLoading]     = useState(false);
   const [phone,       setPhone]       = useState('');
   const [busy,        setBusy]        = useState(false);
@@ -211,7 +229,7 @@ export default function QMSPage() {
 
   // Fetch services when category or language changes
   useEffect(() => {
-    if (!cat) return;
+    if (!cat || cat.id === 'other') return;
     setLoading(true);
     fetch('/api/services')
       .then(r => r.json())
@@ -249,6 +267,7 @@ export default function QMSPage() {
     setStep('categories');
     setCat(null);
     setSvc(null);
+    setCustomText('');
     setPhone('');
     setSvcs([]);
   }, []);
@@ -359,8 +378,8 @@ export default function QMSPage() {
       {/* ── Step dots ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-center gap-3 pt-6 pb-2 shrink-0">
         {(['categories','services','phone'] as const).map((s, i) => {
-          const passed  = (step === 'services' && i === 0) || (step === 'phone' && i < 2);
-          const current = step === s;
+          const passed  = ((step === 'services' || step === 'custom_input') && i === 0) || (step === 'phone' && i < 2);
+          const current = step === s || (step === 'custom_input' && s === 'services');
           return (
             <div key={s} className={`rounded-full transition-all duration-400 ${
               current ? 'w-8 h-2.5 bg-gold' :
@@ -391,7 +410,15 @@ export default function QMSPage() {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.03 }}
-                      onClick={() => { setCat(c); setStep('services'); }}
+                      onClick={() => {
+                        setCat(c);
+                        if (c.id === 'other') {
+                          setCustomText('');
+                          setStep('custom_input');
+                        } else {
+                          setStep('services');
+                        }
+                      }}
                       className="group relative flex flex-col items-center justify-center gap-4 py-10 px-6 rounded-3xl text-center transition-all duration-200 active:scale-97 overflow-hidden cursor-pointer shadow-lg"
                       style={{
                         background: 'rgba(255,255,255,0.05)',
@@ -485,11 +512,72 @@ export default function QMSPage() {
             </motion.div>
           )}
 
+          {/* Step 2.5 — Custom Input for "Other" */}
+          {step === 'custom_input' && (
+            <motion.div key="custom" {...slide} className="w-full max-w-xl">
+              <div className="flex items-center gap-4 mb-6">
+                <button
+                  onClick={() => setStep('categories')}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/12 text-white/60 hover:text-white text-base font-bold transition-all cursor-pointer"
+                >
+                  <ChevronRight size={18} className={isRTL ? '' : 'rotate-180'} />
+                  {t.back}
+                </button>
+                <div className="h-5 w-px bg-white/12" />
+                <div className="flex items-center gap-3">
+                  <div
+                    className="flex items-center justify-center w-10 h-10 rounded-xl"
+                    style={{ background: 'rgba(201,162,39,0.14)' }}
+                  >
+                    <HelpCircle size={20} strokeWidth={1.8} className="text-gold" />
+                  </div>
+                  <span className="text-white font-black text-xl">{t.otherCategory}</span>
+                </div>
+              </div>
+
+              <div
+                className="rounded-3xl p-8 space-y-6 shadow-2xl"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+              >
+                <p className="text-white/80 font-bold text-lg text-center leading-snug">
+                  {t.otherSubtitle}
+                </p>
+
+                <textarea
+                  value={customText}
+                  onChange={(e) => setCustomText(e.target.value)}
+                  placeholder={t.otherPlaceholder}
+                  rows={4}
+                  className="w-full rounded-2xl bg-white/8 border border-white/15 p-5 text-white placeholder-white/25 text-base outline-none focus:border-gold focus:bg-white/12 transition-all resize-none font-bold"
+                  autoFocus
+                />
+
+                <button
+                  onClick={() => {
+                    const finalTitle = customText.trim() ? `${t.otherCategory}: ${customText.trim()}` : t.otherCategory;
+                    setSvc({ id: 'custom', title: finalTitle });
+                    setPhone('');
+                    setStep('phone');
+                  }}
+                  className="w-full py-5 rounded-2xl font-black text-xl transition-all active:scale-98 cursor-pointer shadow-xl flex items-center justify-center gap-2"
+                  style={{
+                    background: 'linear-gradient(135deg, #c9a227 0%, #e4bc3c 100%)',
+                    color: '#0f1e37',
+                    boxShadow: '0 8px 30px rgba(201,162,39,0.35)',
+                  }}
+                >
+                  <span>{t.otherNext}</span>
+                  <ChevronRight size={20} className={isRTL ? 'rotate-180' : ''} />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {/* Step 3 — Phone (Enlarged Container & Buttons) */}
           {step === 'phone' && (
             <motion.div key="phone" {...slide} className="w-full max-w-md">
               <button
-                onClick={() => setStep('services')}
+                onClick={() => setStep(cat?.id === 'other' ? 'custom_input' : 'services')}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/12 text-white/50 hover:text-white text-sm font-bold transition-all mb-5 cursor-pointer"
               >
                 <ChevronRight size={18} className={isRTL ? '' : 'rotate-180'} />
