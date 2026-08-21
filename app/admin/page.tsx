@@ -14,25 +14,23 @@ import { toast, Toaster } from 'sonner';
 // Categories list matching app/page.tsx
 const categories = [
   'Company Setup Services',
-  'Renewal Services',
-  'Ejari Registration Services',
+  'Family & Business Visas',
+  'Tourist Visa Extension Services',
+  'License Renewal Services',
+  'Car Rental Services',
   'Banking Services',
   'Tax Services',
-  'Tourism Services',
-  'License Modification Services',
-  'Cancellation Services',
   'General Government Services',
 ];
 
 const categoryTranslations: Record<string, string> = {
   'Company Setup Services': 'ثبت شرکت',
-  'Renewal Services': 'تمدید خدمات',
-  'Ejari Registration Services': 'ایجاری / بلدیه',
+  'Family & Business Visas': 'ویزای فامیلی و تجاری',
+  'Tourist Visa Extension Services': 'تمدید ویزای توریستی',
+  'License Renewal Services': 'تمدید لایسنس‌ها',
+  'Car Rental Services': 'رنت خودرو',
   'Banking Services': 'خدمات بانکی',
   'Tax Services': 'امور مالیاتی',
-  'Tourism Services': 'گردشگری',
-  'License Modification Services': 'اصلاح لایسنس',
-  'Cancellation Services': 'کنسلی و انحلال',
   'General Government Services': 'خدمات دولتی',
 };
 

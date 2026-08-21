@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight, Delete, CheckCircle2, RotateCcw, X, AlertCircle, Globe,
   Building2, RefreshCw, FileText, Landmark, BarChart3,
-  Plane, PenLine, XCircle, ScrollText, type LucideIcon
+  Plane, PenLine, XCircle, ScrollText, Car, Users, type LucideIcon
 } from 'lucide-react';
 
 // ─── Constants & Languages ───────────────────────────────────────────────────
@@ -113,15 +113,14 @@ interface Category {
 interface ServiceItem { id: string; title: string }
 
 const CATEGORIES: Category[] = [
-  { id: 'Company Setup Services',        fa: 'ثبت شرکت',        en: 'Company Setup',       ar: 'تأسيس الشركات',      Icon: Building2  },
-  { id: 'Renewal Services',              fa: 'تمدید خدمات',     en: 'Renewals',            ar: 'تجديد الخدمات',       Icon: RefreshCw  },
-  { id: 'Ejari Registration Services',   fa: 'ایجاری / بلدیه',  en: 'Ejari / Municipality',ar: 'إيجاري / البلدية',    Icon: FileText   },
-  { id: 'Banking Services',              fa: 'خدمات بانکی',     en: 'Banking Services',    ar: 'الخدمات المصرفية',    Icon: Landmark   },
-  { id: 'Tax Services',                  fa: 'امور مالیاتی',    en: 'Tax Services',        ar: 'الخدمات الضريبية',    Icon: BarChart3  },
-  { id: 'Tourism Services',              fa: 'گردشگری',         en: 'Tourism & Visas',     ar: 'السياحة والتأشيرات', Icon: Plane      },
-  { id: 'License Modification Services', fa: 'اصلاح لایسنس',    en: 'License Modification',ar: 'تعديل الرخصة',       Icon: PenLine    },
-  { id: 'Cancellation Services',         fa: 'کنسلی و انحلال',  en: 'Cancellations',       ar: 'الإلغاء والتصفية',   Icon: XCircle    },
-  { id: 'General Government Services',   fa: 'خدمات دولتی',     en: 'Govt. Services',      ar: 'الخدمات الحكومية',   Icon: ScrollText },
+  { id: 'Company Setup Services',          fa: 'ثبت شرکت',             en: 'Company Setup',          ar: 'تأسيس الشركات',          Icon: Building2  },
+  { id: 'Family & Business Visas',        fa: 'ویزای فامیلی و تجاری',  en: 'Family & Business Visas',ar: 'تأشيرات العائلة والأعمال', Icon: Users      },
+  { id: 'Tourist Visa Extension Services',fa: 'تمدید ویزای توریستی',  en: 'Tourist Visa Extension', ar: 'تجديد التأشيرات السياحية', Icon: RefreshCw  },
+  { id: 'License Renewal Services',       fa: 'تمدید لایسنس‌ها',       en: 'License Renewals',       ar: 'تجديد الرخص تجارية',      Icon: FileText   },
+  { id: 'Car Rental Services',            fa: 'رنت خودرو',            en: 'Car Rental',             ar: 'تأجير السيارات',         Icon: Car        },
+  { id: 'Banking Services',                fa: 'خدمات بانکی',          en: 'Banking Services',       ar: 'الخدمات المصرفية',       Icon: Landmark   },
+  { id: 'Tax Services',                    fa: 'امور مالیاتی',         en: 'Tax Services',           ar: 'الخدمات الضريبية',       Icon: BarChart3  },
+  { id: 'General Government Services',     fa: 'خدمات دولتی',          en: 'Govt. Services',         ar: 'الخدمات الحكومية',      Icon: ScrollText },
 ];
 
 // ─── Live Clock ──────────────────────────────────────────────────────────────
