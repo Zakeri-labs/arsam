@@ -7,7 +7,7 @@ import {
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
   Trash2, Edit3, Globe, Save, LogOut, Check, X, FileText, 
   Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink, Menu,
-  DollarSign, Languages
+  DollarSign, Languages, Users, Image as ImageIcon
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
@@ -24,7 +24,7 @@ const categories = [
   'General Government Services',
 ];
 
-const categoryTranslations = {
+const categoryTranslations: Record<string, string> = {
   'Company Setup Services': 'ثبت شرکت',
   'Renewal Services': 'تمدید خدمات',
   'Ejari Registration Services': 'ایجاری / بلدیه',
@@ -854,6 +854,14 @@ export default function AdminPage() {
             </span>
           )}
         </button>
+
+        <a
+          href="/admin/qms"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer mt-2"
+        >
+          <Users className="h-4.5 w-4.5 shrink-0 text-amber-400" />
+          <span>مدیریت صف QMS (جناب اماره)</span>
+        </a>
       </nav>
 
       {/* Sidebar Footer / Action buttons */}
@@ -1395,7 +1403,7 @@ export default function AdminPage() {
             {/* Card 3: Image Upload & Storage */}
             <div className="rounded-3xl border border-border bg-white p-5.5 shadow-sm space-y-4">
               <h3 className="text-[11px] font-black text-navy flex items-center gap-2 border-b border-border pb-3">
-                <Image className="h-4.5 w-4.5 text-gold" />
+                <ImageIcon className="h-4.5 w-4.5 text-gold" />
                 <span>تصویر لنداسکیپ خدمت</span>
               </h3>
               

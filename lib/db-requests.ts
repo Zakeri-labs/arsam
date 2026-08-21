@@ -16,6 +16,8 @@ export interface ServiceRequest {
   createdAt: string; // ISO date string
   queueNumber?: number | null; // Queue number for QMS requests
   source?: string; // 'web' | 'qms'
+  queueName?: string; // e.g. 'جناب اماره' or counter name
+  queueStatus?: 'waiting' | 'calling' | 'in_progress' | 'completed' | 'absent';
 }
 
 export async function getRequests(): Promise<ServiceRequest[]> {
@@ -41,6 +43,8 @@ export async function getRequests(): Promise<ServiceRequest[]> {
         createdAt: row.created_at,
         queueNumber: row.queue_number ?? null,
         source: row.source || 'web',
+        queueName: row.queue_name || (row.source === 'qms' ? 'جناب اماره' : undefined),
+        queueStatus: row.queue_status || (row.source === 'qms' ? 'waiting' : undefined),
       }));
     }
   } catch (error) {
@@ -76,6 +80,28 @@ export async function addRequest(request: Omit<ServiceRequest, 'id' | 'createdAt
     id: newRequest.id,
     createdAt: newRequest.created_at,
   };
+}
+
+export async function updateRequestQueue(id: string, updates: { queueName?: string; queueStatus?: string }): Promise<boolean> {
+  try {
+    const dbPayload: Record<string, any> = {};
+    if (updates.queueName !== undefined) dbPayload.queue_name = updates.queueName;
+    if (updates.queueStatus !== undefined) dbPayload.queue_status = updates.queueStatus;
+
+    const { error } = await supabase
+      .from('requests')
+      .update(dbPayload)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to update request queue in Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Exception in updateRequestQueue:', err);
+    return false;
+  }
 }
 
 export async function deleteRequest(id: string): Promise<boolean> {

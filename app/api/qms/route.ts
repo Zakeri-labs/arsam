@@ -52,6 +52,8 @@ export async function POST(request: Request) {
       files: [],
       queue_number: queueNumber,
       source: 'qms',
+      queue_name: 'جناب اماره',
+      queue_status: 'waiting',
       created_at: new Date().toISOString(),
     };
 
@@ -66,6 +68,10 @@ export async function POST(request: Request) {
         description: `نوبت QMS #${queueNumber} - ${serviceTitle}`,
         service_title: serviceTitle,
         files: [],
+        queue_number: queueNumber,
+        source: 'qms',
+        queue_name: 'جناب اماره',
+        queue_status: 'waiting',
         created_at: new Date().toISOString(),
       };
       await supabase.from('requests').insert([fallbackRequest]);
