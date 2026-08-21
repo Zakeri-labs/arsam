@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const ADMIN_EMAIL = 'Alirezaebrahimi.ceo@gmail.com';
-const ADMIN_PASSWORD = 'Ofogh@2026';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'R.amareh@yahoo.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ofogh@2026';
 
 // check-auth or login post
 export async function POST(request: Request) {
