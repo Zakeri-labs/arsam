@@ -74,7 +74,7 @@ interface ServiceRequest {
 }
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -710,17 +710,6 @@ export default function AdminPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
-
-  if (isAuthenticated === null) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0f1e37] text-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-gold border-t-transparent"></div>
-          <span className="font-semibold text-sm tracking-wide">درحال بررسی سشن مدیریت...</span>
-        </div>
-      </div>
-    );
-  }
 
   // --- 1. LOGIN SCREEN ---
   if (!isAuthenticated) {
