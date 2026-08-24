@@ -894,14 +894,14 @@ export default function AdminPage() {
     </div>
   );
 
-  // --- 3. REQUESTS SCREEN RENDER ---
+  // --- 3. REQUESTS SCREEN RENDER (Card Grid for All Days) ---
   const renderRequestsScreen = () => {
     if (!requests) {
       return (
         <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
           <div className="flex flex-col items-center gap-3">
             <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#0f1e37] border-t-transparent"></div>
-            <span className="text-xs font-bold text-muted-foreground">درحال دریافت درخواست‌ها...</span>
+            <span className="text-xs font-bold text-muted-foreground">درحال دریافت تمامی درخواست‌ها...</span>
           </div>
         </div>
       );
@@ -915,12 +915,12 @@ export default function AdminPage() {
     );
 
     return (
-      <div className="space-y-4 animate-fadeIn">
+      <div className="space-y-4 animate-fadeIn" dir="rtl">
         {/* Header & Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-border/60 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-border/80 shadow-xs">
           <div>
-            <h2 className="text-base font-black text-[#0f1e37]">درخواست‌های ارسالی کاربران</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">پیگیری فرم‌های ثبت شده از سمت لندینگ پیج و کیوسک</p>
+            <h2 className="text-base font-black text-[#0f1e37]">درخواست‌های ارسالی (همه روزها)</h2>
+            <p className="text-[11px] text-muted-foreground mt-0.5">کل درخواست‌های ثبت‌شده از وب‌سایت و کیوسک QMS در همه زمان‌ها ({filteredRequests.length} درخواست)</p>
           </div>
           
           <div className="relative w-full sm:w-64">
@@ -937,9 +937,9 @@ export default function AdminPage() {
           </div>
         </div>
 
-        {/* Requests List */}
+        {/* Requests Cards Grid (3 Columns like QMS cards) */}
         {filteredRequests.length > 0 ? (
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {filteredRequests.map(req => {
               const cleanPhone = req.phone.replace(/[^0-9+]/g, '');
               const whatsappUrl = `https://wa.me/${cleanPhone}`;
@@ -948,120 +948,129 @@ export default function AdminPage() {
               return (
                 <div
                   key={req.id}
-                  className="rounded-2xl border bg-white p-4 shadow-sm hover:shadow-md transition-all relative overflow-hidden text-right"
-                  style={{ borderColor: isQms ? 'rgba(201,162,39,0.35)' : 'rgba(0,0,0,0.08)' }}
-                  dir="rtl"
+                  className="rounded-2xl border bg-white shadow-xs hover:shadow-md transition-all relative overflow-hidden text-right flex flex-col justify-between"
+                  style={{ borderColor: isQms ? '#fcd34d' : '#e2e8f0' }}
                 >
                   {/* Status Indicator Stripe */}
                   <div
                     className="absolute top-0 right-0 bottom-0 w-1.5"
-                    style={{ background: isQms ? '#c9a227' : '#0f1e37' }}
+                    style={{ background: isQms ? '#d97706' : '#0f1e37' }}
                   />
 
-                  <div className="pr-2 space-y-3">
-                    {/* Header Row: User Info & Actions */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-2.5">
+                  {/* Card Content */}
+                  <div className="p-4 pb-2.5 pr-4.5">
+                    {/* Header Row: Avatar/Number + Name + Source Tag */}
+                    <div className="flex items-start justify-between gap-2.5 mb-2.5">
                       <div className="flex items-center gap-2.5">
                         {isQms && req.queueNumber != null ? (
-                          <span className="px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs font-black shrink-0">
-                            نوبت #{req.queueNumber}
-                          </span>
+                          <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 shrink-0 font-black">
+                            <span className="text-[8px] leading-none mb-0.5 opacity-80">نوبت</span>
+                            <span className="text-xl leading-none">{req.queueNumber}</span>
+                          </div>
                         ) : (
-                          <div className="h-8 w-8 rounded-xl bg-[#0f1e37]/5 text-[#0f1e37] border border-[#0f1e37]/10 flex items-center justify-center font-black text-xs shrink-0">
+                          <div className="h-10 w-10 rounded-xl bg-[#0f1e37]/5 text-[#0f1e37] border border-[#0f1e37]/15 flex items-center justify-center font-black text-sm shrink-0">
                             {req.name.charAt(0)}
                           </div>
                         )}
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-extrabold text-[#0f1e37] text-sm">{req.name}</h4>
-                            {isQms && (
-                              <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[9px] font-extrabold">QMS</span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground">{formatRequestDate(req.createdAt)}</span>
+
+                        <div className="min-w-0">
+                          <h4 className="font-extrabold text-[#0f1e37] text-xs truncate max-w-[150px]">{req.name}</h4>
+                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                            {formatRequestDate(req.createdAt)}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Right chips */}
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-border/60 text-slate-700 text-xs font-bold">
-                          {req.serviceTitle}
-                        </span>
-                      </div>
+                      {/* Source tag */}
+                      <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${
+                        isQms ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}>
+                        {isQms ? '🎫 کیوسک' : '🌐 وب'}
+                      </span>
                     </div>
 
-                    {/* Contact & Description Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center text-xs">
-                      {/* Phone & Whatsapp */}
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-[#0f1e37] bg-slate-100 px-2.5 py-1 rounded-lg border border-border/50 text-xs tracking-wide">
-                          {req.phone}
-                        </span>
-                        <a
-                          href={whatsappUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 bg-[#25D366] text-white hover:brightness-105 transition-all text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xs"
-                        >
-                          واتساپ
-                        </a>
-                      </div>
-
-                      {/* Description */}
-                      <div className="md:col-span-2">
-                        <p className="text-xs text-foreground/80 leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-border/40 font-medium">
-                          {req.description || 'توضیحات بیشتری ثبت نشده است.'}
-                        </p>
-                      </div>
+                    {/* Service title */}
+                    <div className="py-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-400 font-bold text-[10px]">خدمت:</span>
+                      <span className="font-extrabold text-[#0f1e37] text-xs truncate max-w-[170px]">{req.serviceTitle}</span>
                     </div>
 
-                    {/* Files Attachment (if any) */}
+                    {/* Phone & Whatsapp */}
+                    <div className="flex items-center justify-between gap-2 py-2 border-t border-slate-100">
+                      <span className="font-mono font-black text-[#0f1e37] text-xs bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                        {req.phone}
+                      </span>
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 bg-[#25D366] text-white hover:brightness-105 transition-all text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xs"
+                      >
+                        واتساپ
+                      </a>
+                    </div>
+
+                    {/* Description note */}
+                    <div className="mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-[11px] text-slate-700 leading-relaxed min-h-[44px]">
+                      {req.description || 'توضیحات تکمیلی ثبت نشده است.'}
+                    </div>
+
+                    {/* Attached files */}
                     {req.files && req.files.length > 0 && (
-                      <div className="pt-2 border-t border-border/40 flex items-center gap-2 flex-wrap text-xs">
-                        <span className="text-[10px] font-bold text-muted-foreground shrink-0">مدارک پیوست:</span>
-                        {req.files.map((file, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-1.5 rounded-lg bg-amber-50/60 border border-amber-200/80 px-2.5 py-1 text-xs text-[#0f1e37] font-bold"
-                          >
-                            <FileText className="h-3.5 w-3.5 text-gold shrink-0" />
-                            <span className="truncate max-w-[150px]">{file.name}</span>
-                            {file.url && (
-                              <a
-                                href={file.url}
-                                download={file.name}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] text-gold hover:underline font-black pr-1 border-r border-amber-200"
-                              >
-                                دانلود
-                              </a>
-                            )}
-                          </div>
-                        ))}
+                      <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                        <span className="text-[10px] font-extrabold text-slate-400 block">📎 مدارک پیوست شده:</span>
+                        <div className="space-y-1">
+                          {req.files.map((file, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between gap-2 rounded-lg bg-amber-50/70 border border-amber-200/80 px-2 py-1 text-[11px] text-[#0f1e37] font-bold"
+                            >
+                              <span className="truncate max-w-[150px]">{file.name}</span>
+                              {file.url && (
+                                <a
+                                  href={file.url}
+                                  download={file.name}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] text-gold-dark hover:underline font-black shrink-0 pr-1 border-r border-amber-200"
+                                >
+                                  دانلود
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
-
-                    {/* Footer Actions */}
-                    <div className="pt-2 border-t border-border/40 flex justify-end">
-                      <button
-                        onClick={() => handleDeleteRequest(req.id)}
-                        className="flex items-center gap-1 text-[10px] font-bold text-red-600 hover:bg-red-50 px-2.5 py-1 rounded-lg border border-red-100 cursor-pointer transition-colors"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        حذف درخواست
-                      </button>
-                    </div>
                   </div>
+
+                  {/* Footer Actions */}
+                  <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-slate-100 bg-slate-50/50">
+                    <a
+                      href={`tel:${cleanPhone}`}
+                      className="text-[10px] font-bold text-slate-600 hover:text-[#0f1e37] flex items-center gap-1"
+                    >
+                      تماس تلفنی
+                    </a>
+
+                    <button
+                      onClick={() => handleDeleteRequest(req.id)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg border border-red-100 cursor-pointer transition-colors"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      حذف
+                    </button>
+                  </div>
+
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
+          <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-white shadow-xs">
             <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
               <AlertTriangle className="h-6 w-6 text-amber-500" />
-              <span className="font-bold text-xs">هیچ درخواستی ثبت نگردیده است.</span>
+              <span className="font-bold text-xs">هیچ درخواستی یافت نشد.</span>
             </div>
           </div>
         )}
