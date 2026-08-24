@@ -7,7 +7,7 @@ import {
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
   Trash2, Edit3, Globe, Save, LogOut, Check, X, FileText, 
   Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink, Menu,
-  DollarSign, Languages, Users, Image as ImageIcon
+  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
@@ -73,6 +73,7 @@ interface ServiceRequest {
   createdAt: string;
   queueNumber?: number | null;
   source?: string;
+  queueStatus?: string;
 }
 
 export default function AdminPage() {
@@ -1911,7 +1912,9 @@ export default function AdminPage() {
               ) : (
                 <CustomersScreen />
               )}
-            </div>        </div>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
