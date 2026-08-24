@@ -10,6 +10,7 @@ import {
   DollarSign, Languages, Users, Image as ImageIcon
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import QMSScreen from '@/components/qms-screen';
 
 // Categories list matching app/page.tsx
 const categories = [
@@ -80,7 +81,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
 
   // Layout & Navigation State
-  const [activeScreen, setActiveScreen] = useState<'services' | 'requests'>('services');
+  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms'>('services');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Dashboard state
@@ -853,13 +854,22 @@ export default function AdminPage() {
           )}
         </button>
 
-        <a
-          href="/admin/qms"
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-amber-300 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all cursor-pointer mt-2"
+        <button
+          onClick={() => {
+            setActiveScreen('qms');
+            setIsMobileMenuOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeScreen === 'qms'
+              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+              : 'text-white/70 hover:bg-white/5 hover:text-white'
+          }`}
         >
-          <Users className="h-4.5 w-4.5 shrink-0 text-amber-400" />
-          <span>مدیریت صف QMS (جناب اماره)</span>
-        </a>
+          <span className="flex items-center gap-3">
+            <Users className="h-4.5 w-4.5 shrink-0" />
+            مدیریت صف QMS
+          </span>
+        </button>
       </nav>
 
       {/* Sidebar Footer / Action buttons */}
@@ -1735,10 +1745,10 @@ export default function AdminPage() {
             <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
               <div>
                 <h1 className="text-base font-extrabold text-navy leading-none">
-                  {activeScreen === 'services' ? 'مدیریت خدمات' : 'درخواست‌های ارسالی کاربران'}
+                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی کاربران' : 'مدیریت صف نوبت‌دهی (QMS)'}
                 </h1>
                 <p className="text-[10px] text-muted-foreground mt-1.5 font-bold">
-                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : 'پیگیری فرم‌های ثبت شده از سمت لندینگ پیج'}
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'پیگیری فرم‌های ثبت شده از سمت لندینگ پیج' : 'مدیریت پویای نوبت‌های کیوسک و حضوری'}
                 </p>
               </div>
               
@@ -1753,8 +1763,12 @@ export default function AdminPage() {
             <div className="max-w-6xl mx-auto w-full">
               {isEditorOpen ? (
                 renderServiceEditor()
+              ) : activeScreen === 'services' ? (
+                renderServicesScreen()
+              ) : activeScreen === 'requests' ? (
+                renderRequestsScreen()
               ) : (
-                activeScreen === 'services' ? renderServicesScreen() : renderRequestsScreen()
+                <QMSScreen />
               )}
             </div>
           </main>
