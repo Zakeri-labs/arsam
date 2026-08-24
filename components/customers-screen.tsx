@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Search, Phone, MessageSquare, Clock, Calendar,
   CheckCircle2, FileText, Download, ChevronDown, ChevronUp,
-  Award, Sparkles, Filter, ShieldCheck, Loader2, ArrowUpRight, FolderOpen
+  Award, Sparkles, Filter, ShieldCheck, Loader2, FolderOpen
 } from 'lucide-react';
 
 interface RequestFile {
@@ -51,12 +51,6 @@ function formatDate(dateStr: string) {
   } catch { return dateStr; }
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1048576).toFixed(1)} MB`;
-}
-
 export default function CustomersScreen() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,12 +84,10 @@ export default function CustomersScreen() {
     const result: CustomerGroup[] = [];
 
     map.forEach((reqList, phone) => {
-      // Sort requests by date ascending to find firstSeen and lastSeen
       const sorted = [...reqList].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       const firstSeen = sorted[0].createdAt;
       const lastSeen = sorted[sorted.length - 1].createdAt;
 
-      // Pick best name (prefer non-phone name)
       let name = sorted.find(r => r.name && !r.name.includes('+') && r.name !== phone)?.name || sorted[0].name || phone;
 
       const totalRequests = sorted.length;
@@ -107,12 +99,11 @@ export default function CustomersScreen() {
         if (r.files && r.files.length > 0) totalFiles += r.files.length;
       }
 
-      // Customer tier badge
-      let badge = { label: '🆕 جدید', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
+      let badge = { label: '🆕 جدید', bg: 'rgba(59,130,246,0.15)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' };
       if (totalRequests >= 3) {
-        badge = { label: '👑 مشتری VIP', bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300' };
+        badge = { label: '👑 مشتری VIP', bg: 'rgba(201,162,39,0.18)', text: '#c9a227', border: 'rgba(201,162,39,0.4)' };
       } else if (totalRequests === 2) {
-        badge = { label: '⭐ فعال', bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300' };
+        badge = { label: '⭐ فعال', bg: 'rgba(52,211,153,0.15)', text: '#34d399', border: 'rgba(52,211,153,0.3)' };
       }
 
       result.push({
@@ -124,7 +115,7 @@ export default function CustomersScreen() {
         openRequests,
         completedRequests,
         totalFiles,
-        requests: sorted.reverse(), // latest first in details
+        requests: sorted.reverse(),
         badge,
       });
     });
@@ -157,22 +148,23 @@ export default function CustomersScreen() {
   const totalFilesCount = customers.reduce((acc, c) => acc + c.totalFiles, 0);
 
   return (
-    <div className="space-y-4 animate-fadeIn" dir="rtl">
+    <div className="space-y-4 animate-fadeIn text-white" dir="rtl">
       {/* ── STATS BAR ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'کل مشتریان', value: totalCustomersCount, color: '#0f1e37', bg: '#f1f5f9', icon: Users },
-          { label: 'مشتریان VIP', value: vipCustomersCount, color: '#d97706', bg: '#fef3c7', icon: Award },
-          { label: 'کل درخواست‌ها', value: requests.length, color: '#2563eb', bg: '#dbeafe', icon: Clock },
-          { label: 'مدارک دریافت شده', value: totalFilesCount, color: '#059669', bg: '#d1fae5', icon: FolderOpen },
+          { label: 'کل مشتریان', value: totalCustomersCount, color: '#60a5fa', bg: 'rgba(59,130,246,0.12)', icon: Users },
+          { label: 'مشتریان VIP', value: vipCustomersCount, color: '#c9a227', bg: 'rgba(201,162,39,0.15)', icon: Award },
+          { label: 'کل درخواست‌ها', value: requests.length, color: '#a855f7', bg: 'rgba(168,85,247,0.15)', icon: Clock },
+          { label: 'مدارک دریافت شده', value: totalFilesCount, color: '#34d399', bg: 'rgba(52,211,153,0.12)', icon: FolderOpen },
         ].map(({ label, value, color, bg, icon: Icon }) => (
           <div
             key={label}
-            className="rounded-2xl p-4 border border-border bg-white shadow-xs flex items-center justify-between"
+            className="rounded-2xl p-4 border flex items-center justify-between"
+            style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}
           >
             <div>
-              <p className="text-[11px] font-bold text-muted-foreground mb-0.5">{label}</p>
-              <p className="text-2xl font-black text-[#0f1e37]">{value}</p>
+              <p className="text-[11px] font-bold text-white/50 mb-0.5">{label}</p>
+              <p className="text-2xl font-black text-white">{value}</p>
             </div>
             <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: bg }}>
               <Icon size={20} style={{ color }} />
@@ -182,11 +174,14 @@ export default function CustomersScreen() {
       </div>
 
       {/* ── HEADER & SEARCH ── */}
-      <div className="bg-white p-4 rounded-2xl border border-border/80 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div
+        className="p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+        style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}
+      >
         <div>
-          <h2 className="text-base font-black text-[#0f1e37]">مدیریت مشتریان (CRM)</h2>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            لیست جامع مشتریان، تاریخ ثبت‌نام، آمار درخواست‌ها و مدارک پیوست شده
+          <h2 className="text-base font-black text-white">مدیریت مشتریان و پرونده‌ها (CRM)</h2>
+          <p className="text-[11px] text-white/40 mt-0.5">
+            لیست جامع مشتریان به همراه سوابق درخواست‌ها و مدارک ثبت‌شده ({filteredCustomers.length} مشتری)
           </p>
         </div>
 
@@ -195,7 +190,7 @@ export default function CustomersScreen() {
           <select
             value={sortBy}
             onChange={(e: any) => setSortBy(e.target.value)}
-            className="bg-slate-50 border border-border rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-gold cursor-pointer"
+            className="bg-black/30 border border-white/10 rounded-xl px-3 py-2 text-xs font-bold text-white/80 outline-none focus:border-gold cursor-pointer"
           >
             <option value="recent">آخرین مراجعه</option>
             <option value="requests">بیشترین درخواست</option>
@@ -204,175 +199,208 @@ export default function CustomersScreen() {
 
           {/* Search Input */}
           <div className="relative w-full sm:w-60">
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-white/30">
               <Search className="h-3.5 w-3.5" />
             </div>
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="جستجو نام، تلفن یا خدمت..."
-              className="w-full rounded-xl border border-border bg-slate-50/50 py-2 pr-8 pl-3 text-xs outline-none focus:border-gold focus:bg-white"
+              placeholder="جستجو نام، تلفن..."
+              className="w-full rounded-xl border border-white/10 bg-white/5 py-2 pr-8 pl-3 text-xs text-white placeholder-white/30 outline-none focus:border-gold/60"
             />
           </div>
         </div>
       </div>
 
-      {/* ── CUSTOMERS GRID ── */}
+      {/* ── CUSTOMERS LIST TABLE VIEW ── */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 gap-2 text-muted-foreground">
-          <Loader2 size={24} className="animate-spin" />
+        <div className="flex items-center justify-center py-16 gap-2 text-white/40">
+          <Loader2 size={24} className="animate-spin text-gold" />
           <span className="text-xs font-bold">درحال دریافت اطلاعات مشتریان...</span>
         </div>
       ) : filteredCustomers.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-          {filteredCustomers.map(customer => {
-            const cleanPhone = customer.phone.replace(/[^0-9+]/g, '');
-            const whatsappUrl = `https://wa.me/${cleanPhone}`;
-            const isExpanded = expandedPhone === customer.phone;
+        <div
+          className="rounded-2xl border overflow-hidden"
+          style={{ background: 'rgba(255,255,255,0.02)', borderColor: 'rgba(255,255,255,0.08)' }}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-right border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-white/10 text-white/40 font-extrabold text-[11px] bg-black/20">
+                  <th className="py-3 px-4">مشتری</th>
+                  <th className="py-3 px-4">شماره تلفن</th>
+                  <th className="py-3 px-4">تاریخ ثبت‌نام</th>
+                  <th className="py-3 px-4">آخرین مراجعه</th>
+                  <th className="py-3 px-4">سطح</th>
+                  <th className="py-3 px-4">کل درخواست‌ها</th>
+                  <th className="py-3 px-4 text-center">عملیات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filteredCustomers.map(customer => {
+                  const cleanPhone = customer.phone.replace(/[^0-9+]/g, '');
+                  const whatsappUrl = `https://wa.me/${cleanPhone}`;
+                  const isExpanded = expandedPhone === customer.phone;
 
-            return (
-              <motion.div
-                key={customer.phone}
-                layout
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-border bg-white shadow-xs hover:shadow-md transition-all text-right flex flex-col justify-between overflow-hidden"
-              >
-                {/* Card Top Header */}
-                <div className="p-4 pb-3">
-                  <div className="flex items-start justify-between gap-2.5 mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-11 w-11 rounded-xl bg-[#0f1e37] text-gold font-black text-base flex items-center justify-center shrink-0 shadow-xs">
-                        {customer.name.charAt(0)}
-                      </div>
-
-                      <div className="min-w-0">
-                        <h3 className="font-black text-[#0f1e37] text-sm truncate max-w-[160px]">{customer.name}</h3>
-                        <span className="font-mono font-black text-xs text-slate-700 block mt-0.5 inline-block" dir="ltr">
-                          {customer.phone}
-                        </span>
-                      </div>
-                    </div>
-
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${customer.badge.bg} ${customer.badge.text} ${customer.badge.border}`}>
-                      {customer.badge.label}
-                    </span>
-                  </div>
-
-                  {/* Dates & Stats row */}
-                  <div className="grid grid-cols-2 gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs my-2">
-                    <div>
-                      <span className="text-[10px] text-slate-400 font-bold block mb-0.5">تاریخ ثبت‌نام:</span>
-                      <span className="font-extrabold text-slate-700 text-[11px]">{formatDate(customer.firstSeen)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 font-bold block mb-0.5">آخرین مراجعه:</span>
-                      <span className="font-extrabold text-slate-700 text-[11px]">{formatDate(customer.lastSeen)}</span>
-                    </div>
-                  </div>
-
-                  {/* Request Stats summary */}
-                  <div className="flex items-center justify-between text-xs pt-1 px-1">
-                    <span className="text-slate-500 font-bold text-[11px]">
-                      تعداد کل درخواست‌ها: <strong className="text-[#0f1e37] font-black">{customer.totalRequests}</strong>
-                    </span>
-
-                    {customer.totalFiles > 0 && (
-                      <span className="text-amber-700 font-bold text-[10px] bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                        📎 {customer.totalFiles} فایل
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Card Actions Footer */}
-                <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-slate-100 bg-slate-50/50">
-                  <div className="flex items-center gap-1.5">
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 bg-[#25D366] text-white hover:brightness-105 transition-all text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xs"
-                    >
-                      <MessageSquare size={12} />
-                      واتساپ
-                    </a>
-
-                    <a
-                      href={`tel:${cleanPhone}`}
-                      className="p-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all text-[10px] font-bold px-2"
-                      title="تماس"
-                    >
-                      <Phone size={12} />
-                    </a>
-                  </div>
-
-                  <button
-                    onClick={() => setExpandedPhone(isExpanded ? null : customer.phone)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
-                  >
-                    <span>لیست سوابق</span>
-                    {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                  </button>
-                </div>
-
-                {/* Expanded Customer History Drawer */}
-                <AnimatePresence>
-                  {isExpanded && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden bg-slate-50 border-t border-slate-200 p-3 space-y-2"
-                    >
-                      <p className="text-[10px] font-black text-slate-500 mb-1">
-                        📋 سابقه درخواست‌ها ({customer.requests.length} مورد):
-                      </p>
-
-                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                        {customer.requests.map((req, idx) => (
-                          <div key={req.id || idx} className="p-2 rounded-xl bg-white border border-slate-200 text-xs space-y-1">
-                            <div className="flex justify-between items-center">
-                              <span className="font-bold text-[#0f1e37]">{req.serviceTitle}</span>
-                              <span className="text-[9px] text-slate-400">{formatDate(req.createdAt)}</span>
+                  return (
+                    <tbody key={customer.phone} className="group">
+                      <tr className="hover:bg-white/4 transition-colors">
+                        {/* Avatar & Name */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="h-9 w-9 rounded-xl bg-gold/15 text-gold border border-gold/30 font-black text-sm flex items-center justify-center shrink-0">
+                              {customer.name.charAt(0)}
                             </div>
+                            <span className="font-extrabold text-white text-xs truncate max-w-[150px]">
+                              {customer.name}
+                            </span>
+                          </div>
+                        </td>
 
-                            {req.description && (
-                              <p className="text-[10px] text-slate-600 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                                {req.description}
-                              </p>
+                        {/* Phone with STRICT LTR BDO Overriding */}
+                        <td className="py-3 px-4 font-mono font-black text-white/90">
+                          <bdo dir="ltr" className="inline-block tracking-wider" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
+                            {customer.phone}
+                          </bdo>
+                        </td>
+
+                        {/* First seen */}
+                        <td className="py-3 px-4 text-white/60 font-medium">
+                          {formatDate(customer.firstSeen)}
+                        </td>
+
+                        {/* Last seen */}
+                        <td className="py-3 px-4 text-white/60 font-medium">
+                          {formatDate(customer.lastSeen)}
+                        </td>
+
+                        {/* Tier badge */}
+                        <td className="py-3 px-4">
+                          <span
+                            className="px-2.5 py-0.5 rounded-full text-[10px] font-black border inline-block"
+                            style={{ background: customer.badge.bg, color: customer.badge.text, borderColor: customer.badge.border }}
+                          >
+                            {customer.badge.label}
+                          </span>
+                        </td>
+
+                        {/* Request count */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-black text-gold text-xs">{customer.totalRequests} درخواست</span>
+                            {customer.totalFiles > 0 && (
+                              <span className="text-[10px] text-amber-300 font-bold bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                📎 {customer.totalFiles} فایل
+                              </span>
                             )}
+                          </div>
+                        </td>
 
-                            {req.files && req.files.length > 0 && (
-                              <div className="flex flex-wrap gap-1 pt-1">
-                                {req.files.map((f, fIdx) => (
-                                  <div key={fIdx} className="flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded text-[9px] text-amber-800 font-bold border border-amber-200">
-                                    <FileText size={10} />
-                                    <span className="truncate max-w-[120px]">{f.name}</span>
-                                    {f.url && (
-                                      <a href={f.url} download={f.name} target="_blank" rel="noopener noreferrer" className="text-gold-dark hover:underline font-black pr-1 border-r border-amber-300">
-                                        دانلود
-                                      </a>
+                        {/* Action buttons */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <a
+                              href={whatsappUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg transition-all hover:scale-105"
+                              style={{ background: 'rgba(37,211,102,0.15)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)' }}
+                              title="واتساپ"
+                            >
+                              <MessageSquare size={13} />
+                            </a>
+
+                            <a
+                              href={`tel:${cleanPhone}`}
+                              className="p-1.5 rounded-lg transition-all hover:scale-105"
+                              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)' }}
+                              title="تماس"
+                            >
+                              <Phone size={13} />
+                            </a>
+
+                            <button
+                              onClick={() => setExpandedPhone(isExpanded ? null : customer.phone)}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black transition-all cursor-pointer"
+                              style={{ background: 'rgba(201,162,39,0.18)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.4)' }}
+                            >
+                              <span>📋 سوابق</span>
+                              {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Expandable Customer Request Drawer */}
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={7} className="p-0 border-b border-white/10 bg-black/40">
+                            <div className="p-4 space-y-2.5">
+                              <p className="text-[11px] font-black text-gold flex items-center gap-1.5">
+                                📋 سابقه تمامی درخواست‌های {customer.name} ({customer.requests.length} مورد):
+                              </p>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {customer.requests.map((req, idx) => (
+                                  <div
+                                    key={req.id || idx}
+                                    className="p-3 rounded-xl border text-xs space-y-1.5"
+                                    style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-extrabold text-white">{req.serviceTitle}</span>
+                                      <span className="text-[10px] text-white/40">{formatDate(req.createdAt)}</span>
+                                    </div>
+
+                                    {req.description && (
+                                      <p className="text-[11px] text-white/70 bg-black/30 p-2 rounded-lg border border-white/5 leading-relaxed">
+                                        {req.description}
+                                      </p>
+                                    )}
+
+                                    {req.files && req.files.length > 0 && (
+                                      <div className="flex flex-wrap gap-1 pt-1">
+                                        {req.files.map((f, fIdx) => (
+                                          <div
+                                            key={fIdx}
+                                            className="flex items-center gap-1.5 bg-gold/10 px-2 py-1 rounded-lg text-[10px] text-gold font-bold border border-gold/25"
+                                          >
+                                            <FileText size={11} />
+                                            <span className="truncate max-w-[130px]">{f.name}</span>
+                                            {f.url && (
+                                              <a
+                                                href={f.url}
+                                                download={f.name}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-white hover:underline font-black pr-1 border-r border-gold/30"
+                                              >
+                                                دانلود
+                                              </a>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
                                     )}
                                   </div>
                                 ))}
                               </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-white shadow-xs">
-          <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
-            <Users size={32} className="text-slate-300" />
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-white/3 text-white/40">
+          <div className="flex flex-col items-center gap-1.5">
+            <Users size={32} className="text-white/20" />
             <span className="font-bold text-xs">هیچ مشتری‌ای یافت نشد.</span>
           </div>
         </div>

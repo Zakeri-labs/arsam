@@ -1119,9 +1119,9 @@ export default function AdminPage() {
                     <div className="py-2 border-t border-white/8 space-y-1">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-white/40 text-[10px]">تلفن:</span>
-                        <span className="font-mono font-black text-white text-xs tracking-wide inline-block" dir="ltr">
+                        <bdo dir="ltr" className="font-mono font-black text-white text-xs tracking-wide inline-block" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
                           {req.phone}
-                        </span>
+                        </bdo>
                       </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-white/40 text-[10px]">خدمت:</span>

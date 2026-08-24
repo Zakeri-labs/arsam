@@ -186,9 +186,9 @@ export default function CaseModal({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-lg font-black text-white">{request.name}</h2>
-              <span className="font-mono text-xs font-bold text-[#c9a227] bg-[#c9a227]/15 px-2.5 py-0.5 rounded-full border border-[#c9a227]/30" dir="ltr">
+              <bdo dir="ltr" className="font-mono text-xs font-bold text-[#c9a227] bg-[#c9a227]/15 px-2.5 py-0.5 rounded-full border border-[#c9a227]/30 inline-block" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
                 {request.phone}
-              </span>
+              </bdo>
             </div>
             <p className="text-xs text-white/50 flex items-center gap-2">
               <span>خدمت: <strong className="text-white/90">{request.serviceTitle}</strong></span>

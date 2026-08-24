@@ -183,7 +183,7 @@ function TicketCard({
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-mono font-black text-[#0f1e37] text-xs tracking-wide inline-block" dir="ltr">{ticket.phone}</span>
+                <bdo dir="ltr" className="font-mono font-black text-[#0f1e37] text-xs tracking-wide inline-block" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{ticket.phone}</bdo>
               </div>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-[10px] text-slate-400 flex items-center gap-1">
