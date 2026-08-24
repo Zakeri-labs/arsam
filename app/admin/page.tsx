@@ -236,15 +236,24 @@ export default function AdminPage() {
       observer.disconnect();
     }, 7000);
 
+    const authTimeout = setTimeout(() => {
+      setIsAuthenticated(prev => (prev === null ? false : prev));
+    }, 2000);
+
     fetch('/api/auth')
       .then(res => res.json())
       .then(data => {
-        setIsAuthenticated(data.authenticated);
+        clearTimeout(authTimeout);
+        setIsAuthenticated(!!data.authenticated);
       })
-      .catch(() => setIsAuthenticated(false));
+      .catch(() => {
+        clearTimeout(authTimeout);
+        setIsAuthenticated(false);
+      });
 
     return () => {
       clearInterval(interval);
+      clearTimeout(authTimeout);
       observer.disconnect();
     };
   }, []);

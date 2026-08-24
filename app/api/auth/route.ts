@@ -36,11 +36,15 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('ofogh_session');
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get('ofogh_session');
 
-  if (session && session.value === 'authenticated') {
-    return NextResponse.json({ authenticated: true });
+    if (session && session.value === 'authenticated') {
+      return NextResponse.json({ authenticated: true });
+    }
+  } catch (e) {
+    console.error('Auth GET check error:', e);
   }
 
   return NextResponse.json({ authenticated: false });
