@@ -936,14 +936,14 @@ export default function AdminPage() {
     </div>
   );
 
-  // --- 3. REQUESTS SCREEN RENDER (Clean Light Cards + Workflow Modal) ---
+  // --- 3. REQUESTS SCREEN RENDER (Rich Dark Navy Cards + Workflow Modal) ---
   const renderRequestsScreen = () => {
     if (!requests) {
       return (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200/80 bg-white shadow-xs text-[#0f1e37]">
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl text-white">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#0f1e37] border-t-transparent"></div>
-            <span className="text-xs font-bold text-slate-500">درحال دریافت تمامی درخواست‌ها...</span>
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-gold border-t-transparent"></div>
+            <span className="text-xs font-bold text-white/50">درحال دریافت تمامی درخواست‌ها...</span>
           </div>
         </div>
       );
@@ -963,17 +963,17 @@ export default function AdminPage() {
     });
 
     return (
-      <div className="space-y-4 animate-fadeIn text-[#0f1e37]" dir="rtl">
+      <div className="space-y-4 animate-fadeIn text-white" dir="rtl">
         {/* Header, Source Filters & Search */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg">
           <div>
-            <h2 className="text-base font-black text-[#0f1e37]">درخواست‌ها و تسک‌های ادامه‌دار ({filteredRequests.length})</h2>
-            <p className="text-[11px] text-slate-500 mt-0.5">مدیریت پرونده‌ها، گردش کار، فازهای اجرایی و مدارک مشتریان</p>
+            <h2 className="text-base font-black text-white">درخواست‌ها و تسک‌های ادامه‌دار ({filteredRequests.length})</h2>
+            <p className="text-[11px] text-white/40 mt-0.5">مدیریت پرونده‌ها، گردش کار، فازهای اجرایی و مدارک مشتریان</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Source Filter Pills */}
-            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            <div className="flex items-center gap-1 bg-[#0f1e37] p-1 rounded-xl border border-white/10">
               {[
                 { id: 'all', label: 'همه سورس‌ها' },
                 { id: 'web', label: '🌐 آنلاین' },
@@ -985,9 +985,9 @@ export default function AdminPage() {
                   onClick={() => setSourceFilter(sf.id as any)}
                   className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border"
                   style={{
-                    background: sourceFilter === sf.id ? '#0f1e37' : 'white',
-                    color: sourceFilter === sf.id ? 'white' : '#64748b',
-                    borderColor: sourceFilter === sf.id ? '#0f1e37' : 'transparent',
+                    background: sourceFilter === sf.id ? '#c9a227' : 'transparent',
+                    color: sourceFilter === sf.id ? '#0f1e37' : 'rgba(255,255,255,0.6)',
+                    borderColor: sourceFilter === sf.id ? '#c9a227' : 'transparent',
                   }}
                 >
                   {sf.label}
@@ -998,15 +998,15 @@ export default function AdminPage() {
             {/* Manual Phone Request Button */}
             <button
               onClick={handleAddManualPhoneRequest}
-              className="px-3.5 py-2 rounded-xl text-xs font-black cursor-pointer flex items-center gap-1.5 transition-all hover:bg-[#162a4a] bg-[#0f1e37] text-white shadow-xs shrink-0"
+              className="px-3.5 py-2 rounded-xl text-xs font-black cursor-pointer flex items-center gap-1.5 transition-all hover:brightness-110 bg-gold text-[#0f1e37] shadow-md shrink-0"
             >
-              <Plus size={14} className="text-gold" />
+              <Plus size={14} />
               <span>ثبت درخواست جدید / تلفنی</span>
             </button>
 
             {/* Search */}
             <div className="relative w-full sm:w-52">
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-white/30">
                 <Search className="h-3.5 w-3.5" />
               </div>
               <input
@@ -1014,7 +1014,7 @@ export default function AdminPage() {
                 value={requestsSearchQuery}
                 onChange={(e) => setRequestsSearchQuery(e.target.value)}
                 placeholder="جستجو..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-1.5 pr-8 pl-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-gold focus:bg-white"
+                className="w-full rounded-xl border border-white/10 bg-[#0f1e37] py-1.5 pr-8 pl-3 text-xs text-white placeholder-white/30 outline-none focus:border-gold"
               />
             </div>
           </div>
@@ -1030,12 +1030,12 @@ export default function AdminPage() {
               const reqStatus = req.queueStatus || 'waiting';
 
               const statusColors: Record<string, { label: string; color: string; bg: string; border: string }> = {
-                waiting:      { label: 'در انتظار بررسی', color: '#64748b', bg: '#f8fafc', border: '#cbd5e1' },
-                in_progress:  { label: 'در حال اقدام',     color: '#b45309', bg: '#fffbeb', border: '#fcd34d' },
-                pending_docs: { label: 'منتظر مدارک',    color: '#c2410c', bg: '#fff7ed', border: '#fdba74' },
-                gov_process:  { label: 'امور دولتی',      color: '#1d4ed8', bg: '#eff6ff', border: '#93c5fd' },
-                completed:    { label: 'تکمیل شد',        color: '#047857', bg: '#ecfdf5', border: '#6ee7b7' },
-                absent:       { label: 'معلق',             color: '#b91c1c', bg: '#fef2f2', border: '#fca5a5' },
+                waiting:      { label: 'در انتظار بررسی', color: '#94a3b8', bg: 'rgba(148,163,184,0.12)', border: 'rgba(148,163,184,0.3)' },
+                in_progress:  { label: 'در حال اقدام',     color: '#c9a227', bg: 'rgba(201,162,39,0.18)', border: 'rgba(201,162,39,0.45)' },
+                pending_docs: { label: 'منتظر مدارک',    color: '#f97316', bg: 'rgba(249,115,22,0.18)', border: 'rgba(249,115,22,0.45)' },
+                gov_process:  { label: 'امور دولتی',      color: '#60a5fa', bg: 'rgba(59,130,246,0.18)', border: 'rgba(59,130,246,0.45)' },
+                completed:    { label: 'تکمیل شد',        color: '#34d399', bg: 'rgba(52,211,153,0.15)', border: 'rgba(52,211,153,0.35)' },
+                absent:       { label: 'معلق',             color: '#f87171', bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.35)' },
               };
 
               const stCfg = statusColors[reqStatus] || statusColors.waiting;
@@ -1043,7 +1043,7 @@ export default function AdminPage() {
               return (
                 <div
                   key={req.id}
-                  className="rounded-2xl border bg-white shadow-xs hover:shadow-md transition-all relative overflow-hidden text-right flex flex-col justify-between"
+                  className="rounded-2xl border bg-[#0b172a] shadow-xl transition-all relative overflow-hidden text-right flex flex-col justify-between"
                   style={{
                     borderColor: stCfg.border,
                   }}
@@ -1061,21 +1061,21 @@ export default function AdminPage() {
                       <div className="flex items-center gap-2.5">
                         {req.queueNumber != null ? (
                           <div
-                            className="flex flex-col items-center justify-center w-12 h-12 rounded-xl shrink-0 font-black border"
+                            className="flex flex-col items-center justify-center w-12 h-12 rounded-xl shrink-0 font-black border shadow-xs"
                             style={{ background: stCfg.bg, borderColor: stCfg.border, color: stCfg.color }}
                           >
                             <span className="text-[8px] leading-none mb-0.5 opacity-80">نوبت</span>
                             <span className="text-xl leading-none font-black">{req.queueNumber}</span>
                           </div>
                         ) : (
-                          <div className="h-10 w-10 rounded-xl bg-[#0f1e37] text-gold border border-[#0f1e37] flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                          <div className="h-10 w-10 rounded-xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
                             {req.name.charAt(0)}
                           </div>
                         )}
 
                         <div className="min-w-0">
-                          <h4 className="font-extrabold text-[#0f1e37] text-xs truncate max-w-[140px]">{req.name}</h4>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                          <h4 className="font-extrabold text-white text-xs truncate max-w-[140px]">{req.name}</h4>
+                          <span className="text-[10px] text-white/40 block mt-0.5">
                             {formatRequestDate(req.createdAt)}
                           </span>
                         </div>
@@ -1088,58 +1088,58 @@ export default function AdminPage() {
                         >
                           {stCfg.label}
                         </span>
-                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-slate-100 border border-slate-200 text-slate-600">
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/5 border border-white/10 text-white/60">
                           {reqSource === 'qms' ? '🏛️ حضوری' : reqSource === 'phone' ? '📞 تلفنی' : '🌐 آنلاین'}
                         </span>
                       </div>
                     </div>
 
                     {/* Phone & Service */}
-                    <div className="py-2 border-t border-slate-100 space-y-1">
+                    <div className="py-2 border-t border-white/10 space-y-1">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 text-[10px]">تلفن:</span>
-                        <bdo dir="ltr" className="font-mono font-black text-[#0f1e37] text-xs tracking-wide inline-block" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
+                        <span className="text-white/40 text-[10px]">تلفن:</span>
+                        <bdo dir="ltr" className="font-mono font-black text-white text-xs tracking-wide inline-block" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
                           {req.phone}
                         </bdo>
                       </div>
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-400 text-[10px]">خدمت:</span>
-                        <span className="font-extrabold text-[#0f1e37] text-xs truncate max-w-[160px]">{req.serviceTitle}</span>
+                        <span className="text-white/40 text-[10px]">خدمت:</span>
+                        <span className="font-extrabold text-white/90 text-xs truncate max-w-[160px]">{req.serviceTitle}</span>
                       </div>
                     </div>
 
                     {/* Description note */}
-                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-[11px] text-slate-700 leading-relaxed min-h-[40px] max-h-16 overflow-hidden font-medium">
+                    <div className="bg-[#07111f] p-2.5 rounded-xl border border-white/8 text-[11px] text-white/70 leading-relaxed min-h-[40px] max-h-16 overflow-hidden font-medium">
                       {req.description || 'توضیحات اولیه ثبت نشده است.'}
                     </div>
 
                     {/* Files attached summary */}
                     {req.files && req.files.length > 0 && (
-                      <div className="flex items-center justify-between text-[10px] text-amber-800 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                      <div className="flex items-center justify-between text-[10px] text-gold font-bold bg-gold/10 px-2.5 py-1 rounded-lg border border-gold/20">
                         <span>📎 {req.files.length} مدرک و فایل پیوست</span>
-                        <span className="text-amber-600 font-normal">مشاهده</span>
+                        <span className="text-white/40 font-normal">مشاهده</span>
                       </div>
                     )}
                   </div>
 
                   {/* Footer Actions */}
-                  <div className="flex items-center justify-between gap-1.5 px-4 py-2 border-t border-slate-100 bg-slate-50/50">
+                  <div className="flex items-center justify-between gap-1.5 px-4 py-2 border-t border-white/10 bg-[#07111f]/60">
                     <div className="flex items-center gap-1.5">
                       <a
                         href={whatsappUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 bg-[#25D366] text-white hover:brightness-105 transition-all text-[10px] font-bold px-2 py-1 rounded-lg shadow-xs"
+                        className="p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all"
                         title="واتساپ"
                       >
-                        <MessageSquare size={12} />
+                        <MessageSquare size={13} />
                       </a>
                       <a
                         href={`tel:${cleanPhone}`}
-                        className="p-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all text-[10px] font-bold px-2"
+                        className="p-1.5 rounded-lg bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 transition-all"
                         title="تماس"
                       >
-                        <Phone size={12} />
+                        <Phone size={13} />
                       </a>
                     </div>
 
@@ -1147,14 +1147,14 @@ export default function AdminPage() {
                       {/* Case Workflow & Files Modal Trigger */}
                       <button
                         onClick={() => setSelectedCaseRequest(req)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black transition-all cursor-pointer bg-white text-[#0f1e37] border border-slate-200 hover:bg-slate-100 shadow-xs"
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black transition-all cursor-pointer bg-gold/20 text-gold border border-gold/30 hover:bg-gold/30 shadow-xs"
                       >
                         <span>📂 گردش کار پرونده</span>
                       </button>
 
                       <button
                         onClick={() => handleDeleteRequest(req.id)}
-                        className="p-1 rounded-lg text-red-500 hover:bg-red-50 transition-all cursor-pointer"
+                        className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/15 transition-all cursor-pointer"
                         title="حذف"
                       >
                         <Trash2 size={13} />
@@ -1166,7 +1166,7 @@ export default function AdminPage() {
             })}
           </div>
         ) : (
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-xs text-slate-400">
+          <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl text-white/40">
             <div className="flex flex-col items-center gap-1.5">
               <AlertTriangle className="h-6 w-6 text-amber-500" />
               <span className="font-bold text-xs">هیچ درخواستی یافت نشد.</span>
@@ -1791,7 +1791,7 @@ export default function AdminPage() {
 
   // --- 5. COMPONENT MAIN RENDER ---
   return (
-    <div className="min-h-screen bg-slate-50/50 font-sans text-right" dir="rtl">
+    <div className="min-h-screen bg-[#07111f] font-sans text-right text-white" dir="rtl">
       <Toaster position="top-center" toastOptions={{ style: { fontFamily: 'inherit' } }} />
 
       {/* Case Workflow & Task Management Modal */}
@@ -1822,8 +1822,8 @@ export default function AdminPage() {
       {/* Main Responsive Grid Layout */}
       <div className="flex min-h-screen">
         
-        {/* DESKTOP SIDEBAR PANEL (Always visible on large screens) */}
-        <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-screen md:z-20 border-l border-border bg-[#0f1e37] shadow-xl">
+        {/* DESKTOP SIDEBAR PANEL */}
+        <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-screen md:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
           <SidebarContent />
         </aside>
 
@@ -1836,15 +1836,14 @@ export default function AdminPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+                className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
               />
-
               <motion.aside
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl md:hidden border-l border-white/10"
+                className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl md:hidden border-l border-white/10 bg-[#0b172a]"
               >
                 <SidebarContent />
               </motion.aside>
@@ -1853,36 +1852,36 @@ export default function AdminPage() {
         </AnimatePresence>
 
         {/* MAIN DISPLAY AREA */}
-        <div className="flex-1 md:mr-64 min-h-screen flex flex-col">
+        <div className="flex-1 md:mr-64 min-h-screen flex flex-col bg-[#07111f]">
           
           {/* MOBILE ONLY TOP HEADER */}
-          <header className="md:hidden sticky top-0 z-30 w-full border-b border-[#ede8df] bg-white/85 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+          <header className="md:hidden sticky top-0 z-30 w-full border-b border-white/10 bg-[#0b172a]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-xl border border-border bg-white text-navy hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+              className="p-2 rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 transition-colors shadow-sm cursor-pointer"
             >
               <Menu className="h-5.5 w-5.5" />
             </button>
 
             <div className="flex flex-col items-end select-none">
-              <h1 className="text-[13px] font-black text-navy leading-none">پنل مدیریت</h1>
+              <h1 className="text-[13px] font-black text-white leading-none">پنل مدیریت</h1>
               <span className="text-[9px] font-bold text-gold tracking-wide mt-1.5">ابوآرسام</span>
             </div>
           </header>
 
           {/* DESKTOP BRAND BANNER */}
-          <header className="hidden md:block w-full border-b border-border bg-white py-4.5 px-6 select-none">
+          <header className="hidden md:block w-full border-b border-white/10 bg-[#0b172a]/80 py-4.5 px-6 select-none backdrop-blur-md">
             <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
               <div>
-                <h1 className="text-base font-extrabold text-navy leading-none">
+                <h1 className="text-base font-extrabold text-white leading-none">
                   {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : 'مدیریت مشتریان (CRM)'}
                 </h1>
-                <p className="text-[10px] text-muted-foreground mt-1.5 font-bold">
+                <p className="text-[10px] text-white/50 mt-1.5 font-bold">
                   {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : 'لیست پرونده‌ها، سوابق و مدارک مشتریان'}
                 </p>
               </div>
               
-              <div className="text-[10px] text-gold font-bold tracking-widest bg-secondary px-3 py-1.5 rounded-full border border-border/60">
+              <div className="text-[10px] text-gold font-bold tracking-widest bg-gold/10 px-3.5 py-1.5 rounded-full border border-gold/30">
                 ABU ARSAM SERVICES
               </div>
             </div>

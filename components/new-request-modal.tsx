@@ -83,39 +83,39 @@ export default function NewRequestModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
+        className="absolute inset-0 bg-black/70 backdrop-blur-xs"
       />
 
-      {/* Main Glass Dialog */}
+      {/* Main Glass Dialog (Dark Navy) */}
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="relative z-10 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-white text-[#0f1e37] shadow-2xl space-y-4 border border-slate-200"
+        className="relative z-10 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-[#0b172a] text-white shadow-2xl space-y-4 border border-white/10"
         dir="rtl"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
           <div className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl bg-[#0f1e37] text-gold flex items-center justify-center font-black">
+            <div className="h-9 w-9 rounded-xl bg-gold text-[#0f1e37] flex items-center justify-center font-black">
               <Plus size={18} />
             </div>
             <div>
-              <h2 className="text-base font-black text-[#0f1e37]">ثبت درخواست / پرونده جدید</h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">ثبت دستی نوبت یا درخواست تلفنی متقاضیان</p>
+              <h2 className="text-base font-black text-white">ثبت درخواست / پرونده جدید</h2>
+              <p className="text-[11px] text-white/50 mt-0.5">ثبت دستی نوبت یا درخواست تلفنی متقاضیان</p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
         </div>
 
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold text-center">
+          <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-xs font-bold text-center">
             {errorMsg}
           </div>
         )}
@@ -124,8 +124,8 @@ export default function NewRequestModal({
           {/* Row 1: Name & Phone */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-700 flex items-center gap-1">
-                <User size={13} className="text-slate-400" />
+              <label className="text-xs font-black text-white/70 flex items-center gap-1">
+                <User size={13} className="text-white/40" />
                 <span>نام و نام خانوادگی متقاضی: *</span>
               </label>
               <input
@@ -134,13 +134,13 @@ export default function NewRequestModal({
                 onChange={(e) => setName(e.target.value)}
                 placeholder="مثلا: علی رضایی"
                 required
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-[#0f1e37] outline-none focus:border-gold focus:bg-white font-semibold"
+                className="w-full rounded-xl border border-white/10 bg-[#0f1e37] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-gold font-semibold"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-black text-slate-700 flex items-center gap-1">
-                <Phone size={13} className="text-slate-400" />
+              <label className="text-xs font-black text-white/70 flex items-center gap-1">
+                <Phone size={13} className="text-white/40" />
                 <span>شماره تلفن متقاضی: *</span>
               </label>
               <input
@@ -150,14 +150,14 @@ export default function NewRequestModal({
                 placeholder="+968 71713238"
                 required
                 dir="ltr"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-[#0f1e37] outline-none focus:border-gold focus:bg-white font-mono font-bold text-left"
+                className="w-full rounded-xl border border-white/10 bg-[#0f1e37] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-gold font-mono font-bold text-left"
               />
             </div>
           </div>
 
           {/* Source Selector */}
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700 block">سورس دریافت درخواست:</label>
+            <label className="text-xs font-black text-white/70 block">سورس دریافت درخواست:</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'phone', label: '📞 تلفنی / مشاوره', icon: PhoneCall },
@@ -170,9 +170,9 @@ export default function NewRequestModal({
                   onClick={() => setSource(s.id as any)}
                   className="py-2.5 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center border flex items-center justify-center gap-1"
                   style={{
-                    background: source === s.id ? '#0f1e37' : '#f8fafc',
-                    borderColor: source === s.id ? '#0f1e37' : '#e2e8f0',
-                    color: source === s.id ? 'white' : '#475569',
+                    background: source === s.id ? '#c9a227' : 'rgba(255,255,255,0.03)',
+                    borderColor: source === s.id ? '#c9a227' : 'rgba(255,255,255,0.08)',
+                    color: source === s.id ? '#0f1e37' : 'rgba(255,255,255,0.7)',
                   }}
                 >
                   {s.label}
@@ -183,12 +183,12 @@ export default function NewRequestModal({
 
           {/* Service Title Dropdown / Custom */}
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700 block">عنوان خدمت درخواستی:</label>
+            <label className="text-xs font-black text-white/70 block">عنوان خدمت درخواستی:</label>
             {servicesList.length > 0 ? (
               <select
                 value={serviceTitle}
                 onChange={(e) => setServiceTitle(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-[#0f1e37] outline-none focus:border-gold focus:bg-white font-extrabold cursor-pointer"
+                className="w-full rounded-xl border border-white/10 bg-[#0f1e37] p-2.5 text-xs text-white outline-none focus:border-gold font-extrabold cursor-pointer"
               >
                 {servicesList.map((svc, idx) => (
                   <option key={idx} value={svc}>{svc}</option>
@@ -203,46 +203,46 @@ export default function NewRequestModal({
                 value={customService}
                 onChange={(e) => setCustomService(e.target.value)}
                 placeholder="عنوان خدمت سفارشی..."
-                className="w-full mt-1.5 rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-[#0f1e37] outline-none focus:border-gold focus:bg-white font-semibold"
+                className="w-full mt-1.5 rounded-xl border border-white/10 bg-[#0f1e37] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-gold font-semibold"
               />
             )}
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700 block">توضیحات اولیه پرونده:</label>
+            <label className="text-xs font-black text-white/70 block">توضیحات اولیه پرونده:</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="نکات اولیه، خواسته متقاضی یا توضیحات توافقات..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-2.5 text-xs text-[#0f1e37] placeholder-slate-400 outline-none focus:border-gold focus:bg-white leading-relaxed font-medium"
+              className="w-full rounded-xl border border-white/10 bg-[#0f1e37] p-2.5 text-xs text-white placeholder-white/30 outline-none focus:border-gold leading-relaxed font-medium"
             />
           </div>
 
           {/* File attachments */}
           <div className="space-y-1.5">
-            <label className="text-xs font-black text-slate-700 block">مدارک پیوست (اختیاری):</label>
-            <div className="relative border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center hover:border-gold transition-colors cursor-pointer bg-slate-50/50">
+            <label className="text-xs font-black text-white/70 block">مدارک پیوست (اختیاری):</label>
+            <div className="relative border-2 border-dashed border-white/10 rounded-2xl p-4 text-center hover:border-gold transition-colors cursor-pointer bg-[#0f1e37]">
               <input
                 type="file"
                 multiple
                 onChange={handleFileChange}
                 className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
               />
-              <Upload className="mx-auto h-6 w-6 text-slate-400 mb-1" />
-              <p className="text-xs font-bold text-slate-600">
+              <Upload className="mx-auto h-6 w-6 text-white/40 mb-1" />
+              <p className="text-xs font-bold text-white/70">
                 {files.length > 0 ? `${files.length} فایل انتخاب گردید` : 'جهت آپلود مدارک کلیک کنید یا فایل‌ها را رها کنید'}
               </p>
             </div>
           </div>
 
           {/* Form Action Buttons */}
-          <div className="flex items-center justify-between border-t border-slate-100 pt-4 mt-2">
+          <div className="flex items-center justify-between border-t border-white/10 pt-4 mt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl border border-white/10 text-white/70 text-xs font-bold hover:bg-white/5 cursor-pointer"
             >
               انصراف
             </button>
@@ -250,9 +250,9 @@ export default function NewRequestModal({
             <button
               type="submit"
               disabled={loading}
-              className="px-7 py-2.5 rounded-xl font-black text-xs cursor-pointer flex items-center gap-2 bg-[#0f1e37] text-white hover:bg-[#162a4a] transition-all shadow-md disabled:opacity-50"
+              className="px-7 py-2.5 rounded-xl font-black text-xs cursor-pointer flex items-center gap-2 bg-gold text-[#0f1e37] hover:brightness-110 transition-all shadow-md disabled:opacity-50"
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} className="text-gold" />}
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
               <span>ایجاد و ثبت پرونده</span>
             </button>
           </div>

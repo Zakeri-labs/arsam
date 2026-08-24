@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users, Search, Phone, MessageSquare, Clock, Calendar,
@@ -99,11 +99,11 @@ export default function CustomersScreen() {
         if (r.files && r.files.length > 0) totalFiles += r.files.length;
       }
 
-      let badge = { label: '🆕 جدید', bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200' };
+      let badge = { label: '🆕 جدید', bg: 'rgba(59,130,246,0.15)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' };
       if (totalRequests >= 3) {
-        badge = { label: '👑 مشتری VIP', bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300' };
+        badge = { label: '👑 مشتری VIP', bg: 'rgba(201,162,39,0.2)', text: '#e4bc3c', border: 'rgba(201,162,39,0.45)' };
       } else if (totalRequests === 2) {
-        badge = { label: '⭐ فعال', bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300' };
+        badge = { label: '⭐ فعال', bg: 'rgba(52,211,153,0.15)', text: '#34d399', border: 'rgba(52,211,153,0.3)' };
       }
 
       result.push({
@@ -148,22 +148,23 @@ export default function CustomersScreen() {
   const totalFilesCount = customers.reduce((acc, c) => acc + c.totalFiles, 0);
 
   return (
-    <div className="space-y-4 animate-fadeIn text-[#0f1e37]" dir="rtl">
-      {/* ── STATS BAR ── */}
+    <div className="space-y-4 animate-fadeIn text-white" dir="rtl">
+      {/* ── STATS BAR (Dark Navy Theme) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'کل مشتریان', value: totalCustomersCount, color: '#0f1e37', bg: '#f1f5f9', icon: Users },
-          { label: 'مشتریان VIP', value: vipCustomersCount, color: '#d97706', bg: '#fef3c7', icon: Award },
-          { label: 'کل درخواست‌ها', value: requests.length, color: '#2563eb', bg: '#dbeafe', icon: Clock },
-          { label: 'مدارک دریافت شده', value: totalFilesCount, color: '#059669', bg: '#d1fae5', icon: FolderOpen },
+          { label: 'کل مشتریان', value: totalCustomersCount, color: '#60a5fa', bg: 'rgba(59,130,246,0.15)', icon: Users },
+          { label: 'مشتریان VIP', value: vipCustomersCount, color: '#c9a227', bg: 'rgba(201,162,39,0.2)', icon: Award },
+          { label: 'کل درخواست‌ها', value: requests.length, color: '#a855f7', bg: 'rgba(168,85,247,0.15)', icon: Clock },
+          { label: 'مدارک دریافت شده', value: totalFilesCount, color: '#34d399', bg: 'rgba(52,211,153,0.15)', icon: FolderOpen },
         ].map(({ label, value, color, bg, icon: Icon }) => (
           <div
             key={label}
-            className="rounded-2xl p-4 border border-slate-200/80 bg-white shadow-xs flex items-center justify-between"
+            className="rounded-2xl p-4 border bg-[#0b172a] shadow-lg flex items-center justify-between"
+            style={{ borderColor: 'rgba(255,255,255,0.08)' }}
           >
             <div>
-              <p className="text-[11px] font-bold text-slate-500 mb-0.5">{label}</p>
-              <p className="text-2xl font-black text-[#0f1e37]">{value}</p>
+              <p className="text-[11px] font-bold text-white/50 mb-0.5">{label}</p>
+              <p className="text-2xl font-black text-white">{value}</p>
             </div>
             <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: bg }}>
               <Icon size={20} style={{ color }} />
@@ -173,10 +174,10 @@ export default function CustomersScreen() {
       </div>
 
       {/* ── HEADER & SEARCH ── */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-base font-black text-[#0f1e37]">مدیریت مشتریان و پرونده‌ها (CRM)</h2>
-          <p className="text-[11px] text-slate-500 mt-0.5">
+          <h2 className="text-base font-black text-white">مدیریت مشتریان و پرونده‌ها (CRM)</h2>
+          <p className="text-[11px] text-white/40 mt-0.5">
             لیست جامع مشتریان به همراه سوابق درخواست‌ها و مدارک ثبت‌شده ({filteredCustomers.length} مشتری)
           </p>
         </div>
@@ -186,7 +187,7 @@ export default function CustomersScreen() {
           <select
             value={sortBy}
             onChange={(e: any) => setSortBy(e.target.value)}
-            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-gold cursor-pointer"
+            className="bg-[#0f1e37] border border-white/15 rounded-xl px-3 py-2 text-xs font-bold text-white/80 outline-none focus:border-gold cursor-pointer"
           >
             <option value="recent">آخرین مراجعه</option>
             <option value="requests">بیشترین درخواست</option>
@@ -195,7 +196,7 @@ export default function CustomersScreen() {
 
           {/* Search Input */}
           <div className="relative w-full sm:w-60">
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-white/30">
               <Search className="h-3.5 w-3.5" />
             </div>
             <input
@@ -203,74 +204,77 @@ export default function CustomersScreen() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="جستجو نام، تلفن..."
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 py-2 pr-8 pl-3 text-xs text-slate-800 placeholder-slate-400 outline-none focus:border-gold focus:bg-white"
+              className="w-full rounded-xl border border-white/15 bg-[#0f1e37] py-2 pr-8 pl-3 text-xs text-white placeholder-white/30 outline-none focus:border-gold"
             />
           </div>
         </div>
       </div>
 
-      {/* ── CUSTOMERS LIST TABLE VIEW (Clean Light Theme) ── */}
+      {/* ── CUSTOMERS LIST TABLE VIEW (Perfect Grid Table) ── */}
       {loading ? (
-        <div className="flex items-center justify-center py-16 gap-2 text-slate-500">
-          <Loader2 size={24} className="animate-spin text-[#0f1e37]" />
+        <div className="flex items-center justify-center py-16 gap-2 text-white/40">
+          <Loader2 size={24} className="animate-spin text-gold" />
           <span className="text-xs font-bold">درحال دریافت اطلاعات مشتریان...</span>
         </div>
       ) : filteredCustomers.length > 0 ? (
-        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+        <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse text-xs">
+            <table className="w-full text-right border-collapse text-xs table-fixed">
               <thead>
-                <tr className="border-b border-slate-100 text-slate-500 font-extrabold text-[11px] bg-slate-50/80">
-                  <th className="py-3 px-4">مشتری</th>
-                  <th className="py-3 px-4">شماره تلفن</th>
-                  <th className="py-3 px-4">تاریخ ثبت‌نام</th>
-                  <th className="py-3 px-4">آخرین مراجعه</th>
-                  <th className="py-3 px-4">سطح</th>
-                  <th className="py-3 px-4">کل درخواست‌ها</th>
-                  <th className="py-3 px-4 text-center">عملیات</th>
+                <tr className="border-b border-white/10 text-gold font-extrabold text-[11px] bg-[#0f1e37]/90">
+                  <th className="py-3.5 px-4 w-[22%]">مشتری</th>
+                  <th className="py-3.5 px-4 w-[18%] text-right">شماره تلفن</th>
+                  <th className="py-3.5 px-4 w-[13%]">تاریخ ثبت‌نام</th>
+                  <th className="py-3.5 px-4 w-[13%]">آخرین مراجعه</th>
+                  <th className="py-3.5 px-4 w-[12%]">سطح</th>
+                  <th className="py-3.5 px-4 w-[12%]">درخواست‌ها</th>
+                  <th className="py-3.5 px-4 w-[12%] text-center">عملیات</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-white/5">
                 {filteredCustomers.map(customer => {
                   const cleanPhone = customer.phone.replace(/[^0-9+]/g, '');
                   const whatsappUrl = `https://wa.me/${cleanPhone}`;
                   const isExpanded = expandedPhone === customer.phone;
 
                   return (
-                    <tbody key={customer.phone} className="group">
-                      <tr className="hover:bg-slate-50/60 transition-colors">
+                    <Fragment key={customer.phone}>
+                      <tr className="hover:bg-white/5 transition-colors border-b border-white/5">
                         {/* Avatar & Name */}
                         <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-2.5">
-                            <div className="h-9 w-9 rounded-xl bg-[#0f1e37] text-gold font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 rounded-xl bg-gold/15 text-gold border border-gold/30 font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
                               {customer.name.charAt(0)}
                             </div>
-                            <span className="font-extrabold text-[#0f1e37] text-xs truncate max-w-[150px]">
+                            <span className="font-extrabold text-white text-xs truncate max-w-[150px]">
                               {customer.name}
                             </span>
                           </div>
                         </td>
 
                         {/* Phone with STRICT LTR BDO Overriding */}
-                        <td className="py-3.5 px-4 font-mono font-black text-[#0f1e37]">
+                        <td className="py-3.5 px-4 font-mono font-black text-white/90 text-right">
                           <bdo dir="ltr" className="inline-block tracking-wider" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
                             {customer.phone}
                           </bdo>
                         </td>
 
                         {/* First seen */}
-                        <td className="py-3.5 px-4 text-slate-600 font-medium">
+                        <td className="py-3.5 px-4 text-white/60 font-medium">
                           {formatDate(customer.firstSeen)}
                         </td>
 
                         {/* Last seen */}
-                        <td className="py-3.5 px-4 text-slate-600 font-medium">
+                        <td className="py-3.5 px-4 text-white/60 font-medium">
                           {formatDate(customer.lastSeen)}
                         </td>
 
                         {/* Tier badge */}
                         <td className="py-3.5 px-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${customer.badge.bg} ${customer.badge.text} ${customer.badge.border}`}>
+                          <span
+                            className="px-2.5 py-0.5 rounded-full text-[10px] font-black border inline-block"
+                            style={{ background: customer.badge.bg, color: customer.badge.text, borderColor: customer.badge.border }}
+                          >
                             {customer.badge.label}
                           </span>
                         </td>
@@ -278,10 +282,10 @@ export default function CustomersScreen() {
                         {/* Request count */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-black text-[#0f1e37] text-xs">{customer.totalRequests} درخواست</span>
+                            <span className="font-black text-gold text-xs">{customer.totalRequests} مورد</span>
                             {customer.totalFiles > 0 && (
-                              <span className="text-[10px] text-amber-800 font-bold bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-                                📎 {customer.totalFiles} فایل
+                              <span className="text-[10px] text-amber-300 font-bold bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">
+                                📎 {customer.totalFiles}
                               </span>
                             )}
                           </div>
@@ -294,23 +298,26 @@ export default function CustomersScreen() {
                               href={whatsappUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 bg-[#25D366] text-white hover:brightness-105 transition-all text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xs"
+                              className="p-1.5 rounded-lg transition-all hover:scale-105"
+                              style={{ background: 'rgba(37,211,102,0.15)', color: '#25D366', border: '1px solid rgba(37,211,102,0.3)' }}
+                              title="واتساپ"
                             >
-                              <MessageSquare size={12} />
-                              واتساپ
+                              <MessageSquare size={13} />
                             </a>
 
                             <a
                               href={`tel:${cleanPhone}`}
-                              className="p-1 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-all text-[10px] font-bold px-2"
+                              className="p-1.5 rounded-lg transition-all hover:scale-105"
+                              style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)' }}
                               title="تماس"
                             >
-                              <Phone size={12} />
+                              <Phone size={13} />
                             </a>
 
                             <button
                               onClick={() => setExpandedPhone(isExpanded ? null : customer.phone)}
-                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-all cursor-pointer bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                              className="flex items-center gap-1 px-2 py-1 rounded-xl text-[10px] font-extrabold transition-all cursor-pointer"
+                              style={{ background: 'rgba(201,162,39,0.18)', color: '#e4bc3c', border: '1px solid rgba(201,162,39,0.4)' }}
                             >
                               <span>📋 سوابق</span>
                               {isExpanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
@@ -322,9 +329,9 @@ export default function CustomersScreen() {
                       {/* Expandable Customer Request Drawer */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={7} className="p-0 border-b border-slate-200 bg-slate-50/70">
+                          <td colSpan={7} className="p-0 border-b border-white/10 bg-[#07111f]/90">
                             <div className="p-4 space-y-2.5">
-                              <p className="text-[11px] font-black text-slate-600 flex items-center gap-1.5">
+                              <p className="text-[11px] font-black text-gold flex items-center gap-1.5">
                                 📋 سابقه تمامی درخواست‌های {customer.name} ({customer.requests.length} مورد):
                               </p>
 
@@ -332,15 +339,16 @@ export default function CustomersScreen() {
                                 {customer.requests.map((req, idx) => (
                                   <div
                                     key={req.id || idx}
-                                    className="p-3 rounded-xl bg-white border border-slate-200 text-xs space-y-1.5 shadow-2xs"
+                                    className="p-3 rounded-xl border text-xs space-y-1.5"
+                                    style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}
                                   >
                                     <div className="flex justify-between items-center">
-                                      <span className="font-extrabold text-[#0f1e37]">{req.serviceTitle}</span>
-                                      <span className="text-[10px] text-slate-400">{formatDate(req.createdAt)}</span>
+                                      <span className="font-extrabold text-white">{req.serviceTitle}</span>
+                                      <span className="text-[10px] text-white/40">{formatDate(req.createdAt)}</span>
                                     </div>
 
                                     {req.description && (
-                                      <p className="text-[11px] text-slate-700 bg-slate-50 p-2 rounded-lg border border-slate-100 leading-relaxed font-medium">
+                                      <p className="text-[11px] text-white/70 bg-black/30 p-2 rounded-lg border border-white/5 leading-relaxed font-medium">
                                         {req.description}
                                       </p>
                                     )}
@@ -350,7 +358,7 @@ export default function CustomersScreen() {
                                         {req.files.map((f, fIdx) => (
                                           <div
                                             key={fIdx}
-                                            className="flex items-center gap-1.5 bg-amber-50 px-2 py-1 rounded-lg text-[10px] text-amber-800 font-bold border border-amber-200"
+                                            className="flex items-center gap-1.5 bg-gold/10 px-2 py-1 rounded-lg text-[10px] text-gold font-bold border border-gold/25"
                                           >
                                             <FileText size={11} />
                                             <span className="truncate max-w-[130px]">{f.name}</span>
@@ -360,7 +368,7 @@ export default function CustomersScreen() {
                                                 download={f.name}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-gold-dark hover:underline font-black pr-1 border-r border-amber-300"
+                                                className="text-white hover:underline font-black pr-1 border-r border-gold/30"
                                               >
                                                 دانلود
                                               </a>
@@ -376,7 +384,7 @@ export default function CustomersScreen() {
                           </td>
                         </tr>
                       )}
-                    </tbody>
+                    </Fragment>
                   );
                 })}
               </tbody>
@@ -384,9 +392,9 @@ export default function CustomersScreen() {
           </div>
         </div>
       ) : (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-xs">
-          <div className="flex flex-col items-center gap-1.5 text-slate-400">
-            <Users size={32} className="text-slate-300" />
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl text-white/40">
+          <div className="flex flex-col items-center gap-1.5">
+            <Users size={32} className="text-white/20" />
             <span className="font-bold text-xs">هیچ مشتری‌ای یافت نشد.</span>
           </div>
         </div>

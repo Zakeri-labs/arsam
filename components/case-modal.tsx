@@ -28,12 +28,12 @@ export interface ServiceRequest {
 }
 
 const STATUS_STEPS = [
-  { id: 'waiting', label: 'در انتظار بررسی اولیه', color: '#475569', bg: '#f8fafc', border: '#cbd5e1' },
-  { id: 'in_progress', label: 'در حال اقدام و پیگیری', color: '#b45309', bg: '#fffbeb', border: '#fcd34d' },
-  { id: 'pending_docs', label: 'منتظر مدارک از مشتری', color: '#c2410c', bg: '#fff7ed', border: '#fdba74' },
-  { id: 'gov_process', label: 'در حال استعلام و امور دولتی', color: '#1d4ed8', bg: '#eff6ff', border: '#93c5fd' },
-  { id: 'completed', label: 'تکمیل شد (خدمت نهایی)', color: '#047857', bg: '#ecfdf5', border: '#6ee7b7' },
-  { id: 'absent', label: 'معلق / انصراف', color: '#b91c1c', bg: '#fef2f2', border: '#fca5a5' },
+  { id: 'waiting', label: 'در انتظار بررسی اولیه', color: '#94a3b8', bg: 'rgba(148,163,184,0.15)', border: 'rgba(148,163,184,0.3)' },
+  { id: 'in_progress', label: 'در حال اقدام و پیگیری', color: '#e4bc3c', bg: 'rgba(201,162,39,0.2)', border: 'rgba(201,162,39,0.45)' },
+  { id: 'pending_docs', label: 'منتظر مدارک از مشتری', color: '#fb923c', bg: 'rgba(249,115,22,0.2)', border: 'rgba(249,115,22,0.45)' },
+  { id: 'gov_process', label: 'در حال استعلام و امور دولتی', color: '#60a5fa', bg: 'rgba(59,130,246,0.2)', border: 'rgba(59,130,246,0.45)' },
+  { id: 'completed', label: 'تکمیل شد (خدمت نهایی)', color: '#34d399', bg: 'rgba(52,211,153,0.18)', border: 'rgba(52,211,153,0.4)' },
+  { id: 'absent', label: 'معلق / انصراف', color: '#f87171', bg: 'rgba(248,113,113,0.15)', border: 'rgba(248,113,113,0.35)' },
 ];
 
 function formatFileSize(bytes: number) {
@@ -165,40 +165,40 @@ export default function CaseModal({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"
+        className="absolute inset-0 bg-black/70 backdrop-blur-xs"
       />
 
-      {/* Main Dialog (Sleek Clean Light Design) */}
+      {/* Main Dialog (Rich Dark Navy Design) */}
       <motion.div
         initial={{ scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
-        className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-white text-[#0f1e37] shadow-2xl space-y-5 border border-slate-200"
+        className="relative z-10 w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl p-6 bg-[#0b172a] text-white shadow-2xl space-y-5 border border-white/10"
         dir="rtl"
       >
         {/* Header */}
-        <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-start justify-between border-b border-white/10 pb-4">
           <div>
             <div className="flex items-center gap-2.5 mb-1">
-              <h2 className="text-lg font-black text-[#0f1e37]">{request.name}</h2>
+              <h2 className="text-lg font-black text-white">{request.name}</h2>
               <bdo
                 dir="ltr"
-                className="font-mono text-xs font-black text-[#0f1e37] bg-slate-100 px-2.5 py-0.5 rounded-lg border border-slate-200 inline-block tracking-wide"
+                className="font-mono text-xs font-black text-gold bg-gold/15 px-2.5 py-0.5 rounded-lg border border-gold/30 inline-block tracking-wide"
                 style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}
               >
                 {request.phone}
               </bdo>
             </div>
-            <p className="text-xs text-slate-500 flex items-center gap-2">
-              <span>خدمت: <strong className="text-[#0f1e37] font-extrabold">{request.serviceTitle}</strong></span>
+            <p className="text-xs text-white/50 flex items-center gap-2">
+              <span>خدمت: <strong className="text-white font-extrabold">{request.serviceTitle}</strong></span>
               <span>•</span>
-              <span className="text-[11px] text-slate-400">{formatDate(request.createdAt)}</span>
+              <span className="text-[11px] text-white/40">{formatDate(request.createdAt)}</span>
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
           >
             <X size={20} />
           </button>
@@ -206,7 +206,7 @@ export default function CaseModal({
 
         {/* Toast */}
         {toastMsg && (
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-center text-xs font-bold">
+          <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-center text-xs font-bold">
             {toastMsg}
           </div>
         )}
@@ -214,8 +214,8 @@ export default function CaseModal({
         {/* Source & Status Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Source Selector */}
-          <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
-            <label className="text-xs font-black text-slate-600 block">سورس درخواست:</label>
+          <div className="space-y-1.5 bg-[#0f1e37] p-3.5 rounded-2xl border border-white/10">
+            <label className="text-xs font-black text-white/70 block">سورس درخواست:</label>
             <div className="grid grid-cols-3 gap-1.5">
               {[
                 { id: 'web', label: '🌐 آنلاین' },
@@ -227,9 +227,9 @@ export default function CaseModal({
                   onClick={() => setSource(s.id)}
                   className="py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer text-center border"
                   style={{
-                    background: source === s.id ? '#0f1e37' : 'white',
-                    borderColor: source === s.id ? '#0f1e37' : '#e2e8f0',
-                    color: source === s.id ? 'white' : '#475569',
+                    background: source === s.id ? '#c9a227' : 'rgba(255,255,255,0.03)',
+                    borderColor: source === s.id ? '#c9a227' : 'rgba(255,255,255,0.08)',
+                    color: source === s.id ? '#0f1e37' : 'rgba(255,255,255,0.7)',
                   }}
                 >
                   {s.label}
@@ -239,8 +239,8 @@ export default function CaseModal({
           </div>
 
           {/* Quick Contact Bar */}
-          <div className="space-y-1.5 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 flex flex-col justify-between">
-            <label className="text-xs font-black text-slate-600 block">ارتباط سریع با مشتری:</label>
+          <div className="space-y-1.5 bg-[#0f1e37] p-3.5 rounded-2xl border border-white/10 flex flex-col justify-between">
+            <label className="text-xs font-black text-white/70 block">ارتباط سریع با مشتری:</label>
             <div className="flex items-center gap-2">
               <a
                 href={whatsappUrl}
@@ -253,7 +253,7 @@ export default function CaseModal({
               </a>
               <a
                 href={`tel:${cleanPhone}`}
-                className="py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1 hover:bg-slate-100 transition-all"
+                className="py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-white/80 font-bold text-xs flex items-center justify-center gap-1 hover:bg-white/10 transition-all"
               >
                 <Phone size={15} />
                 تماس
@@ -263,8 +263,8 @@ export default function CaseModal({
         </div>
 
         {/* Workflow Steps */}
-        <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-          <label className="text-xs font-black text-slate-600 block">مرحله و وضعیت فعلی پرونده (گردش کار):</label>
+        <div className="space-y-2 bg-[#0f1e37] p-4 rounded-2xl border border-white/10">
+          <label className="text-xs font-black text-white/70 block">مرحله و وضعیت فعلی پرونده (گردش کار):</label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {STATUS_STEPS.map(st => {
               const active = queueStatus === st.id;
@@ -274,9 +274,9 @@ export default function CaseModal({
                   onClick={() => setQueueStatus(st.id)}
                   className="p-2.5 rounded-xl text-xs font-bold text-right transition-all cursor-pointer border flex items-center justify-between"
                   style={{
-                    background: active ? st.bg : 'white',
-                    borderColor: active ? st.border : '#e2e8f0',
-                    color: active ? st.color : '#64748b',
+                    background: active ? st.bg : 'rgba(255,255,255,0.03)',
+                    borderColor: active ? st.border : 'rgba(255,255,255,0.08)',
+                    color: active ? st.color : 'rgba(255,255,255,0.6)',
                   }}
                 >
                   <span className="truncate max-w-[150px]">{st.label}</span>
@@ -288,25 +288,25 @@ export default function CaseModal({
         </div>
 
         {/* Case Timeline / Description Notes */}
-        <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
-          <label className="text-xs font-black text-slate-600 block">یادداشت‌ها و روندهای ادامه دار پرونده:</label>
+        <div className="space-y-2 bg-[#0f1e37] p-4 rounded-2xl border border-white/10">
+          <label className="text-xs font-black text-white/70 block">یادداشت‌ها و روندهای ادامه دار پرونده:</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             placeholder="یادداشت‌های پیگیری، تاریخچه تماس، مراحل دولتی یا توضیحات کارهای انجام شده را اینجا وارد کنید..."
-            className="w-full rounded-xl bg-white border border-slate-200 p-3 text-xs text-[#0f1e37] placeholder-slate-400 outline-none focus:border-gold leading-relaxed font-medium"
+            className="w-full rounded-xl bg-[#07111f] border border-white/10 p-3 text-xs text-white placeholder-white/30 outline-none focus:border-gold leading-relaxed font-medium"
           />
         </div>
 
         {/* Documents & File Upload */}
-        <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+        <div className="space-y-3 bg-[#0f1e37] p-4 rounded-2xl border border-white/10">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-black text-slate-600">مدارک و فایل‌های پرونده ({files.length} مورد):</label>
+            <label className="text-xs font-black text-white/70">مدارک و فایل‌های پرونده ({files.length} مورد):</label>
 
             {/* Admin Upload Button */}
-            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0f1e37] text-white text-xs font-bold hover:bg-[#162a4a] cursor-pointer transition-all shadow-xs">
-              <Upload size={13} className="text-gold" />
+            <label className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gold text-[#0f1e37] text-xs font-black hover:brightness-110 cursor-pointer transition-all shadow-xs">
+              <Upload size={13} />
               <span>{uploading ? 'در حال آپلود...' : '+ آپلود فایل جدید (ادمین)'}</span>
               <input
                 type="file"
@@ -323,12 +323,12 @@ export default function CaseModal({
               {files.map((file, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 transition-all text-xs"
+                  className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-[#07111f] border border-white/10 text-xs"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <FileText size={15} className="text-gold shrink-0" />
-                    <span className="font-bold text-[#0f1e37] truncate max-w-[200px]">{file.name}</span>
-                    <span className="text-[10px] text-slate-400">({formatFileSize(file.size)})</span>
+                    <span className="font-bold text-white truncate max-w-[200px]">{file.name}</span>
+                    <span className="text-[10px] text-white/40">({formatFileSize(file.size)})</span>
                   </div>
 
                   {file.url && (
@@ -336,7 +336,7 @@ export default function CaseModal({
                       href={file.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold/15 text-gold-dark text-[10px] font-bold hover:bg-gold/25"
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-gold/20 text-gold text-[10px] font-bold hover:bg-gold/30"
                     >
                       <Download size={12} />
                       دانلود
@@ -346,17 +346,17 @@ export default function CaseModal({
               ))}
             </div>
           ) : (
-            <p className="text-center py-4 text-slate-400 text-xs">
+            <p className="text-center py-4 text-white/40 text-xs">
               هیچ مدرکی تاکنون آپلود نشده است
             </p>
           )}
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+        <div className="flex items-center justify-between border-t border-white/10 pt-4">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+            className="px-5 py-2.5 rounded-xl border border-white/10 text-white/70 text-xs font-bold hover:bg-white/5 cursor-pointer"
           >
             بستن
           </button>
@@ -364,9 +364,9 @@ export default function CaseModal({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-7 py-2.5 rounded-xl font-black text-xs cursor-pointer flex items-center gap-2 bg-[#0f1e37] text-white hover:bg-[#162a4a] transition-all shadow-md disabled:opacity-50"
+            className="px-7 py-2.5 rounded-xl font-black text-xs cursor-pointer flex items-center gap-2 bg-gold text-[#0f1e37] hover:brightness-110 transition-all shadow-md disabled:opacity-50"
           >
-            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} className="text-gold" />}
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             <span>ذخیره تمامی تغییرات پرونده</span>
           </button>
         </div>
