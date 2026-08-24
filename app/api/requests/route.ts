@@ -142,3 +142,46 @@ export async function DELETE(request: Request) {
     );
   }
 }
+
+// PATCH (Secure, Admin Only) - Update request workflow, status, source, notes, or files
+export async function PATCH(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get('ofogh_session');
+
+    if (!session || session.value !== 'authenticated') {
+      return NextResponse.json(
+        { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'شناسه درخواست الزامی است' },
+        { status: 400 }
+      );
+    }
+
+    const { updateRequestDetails } = await import('@/lib/db-requests');
+    const success = await updateRequestDetails(id, updates);
+
+    if (success) {
+      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json(
+        { error: 'بروزرسانی درخواست ناموفق بود' },
+        { status: 500 }
+      );
+    }
+  } catch (error: any) {
+    console.error('Error updating request via PATCH:', error);
+    return NextResponse.json(
+      { error: 'خطا در بروزرسانی اطلاعات درخواست', details: error.message || String(error) },
+      { status: 500 }
+    );
+  }
+}

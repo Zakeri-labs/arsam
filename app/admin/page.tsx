@@ -12,6 +12,7 @@ import {
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
 import CustomersScreen from '@/components/customers-screen';
+import CaseModal from '@/components/case-modal';
 
 // Categories list matching app/page.tsx
 const categories = [
@@ -94,6 +95,45 @@ export default function AdminPage() {
   // Requests state
   const [requests, setRequests] = useState<ServiceRequest[] | null>(null);
   const [requestsSearchQuery, setRequestsSearchQuery] = useState('');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'web' | 'qms' | 'phone'>('all');
+  const [selectedCaseRequest, setSelectedCaseRequest] = useState<ServiceRequest | null>(null);
+
+  const handleCaseUpdateSuccess = (updated: ServiceRequest) => {
+    setRequests(prev => prev ? prev.map(r => r.id === updated.id ? updated : r) : null);
+    toast.success('پرونده و گردش کار با موفقیت بروزرسانی شد');
+  };
+
+  const handleAddManualPhoneRequest = async () => {
+    const name = prompt('نام متقاضی:');
+    if (!name || !name.trim()) return;
+    const phone = prompt('شماره تلفن متقاضی (مثلا +968 71713238):');
+    if (!phone || !phone.trim()) return;
+    const serviceTitle = prompt('عنوان خدمت (مثلا ثبت شرکت در امارات):') || 'مشاوره خدمات';
+    const description = prompt('توضیحات اولیه یا یادداشت پیگیری:') || '';
+
+    try {
+      const formData = new FormData();
+      formData.append('name', name.trim());
+      formData.append('phone', phone.trim());
+      formData.append('serviceTitle', serviceTitle.trim());
+      formData.append('description', description.trim());
+      formData.append('source', 'phone');
+
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        toast.success('درخواست جدید با موفقیت ثبت شد');
+        fetchRequests();
+      } else {
+        toast.error('خطا در ثبت درخواست');
+      }
+    } catch {
+      toast.error('خطا در ارتباط با سرور');
+    }
+  };
 
   // Editor modal state
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -912,181 +952,246 @@ export default function AdminPage() {
     </div>
   );
 
-  // --- 3. REQUESTS SCREEN RENDER (Card Grid for All Days) ---
+  // --- 3. REQUESTS SCREEN RENDER (Dark Navy Card Grid + Workflow Modal) ---
   const renderRequestsScreen = () => {
     if (!requests) {
       return (
-        <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
+        <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-white/3 text-white">
           <div className="flex flex-col items-center gap-3">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-[#0f1e37] border-t-transparent"></div>
-            <span className="text-xs font-bold text-muted-foreground">درحال دریافت تمامی درخواست‌ها...</span>
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-gold border-t-transparent"></div>
+            <span className="text-xs font-bold text-white/50">درحال دریافت تمامی درخواست‌ها...</span>
           </div>
         </div>
       );
     }
 
-    const filteredRequests = requests.filter(r => 
-      r.name.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
-      r.phone.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
-      r.serviceTitle.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
-      (r.description && r.description.toLowerCase().includes(requestsSearchQuery.toLowerCase()))
-    );
+    const filteredRequests = requests.filter(r => {
+      const matchSearch =
+        r.name.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
+        r.phone.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
+        r.serviceTitle.toLowerCase().includes(requestsSearchQuery.toLowerCase()) ||
+        (r.description && r.description.toLowerCase().includes(requestsSearchQuery.toLowerCase()));
+
+      const matchSource =
+        sourceFilter === 'all' ? true : (r.source || 'web') === sourceFilter;
+
+      return matchSearch && matchSource;
+    });
 
     return (
-      <div className="space-y-4 animate-fadeIn" dir="rtl">
-        {/* Header & Search */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-border/80 shadow-xs">
+      <div className="space-y-4 animate-fadeIn text-white" dir="rtl">
+        {/* Header, Source Filters & Search */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 rounded-2xl border"
+          style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.08)' }}
+        >
           <div>
-            <h2 className="text-base font-black text-[#0f1e37]">درخواست‌های ارسالی (همه روزها)</h2>
-            <p className="text-[11px] text-muted-foreground mt-0.5">کل درخواست‌های ثبت‌شده از وب‌سایت و کیوسک QMS در همه زمان‌ها ({filteredRequests.length} درخواست)</p>
+            <h2 className="text-base font-black text-white">درخواست‌ها و تسک‌های ادامه‌دار ({filteredRequests.length})</h2>
+            <p className="text-[11px] text-white/40 mt-0.5">مدیریت پرونده‌ها، گردش کار، فازهای اجرایی و مدارک مشتریان</p>
           </div>
-          
-          <div className="relative w-full sm:w-64">
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground">
-              <Search className="h-3.5 w-3.5" />
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Source Filter Pills */}
+            <div className="flex items-center gap-1 bg-black/20 p-1 rounded-xl border border-white/8">
+              {[
+                { id: 'all', label: 'همه سورس‌ها' },
+                { id: 'web', label: '🌐 آنلاین' },
+                { id: 'qms', label: '🏛️ حضوری' },
+                { id: 'phone', label: '📞 تلفنی' },
+              ].map(sf => (
+                <button
+                  key={sf.id}
+                  onClick={() => setSourceFilter(sf.id as any)}
+                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
+                  style={{
+                    background: sourceFilter === sf.id ? '#c9a227' : 'transparent',
+                    color: sourceFilter === sf.id ? '#0f1e37' : 'rgba(255,255,255,0.5)',
+                  }}
+                >
+                  {sf.label}
+                </button>
+              ))}
             </div>
-            <input
-              type="text"
-              value={requestsSearchQuery}
-              onChange={(e) => setRequestsSearchQuery(e.target.value)}
-              placeholder="جستجو نام، تلفن یا خدمت..."
-              className="w-full rounded-xl border border-border bg-slate-50/50 py-2 pr-8 pl-3 text-xs outline-none focus:border-gold focus:bg-white"
-            />
+
+            {/* Manual Phone Request Button */}
+            <button
+              onClick={handleAddManualPhoneRequest}
+              className="px-3.5 py-2 rounded-xl text-xs font-black cursor-pointer flex items-center gap-1.5 transition-all hover:brightness-110 shrink-0"
+              style={{ background: 'linear-gradient(135deg, #c9a227 0%, #e4bc3c 100%)', color: '#0f1e37' }}
+            >
+              <Plus size={14} />
+              <span>ثبت درخواست جدید / تلفنی</span>
+            </button>
+
+            {/* Search */}
+            <div className="relative w-full sm:w-56">
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-white/30">
+                <Search className="h-3.5 w-3.5" />
+              </div>
+              <input
+                type="text"
+                value={requestsSearchQuery}
+                onChange={(e) => setRequestsSearchQuery(e.target.value)}
+                placeholder="جستجو..."
+                className="w-full rounded-xl border border-white/10 bg-white/5 py-1.5 pr-8 pl-3 text-xs text-white placeholder-white/30 outline-none focus:border-gold/60"
+              />
+            </div>
           </div>
         </div>
 
-        {/* Requests Cards Grid (3 Columns like QMS cards) */}
+        {/* Requests Cards Grid (3 Columns matching QMS cards design) */}
         {filteredRequests.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {filteredRequests.map(req => {
               const cleanPhone = req.phone.replace(/[^0-9+]/g, '');
               const whatsappUrl = `https://wa.me/${cleanPhone}`;
-              const isQms = req.source === 'qms';
+              const reqSource = req.source || 'web';
+              const reqStatus = req.queueStatus || 'waiting';
+
+              const statusColors: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                waiting:      { label: 'در انتظار بررسی', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)', border: 'rgba(148,163,184,0.25)' },
+                in_progress:  { label: 'در حال اقدام',     color: '#c9a227', bg: 'rgba(201,162,39,0.15)', border: 'rgba(201,162,39,0.4)' },
+                pending_docs: { label: 'منتظر مدارک',    color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.4)' },
+                gov_process:  { label: 'امور دولتی',      color: '#3b82f6', bg: 'rgba(59,130,246,0.15)', border: 'rgba(59,130,246,0.4)' },
+                completed:    { label: 'تکمیل شد',        color: '#34d399', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.3)' },
+                absent:       { label: 'معلق',             color: '#f87171', bg: 'rgba(248,113,113,0.1)',  border: 'rgba(248,113,113,0.25)' },
+              };
+
+              const stCfg = statusColors[reqStatus] || statusColors.waiting;
 
               return (
                 <div
                   key={req.id}
-                  className="rounded-2xl border bg-white shadow-xs hover:shadow-md transition-all relative overflow-hidden text-right flex flex-col justify-between"
-                  style={{ borderColor: isQms ? '#fcd34d' : '#e2e8f0' }}
+                  className="rounded-2xl border transition-all relative overflow-hidden text-right flex flex-col justify-between"
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    borderColor: stCfg.border,
+                  }}
                 >
                   {/* Status Indicator Stripe */}
                   <div
                     className="absolute top-0 right-0 bottom-0 w-1.5"
-                    style={{ background: isQms ? '#d97706' : '#0f1e37' }}
+                    style={{ background: stCfg.color }}
                   />
 
                   {/* Card Content */}
-                  <div className="p-4 pb-2.5 pr-4.5">
-                    {/* Header Row: Avatar/Number + Name + Source Tag */}
-                    <div className="flex items-start justify-between gap-2.5 mb-2.5">
+                  <div className="p-4 pb-2.5 pr-4.5 space-y-2.5">
+                    {/* Header Row: Number/Avatar + Name + Status & Source badges */}
+                    <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2.5">
-                        {isQms && req.queueNumber != null ? (
-                          <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 shrink-0 font-black">
-                            <span className="text-[8px] leading-none mb-0.5 opacity-80">نوبت</span>
+                        {req.queueNumber != null ? (
+                          <div
+                            className="flex flex-col items-center justify-center w-12 h-12 rounded-xl shrink-0 font-black border"
+                            style={{ background: 'rgba(0,0,0,0.3)', borderColor: stCfg.border, color: stCfg.color }}
+                          >
+                            <span className="text-[8px] leading-none mb-0.5 opacity-70">نوبت</span>
                             <span className="text-xl leading-none">{req.queueNumber}</span>
                           </div>
                         ) : (
-                          <div className="h-10 w-10 rounded-xl bg-[#0f1e37]/5 text-[#0f1e37] border border-[#0f1e37]/15 flex items-center justify-center font-black text-sm shrink-0">
+                          <div className="h-10 w-10 rounded-xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center font-black text-sm shrink-0">
                             {req.name.charAt(0)}
                           </div>
                         )}
 
                         <div className="min-w-0">
-                          <h4 className="font-extrabold text-[#0f1e37] text-xs truncate max-w-[150px]">{req.name}</h4>
-                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                          <h4 className="font-extrabold text-white text-xs truncate max-w-[140px]">{req.name}</h4>
+                          <span className="text-[10px] text-white/40 block mt-0.5">
                             {formatRequestDate(req.createdAt)}
                           </span>
                         </div>
                       </div>
 
-                      {/* Source tag */}
-                      <span className={`shrink-0 px-2 py-0.5 rounded-full text-[9px] font-extrabold border ${
-                        isQms ? 'bg-amber-50 text-amber-800 border-amber-300' : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}>
-                        {isQms ? '🎫 کیوسک' : '🌐 وب'}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[9px] font-black border"
+                          style={{ color: stCfg.color, background: stCfg.bg, borderColor: stCfg.border }}
+                        >
+                          {stCfg.label}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-white/5 border border-white/10 text-white/60">
+                          {reqSource === 'qms' ? '🏛️ حضوری' : reqSource === 'phone' ? '📞 تلفنی' : '🌐 آنلاین'}
+                        </span>
+                      </div>
                     </div>
 
-                    {/* Service title */}
-                    <div className="py-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <span className="text-slate-400 font-bold text-[10px]">خدمت:</span>
-                      <span className="font-extrabold text-[#0f1e37] text-xs truncate max-w-[170px]">{req.serviceTitle}</span>
-                    </div>
-
-                    {/* Phone & Whatsapp */}
-                    <div className="flex items-center justify-between gap-2 py-2 border-t border-slate-100">
-                      <span className="font-mono font-black text-[#0f1e37] text-xs bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 inline-block" dir="ltr">
-                        {req.phone}
-                      </span>
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 bg-[#25D366] text-white hover:brightness-105 transition-all text-[10px] font-bold px-2.5 py-1 rounded-lg shadow-xs"
-                      >
-                        واتساپ
-                      </a>
+                    {/* Phone & Service */}
+                    <div className="py-2 border-t border-white/8 space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-white/40 text-[10px]">تلفن:</span>
+                        <span className="font-mono font-black text-white text-xs tracking-wide inline-block" dir="ltr">
+                          {req.phone}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className="text-white/40 text-[10px]">خدمت:</span>
+                        <span className="font-bold text-white/90 text-xs truncate max-w-[160px]">{req.serviceTitle}</span>
+                      </div>
                     </div>
 
                     {/* Description note */}
-                    <div className="mt-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 text-[11px] text-slate-700 leading-relaxed min-h-[44px]">
-                      {req.description || 'توضیحات تکمیلی ثبت نشده است.'}
+                    <div className="bg-black/20 p-2.5 rounded-xl border border-white/6 text-[11px] text-white/70 leading-relaxed min-h-[40px] max-h-16 overflow-hidden">
+                      {req.description || 'توضیحات اولیه ثبت نشده است.'}
                     </div>
 
-                    {/* Attached files */}
+                    {/* Files attached summary */}
                     {req.files && req.files.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
-                        <span className="text-[10px] font-extrabold text-slate-400 block">📎 مدارک پیوست شده:</span>
-                        <div className="space-y-1">
-                          {req.files.map((file, idx) => (
-                            <div
-                              key={idx}
-                              className="flex items-center justify-between gap-2 rounded-lg bg-amber-50/70 border border-amber-200/80 px-2 py-1 text-[11px] text-[#0f1e37] font-bold"
-                            >
-                              <span className="truncate max-w-[150px]">{file.name}</span>
-                              {file.url && (
-                                <a
-                                  href={file.url}
-                                  download={file.name}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[10px] text-gold-dark hover:underline font-black shrink-0 pr-1 border-r border-amber-200"
-                                >
-                                  دانلود
-                                </a>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                      <div className="flex items-center justify-between text-[10px] text-gold font-bold bg-gold/10 px-2.5 py-1 rounded-lg border border-gold/20">
+                        <span>📎 {req.files.length} مدرک و فایل پیوست</span>
+                        <span className="text-white/50 font-normal">کلیک جهت مشاهده</span>
                       </div>
                     )}
                   </div>
 
                   {/* Footer Actions */}
-                  <div className="flex items-center justify-between gap-2 px-4 py-2 border-t border-slate-100 bg-slate-50/50">
-                    <a
-                      href={`tel:${cleanPhone}`}
-                      className="text-[10px] font-bold text-slate-600 hover:text-[#0f1e37] flex items-center gap-1"
-                    >
-                      تماس تلفنی
-                    </a>
+                  <div className="flex items-center justify-between gap-1.5 px-4 py-2 border-t border-white/8 bg-black/20">
+                    <div className="flex items-center gap-1">
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg transition-all hover:scale-105"
+                        style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366', border: '1px solid rgba(37,211,102,0.25)' }}
+                        title="واتساپ"
+                      >
+                        <MessageSquare size={13} />
+                      </a>
+                      <a
+                        href={`tel:${cleanPhone}`}
+                        className="p-1.5 rounded-lg transition-all hover:scale-105"
+                        style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.12)' }}
+                        title="تماس"
+                      >
+                        <Phone size={13} />
+                      </a>
+                    </div>
 
-                    <button
-                      onClick={() => handleDeleteRequest(req.id)}
-                      className="flex items-center gap-1 text-[10px] font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded-lg border border-red-100 cursor-pointer transition-colors"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      حذف
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      {/* Case Workflow & Files Modal Trigger */}
+                      <button
+                        onClick={() => setSelectedCaseRequest(req)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-black transition-all cursor-pointer"
+                        style={{ background: 'rgba(201,162,39,0.18)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.4)' }}
+                      >
+                        <span>📂 گردش کار پرونده</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteRequest(req.id)}
+                        className="p-1.5 rounded-lg transition-all hover:scale-105 cursor-pointer"
+                        style={{ background: 'rgba(248,113,113,0.08)', color: '#f87171', border: '1px solid rgba(248,113,113,0.18)' }}
+                        title="حذف"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
                   </div>
-
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="flex h-64 items-center justify-center rounded-2xl border border-border bg-white shadow-xs">
-            <div className="flex flex-col items-center gap-1.5 text-muted-foreground">
+          <div className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-white/3 text-white/40">
+            <div className="flex flex-col items-center gap-1.5">
               <AlertTriangle className="h-6 w-6 text-amber-500" />
               <span className="font-bold text-xs">هیچ درخواستی یافت نشد.</span>
             </div>
@@ -1675,7 +1780,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Action Footer (Integrated Page Bar) */}
+            {/* Action Footer */}
             <div className="flex items-center justify-between bg-white rounded-3xl border border-border p-5 shadow-sm">
               <button
                 type="button"
@@ -1710,36 +1815,45 @@ export default function AdminPage() {
 
   // --- 5. COMPONENT MAIN RENDER ---
   return (
-    <div className="min-h-screen bg-slate-50/50 font-sans text-right" dir="rtl">
+    <div className="min-h-screen bg-[#07111f] font-sans text-right text-white" dir="rtl">
       <Toaster position="top-center" toastOptions={{ style: { fontFamily: 'inherit' } }} />
+
+      {/* Case Workflow & Task Management Modal */}
+      <AnimatePresence>
+        {selectedCaseRequest && (
+          <CaseModal
+            request={selectedCaseRequest}
+            onClose={() => setSelectedCaseRequest(null)}
+            onUpdateSuccess={handleCaseUpdateSuccess}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Main Responsive Grid Layout */}
       <div className="flex min-h-screen">
         
-        {/* DESKTOP SIDEBAR PANEL (Always visible on large screens) */}
-        <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-screen md:z-20 border-l border-border bg-[#0f1e37] shadow-xl">
+        {/* DESKTOP SIDEBAR PANEL */}
+        <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-screen md:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
           <SidebarContent />
         </aside>
 
-        {/* MOBILE SLIDING DRAWER NAIGATION */}
+        {/* MOBILE SLIDING DRAWER NAVIGATION */}
         <AnimatePresence>
           {isMobileMenuOpen && (
             <>
-              {/* Overlay shadow backdrop */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+                className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
               />
-              {/* Sliding sidebar container */}
               <motion.aside
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl md:hidden border-l border-white/10"
+                className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl md:hidden border-l border-white/10 bg-[#0b172a]"
               >
                 <SidebarContent />
               </motion.aside>
@@ -1747,37 +1861,37 @@ export default function AdminPage() {
           )}
         </AnimatePresence>
 
-        {/* MAIN DISPLAY AREA (Occupies left side, offset on desktop by sidebar width) */}
-        <div className="flex-1 md:mr-64 min-h-screen flex flex-col">
+        {/* MAIN DISPLAY AREA */}
+        <div className="flex-1 md:mr-64 min-h-screen flex flex-col bg-[#07111f]">
           
-          {/* MOBILE ONLY TOP HEADER (Provides hamburger trigger) */}
-          <header className="md:hidden sticky top-0 z-30 w-full border-b border-[#ede8df] bg-white/85 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+          {/* MOBILE ONLY TOP HEADER */}
+          <header className="md:hidden sticky top-0 z-30 w-full border-b border-white/10 bg-[#0b172a]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 rounded-xl border border-border bg-white text-navy hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
+              className="p-2 rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 transition-colors shadow-sm cursor-pointer"
             >
               <Menu className="h-5.5 w-5.5" />
             </button>
 
             <div className="flex flex-col items-end select-none">
-              <h1 className="text-[13px] font-black text-navy leading-none">پنل مدیریت</h1>
+              <h1 className="text-[13px] font-black text-white leading-none">پنل مدیریت</h1>
               <span className="text-[9px] font-bold text-gold tracking-wide mt-1.5">ابوآرسام</span>
             </div>
           </header>
 
           {/* DESKTOP BRAND BANNER */}
-          <header className="hidden md:block w-full border-b border-border bg-white py-4.5 px-6 select-none">
+          <header className="hidden md:block w-full border-b border-white/10 bg-[#0b172a]/80 py-4.5 px-6 select-none backdrop-blur-md">
             <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
               <div>
-                <h1 className="text-base font-extrabold text-navy leading-none">
-                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی کاربران' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : 'مدیریت مشتریان (CRM)'}
+                <h1 className="text-base font-extrabold text-white leading-none">
+                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : 'مدیریت مشتریان (CRM)'}
                 </h1>
-                <p className="text-[10px] text-muted-foreground mt-1.5 font-bold">
-                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'پیگیری فرم‌های ثبت شده از سمت لندینگ پیج' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : 'لیست پرونده‌ها، سوابق و مدارک مشتریان'}
+                <p className="text-[10px] text-white/50 mt-1.5 font-bold">
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : 'لیست پرونده‌ها، سوابق و مدارک مشتریان'}
                 </p>
               </div>
               
-              <div className="text-[10px] text-gold font-bold tracking-widest bg-secondary px-3 py-1.5 rounded-full border border-border/60">
+              <div className="text-[10px] text-gold font-bold tracking-widest bg-gold/10 px-3.5 py-1.5 rounded-full border border-gold/30">
                 ABU ARSAM SERVICES
               </div>
             </div>
@@ -1797,10 +1911,7 @@ export default function AdminPage() {
               ) : (
                 <CustomersScreen />
               )}
-            </div>
-          </main>
-
-        </div>
+            </div>        </div>
       </div>
     </div>
   );

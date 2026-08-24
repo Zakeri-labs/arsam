@@ -155,6 +155,44 @@ export async function updateRequestQueue(
   }
 }
 
+export async function updateRequestDetails(
+  id: string,
+  updates: {
+    name?: string;
+    phone?: string;
+    description?: string;
+    serviceTitle?: string;
+    source?: string;
+    queueStatus?: string;
+    files?: RequestFile[];
+  }
+): Promise<boolean> {
+  try {
+    const payload: Record<string, any> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.phone !== undefined) payload.phone = updates.phone;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.serviceTitle !== undefined) payload.service_title = updates.serviceTitle;
+    if (updates.source !== undefined) payload.source = updates.source;
+    if (updates.queueStatus !== undefined) payload.queue_status = updates.queueStatus;
+    if (updates.files !== undefined) payload.files = updates.files;
+
+    const { error } = await supabase
+      .from('requests')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to update request details in Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Exception in updateRequestDetails:', err);
+    return false;
+  }
+}
+
 export async function deleteRequest(id: string): Promise<boolean> {
   try {
     const { error } = await supabase
