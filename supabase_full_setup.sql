@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS public.services (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 2. Create requests table (with QMS fields included)
+-- 2. Create requests table
 CREATE TABLE IF NOT EXISTS public.requests (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -55,14 +55,20 @@ CREATE TABLE IF NOT EXISTS public.requests (
     description TEXT,
     service_title TEXT NOT NULL,
     files JSONB DEFAULT '[]'::jsonb,
-    queue_number INTEGER,
-    source TEXT DEFAULT 'web',
-    queue_name TEXT,
-    queue_status TEXT DEFAULT 'waiting',
-    called_at TIMESTAMPTZ,
-    served_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure all QMS columns exist (adds them if table already existed)
+ALTER TABLE public.requests
+  ADD COLUMN IF NOT EXISTS queue_number INTEGER,
+  ADD COLUMN IF NOT EXISTS source       TEXT DEFAULT 'web',
+  ADD COLUMN IF NOT EXISTS queue_name   TEXT,
+  ADD COLUMN IF NOT EXISTS queue_status TEXT DEFAULT 'waiting',
+  ADD COLUMN IF NOT EXISTS called_at    TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS served_at    TIMESTAMPTZ;
+
+-- Fill default source value if any null
+UPDATE public.requests SET source = 'web' WHERE source IS NULL;
 
 -- Indexes for fast queries
 CREATE INDEX IF NOT EXISTS idx_requests_source ON public.requests(source);
