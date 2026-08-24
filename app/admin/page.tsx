@@ -78,6 +78,7 @@ interface ServiceRequest {
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -278,24 +279,20 @@ export default function AdminPage() {
       observer.disconnect();
     }, 7000);
 
-    const authTimeout = setTimeout(() => {
-      setIsAuthenticated(prev => (prev === null ? false : prev));
-    }, 2000);
-
     fetch('/api/auth')
       .then(res => res.json())
       .then(data => {
-        clearTimeout(authTimeout);
         setIsAuthenticated(!!data.authenticated);
       })
       .catch(() => {
-        clearTimeout(authTimeout);
         setIsAuthenticated(false);
+      })
+      .finally(() => {
+        setIsCheckingAuth(false);
       });
 
     return () => {
       clearInterval(interval);
-      clearTimeout(authTimeout);
       observer.disconnect();
     };
   }, []);
@@ -752,6 +749,18 @@ export default function AdminPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
+
+  // --- 0. AUTH CHECKING SPINNER SCREEN ---
+  if (isCheckingAuth) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-[#07111f] font-sans text-white p-4" dir="rtl">
+        <div className="flex flex-col items-center gap-3.5">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-gold border-t-transparent shadow-lg shadow-gold/20" />
+          <span className="text-xs font-bold text-white/60">درحال بررسی سشن و بارگذاری پنل مدیریت...</span>
+        </div>
+      </div>
+    );
+  }
 
   // --- 1. LOGIN SCREEN ---
   if (!isAuthenticated) {
