@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
+import CustomersScreen from '@/components/customers-screen';
 
 // Categories list matching app/page.tsx
 const categories = [
@@ -81,7 +82,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
 
   // Layout & Navigation State
-  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms'>('services');
+  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers'>('services');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Dashboard state
@@ -868,6 +869,23 @@ export default function AdminPage() {
             مدیریت صف QMS
           </span>
         </button>
+
+        <button
+          onClick={() => {
+            setActiveScreen('customers');
+            setIsMobileMenuOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeScreen === 'customers'
+              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+              : 'text-white/70 hover:bg-white/5 hover:text-white'
+          }`}
+        >
+          <span className="flex items-center gap-3">
+            <Users className="h-4.5 w-4.5 shrink-0 text-amber-400" />
+            مدیریت مشتریان (CRM)
+          </span>
+        </button>
       </nav>
 
       {/* Sidebar Footer / Action buttons */}
@@ -997,7 +1015,7 @@ export default function AdminPage() {
 
                     {/* Phone & Whatsapp */}
                     <div className="flex items-center justify-between gap-2 py-2 border-t border-slate-100">
-                      <span className="font-mono font-black text-[#0f1e37] text-xs bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                      <span className="font-mono font-black text-[#0f1e37] text-xs bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200 inline-block" dir="ltr">
                         {req.phone}
                       </span>
                       <a
@@ -1752,10 +1770,10 @@ export default function AdminPage() {
             <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
               <div>
                 <h1 className="text-base font-extrabold text-navy leading-none">
-                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی کاربران' : 'مدیریت صف نوبت‌دهی (QMS)'}
+                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی کاربران' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : 'مدیریت مشتریان (CRM)'}
                 </h1>
                 <p className="text-[10px] text-muted-foreground mt-1.5 font-bold">
-                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'پیگیری فرم‌های ثبت شده از سمت لندینگ پیج' : 'مدیریت پویای نوبت‌های کیوسک و حضوری'}
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'پیگیری فرم‌های ثبت شده از سمت لندینگ پیج' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : 'لیست پرونده‌ها، سوابق و مدارک مشتریان'}
                 </p>
               </div>
               
@@ -1774,8 +1792,10 @@ export default function AdminPage() {
                 renderServicesScreen()
               ) : activeScreen === 'requests' ? (
                 renderRequestsScreen()
-              ) : (
+              ) : activeScreen === 'qms' ? (
                 <QMSScreen />
+              ) : (
+                <CustomersScreen />
               )}
             </div>
           </main>
