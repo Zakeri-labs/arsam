@@ -13,6 +13,7 @@ import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
 import CustomersScreen from '@/components/customers-screen';
 import CaseModal from '@/components/case-modal';
+import NewRequestModal from '@/components/new-request-modal';
 
 // Categories list matching app/page.tsx
 const categories = [
@@ -99,42 +100,15 @@ export default function AdminPage() {
   const [requestsSearchQuery, setRequestsSearchQuery] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'web' | 'qms' | 'phone'>('all');
   const [selectedCaseRequest, setSelectedCaseRequest] = useState<ServiceRequest | null>(null);
+  const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
 
   const handleCaseUpdateSuccess = (updated: ServiceRequest) => {
     setRequests(prev => prev ? prev.map(r => r.id === updated.id ? updated : r) : null);
     toast.success('پرونده و گردش کار با موفقیت بروزرسانی شد');
   };
 
-  const handleAddManualPhoneRequest = async () => {
-    const name = prompt('نام متقاضی:');
-    if (!name || !name.trim()) return;
-    const phone = prompt('شماره تلفن متقاضی (مثلا +968 71713238):');
-    if (!phone || !phone.trim()) return;
-    const serviceTitle = prompt('عنوان خدمت (مثلا ثبت شرکت در امارات):') || 'مشاوره خدمات';
-    const description = prompt('توضیحات اولیه یا یادداشت پیگیری:') || '';
-
-    try {
-      const formData = new FormData();
-      formData.append('name', name.trim());
-      formData.append('phone', phone.trim());
-      formData.append('serviceTitle', serviceTitle.trim());
-      formData.append('description', description.trim());
-      formData.append('source', 'phone');
-
-      const res = await fetch('/api/requests', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (res.ok) {
-        toast.success('درخواست جدید با موفقیت ثبت شد');
-        fetchRequests();
-      } else {
-        toast.error('خطا در ثبت درخواست');
-      }
-    } catch {
-      toast.error('خطا در ارتباط با سرور');
-    }
+  const handleAddManualPhoneRequest = () => {
+    setIsNewRequestModalOpen(true);
   };
 
   // Editor modal state
@@ -1827,6 +1801,20 @@ export default function AdminPage() {
             request={selectedCaseRequest}
             onClose={() => setSelectedCaseRequest(null)}
             onUpdateSuccess={handleCaseUpdateSuccess}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* New Request Modal */}
+      <AnimatePresence>
+        {isNewRequestModalOpen && (
+          <NewRequestModal
+            onClose={() => setIsNewRequestModalOpen(false)}
+            onSuccess={() => {
+              fetchRequests();
+              toast.success('درخواست جدید با موفقیت ثبت شد');
+            }}
+            servicesList={db?.fa ? db.fa.map(s => s.title) : []}
           />
         )}
       </AnimatePresence>
