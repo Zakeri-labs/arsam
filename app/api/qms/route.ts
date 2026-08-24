@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Daily queue number starts at 111 (e.g. 111, 112, 113...)
+    // Daily queue number: count today's QMS requests and increment
     const START_NUMBER = 111;
     let queueNumber = START_NUMBER;
 
@@ -31,9 +31,11 @@ export async function POST(request: Request) {
       if (!countError && typeof count === 'number') {
         queueNumber = START_NUMBER + count;
       } else {
+        // Fallback: use total QMS count ever
         const { count: totalCount } = await supabase
           .from('requests')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .eq('source', 'qms');
         queueNumber = START_NUMBER + (totalCount || 0);
       }
     } catch (e) {
@@ -42,6 +44,7 @@ export async function POST(request: Request) {
     }
 
     const requestId = 'qms_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+    const now = new Date().toISOString();
 
     const newRequest = {
       id: requestId,
@@ -54,27 +57,17 @@ export async function POST(request: Request) {
       source: 'qms',
       queue_name: 'جناب اماره',
       queue_status: 'waiting',
-      created_at: new Date().toISOString(),
+      created_at: now,
     };
 
     const { error: insertError } = await supabase.from('requests').insert([newRequest]);
 
     if (insertError) {
-      console.error('Primary insert error, attempting fallback insert:', insertError);
-      const fallbackRequest = {
-        id: requestId,
-        name: phone,
-        phone: phone,
-        description: `نوبت QMS #${queueNumber} - ${serviceTitle}`,
-        service_title: serviceTitle,
-        files: [],
-        queue_number: queueNumber,
-        source: 'qms',
-        queue_name: 'جناب اماره',
-        queue_status: 'waiting',
-        created_at: new Date().toISOString(),
-      };
-      await supabase.from('requests').insert([fallbackRequest]);
+      console.error('QMS insert error:', insertError);
+      return NextResponse.json(
+        { error: 'خطا در ثبت نوبت در دیتابیس', details: insertError.message },
+        { status: 500 }
+      );
     }
 
     return NextResponse.json({

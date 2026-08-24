@@ -1,13 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users, Volume2, PhoneCall, CheckCircle2, Clock, XCircle, AlertCircle,
-  RefreshCw, ArrowRightLeft, MessageSquare, Trash2, ArrowRight, UserCheck,
-  Building2, Sparkles, Filter, ChevronLeft, ShieldCheck, Phone
+  Users, Volume2, CheckCircle2, Clock, XCircle, AlertCircle,
+  RefreshCw, ArrowRightLeft, MessageSquare, Trash2, ChevronLeft,
+  ShieldCheck, Phone, Paperclip, Download, ChevronDown, ChevronUp,
+  LayoutGrid, Loader2, UserX, PlayCircle, StopCircle,
+  Sparkles, Timer, Hash, Building2
 } from 'lucide-react';
 import Link from 'next/link';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface QMSTicket {
   id: string;
@@ -18,9 +22,27 @@ export interface QMSTicket {
   createdAt: string;
   queueNumber: number;
   source: string;
-  queueName: string; // Defaults to 'جناب اماره'
+  queueName: string;
   queueStatus: 'waiting' | 'calling' | 'in_progress' | 'completed' | 'absent';
+  calledAt?: string | null;
+  servedAt?: string | null;
 }
+
+interface UploadedFile {
+  name: string;
+  size: number;
+  url?: string;
+}
+
+interface FilesMap {
+  [ticketId: string]: UploadedFile[];
+}
+
+interface LoadingFilesMap {
+  [ticketId: string]: boolean;
+}
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const DEFAULT_QUEUE_NAME = 'جناب اماره';
 
@@ -32,26 +54,436 @@ const QUEUE_OPTIONS = [
   'باجه ویژه VIP',
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string }> = {
-  waiting:     { label: 'در انتظار',       bg: 'bg-amber-500/10',   text: 'text-amber-400',   border: 'border-amber-500/30' },
-  calling:     { label: 'در حال فراخوانی', bg: 'bg-gold/20 animate-pulse', text: 'text-gold', border: 'border-gold/50' },
-  in_progress: { label: 'در حال ارائه خدمت', bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/30' },
-  completed:   { label: 'تکمیل شد',       bg: 'bg-slate-500/15',   text: 'text-slate-400',   border: 'border-slate-500/30' },
-  absent:      { label: 'غایب / انصراف',  bg: 'bg-red-500/15',     text: 'text-red-400',     border: 'border-red-500/30' },
-};
+const STATUS_CONFIG = {
+  waiting:     { label: 'در انتظار',         color: '#94a3b8', bg: 'rgba(148,163,184,0.10)', border: 'rgba(148,163,184,0.25)', glow: 'none' },
+  calling:     { label: 'در حال فراخوانی',   color: '#c9a227', bg: 'rgba(201,162,39,0.18)',  border: 'rgba(201,162,39,0.55)',  glow: '0 0 20px rgba(201,162,39,0.4)' },
+  in_progress: { label: 'در حال ارائه خدمت', color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.40)',  glow: '0 0 16px rgba(52,211,153,0.25)' },
+  completed:   { label: 'تکمیل شد',          color: '#60a5fa', bg: 'rgba(96,165,250,0.08)',  border: 'rgba(96,165,250,0.20)',  glow: 'none' },
+  absent:      { label: 'غایب / انصراف',     color: '#f87171', bg: 'rgba(248,113,113,0.10)', border: 'rgba(248,113,113,0.30)', glow: 'none' },
+} as const;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatTime(dateStr: string) {
+  try {
+    return new Date(dateStr).toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+  } catch { return dateStr; }
+}
+
+function useWaitMinutes(createdAt: string) {
+  const [mins, setMins] = useState(0);
+  useEffect(() => {
+    const calc = () => {
+      const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+      setMins(diff > 0 ? diff : 0);
+    };
+    calc();
+    const t = setInterval(calc, 30000);
+    return () => clearInterval(t);
+  }, [createdAt]);
+  return mins;
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function WaitTimer({ createdAt, status }: { createdAt: string; status: string }) {
+  const mins = useWaitMinutes(createdAt);
+  if (status === 'completed' || status === 'absent') return null;
+  return (
+    <span className="flex items-center gap-1 text-[10px] font-bold" style={{ color: mins > 30 ? '#f87171' : mins > 15 ? '#fbbf24' : '#94a3b8' }}>
+      <Timer size={11} />
+      {mins} دقیقه
+    </span>
+  );
+}
+
+function FileRow({ file }: { file: UploadedFile }) {
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext);
+  const isPdf = ext === 'pdf';
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-2 px-3 rounded-xl hover:bg-white/5 transition-all group">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="text-base shrink-0">
+          {isImage ? '🖼️' : isPdf ? '📄' : '📎'}
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-white/80 truncate max-w-[180px]">{file.name}</p>
+          <p className="text-[10px] text-white/30">{formatFileSize(file.size)}</p>
+        </div>
+      </div>
+      {file.url && (
+        <a
+          href={file.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gold/15 text-gold border border-gold/30 text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-all hover:bg-gold/25"
+        >
+          <Download size={11} />
+          دانلود
+        </a>
+      )}
+    </div>
+  );
+}
+
+// ─── Ticket Card ─────────────────────────────────────────────────────────────
+
+function TicketCard({
+  ticket,
+  onStatusChange,
+  onTransfer,
+  onDelete,
+  filesMap,
+  loadingFilesMap,
+  onLoadFiles,
+}: {
+  ticket: QMSTicket;
+  onStatusChange: (id: string, status: QMSTicket['queueStatus']) => void;
+  onTransfer: (ticket: QMSTicket) => void;
+  onDelete: (id: string) => void;
+  filesMap: FilesMap;
+  loadingFilesMap: LoadingFilesMap;
+  onLoadFiles: (ticket: QMSTicket) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const statusCfg = STATUS_CONFIG[ticket.queueStatus || 'waiting'];
+  const cleanPhone = ticket.phone.replace(/[^0-9+]/g, '');
+  const isActive = ticket.queueStatus === 'waiting' || ticket.queueStatus === 'calling' || ticket.queueStatus === 'in_progress';
+  const files = filesMap[ticket.id];
+  const loadingFiles = loadingFilesMap[ticket.id];
+
+  const handleExpand = () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && files === undefined) {
+      onLoadFiles(ticket);
+    }
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="rounded-3xl flex flex-col relative overflow-hidden transition-all duration-300"
+      style={{
+        background: statusCfg.bg,
+        border: `1.5px solid ${statusCfg.border}`,
+        boxShadow: statusCfg.glow,
+        opacity: isActive ? 1 : 0.65,
+      }}
+    >
+      {/* Calling pulse ring */}
+      {ticket.queueStatus === 'calling' && (
+        <div className="absolute inset-0 rounded-3xl animate-ping opacity-10 pointer-events-none" style={{ background: 'rgba(201,162,39,0.5)' }} />
+      )}
+
+      {/* ── Card Header ── */}
+      <div className="p-5 pb-3">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          {/* Queue number badge */}
+          <div
+            className="flex flex-col items-center justify-center w-16 h-16 rounded-2xl shrink-0 font-black"
+            style={{ background: 'rgba(0,0,0,0.25)', border: `1.5px solid ${statusCfg.border}` }}
+          >
+            <span className="text-[9px] font-extrabold leading-none mb-0.5" style={{ color: statusCfg.color, opacity: 0.7 }}>نوبت</span>
+            <span className="text-3xl leading-none" style={{ color: statusCfg.color }}>
+              {ticket.queueNumber ?? '—'}
+            </span>
+          </div>
+
+          {/* Phone + times */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-white font-black text-sm tracking-wide" dir="ltr">{ticket.phone}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] text-white/35 flex items-center gap-1">
+                <Clock size={10} />
+                ثبت: {formatTime(ticket.createdAt)}
+              </span>
+              <WaitTimer createdAt={ticket.createdAt} status={ticket.queueStatus} />
+            </div>
+          </div>
+
+          {/* Status badge */}
+          <span
+            className="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-black border"
+            style={{ color: statusCfg.color, background: 'rgba(0,0,0,0.2)', borderColor: statusCfg.border }}
+          >
+            {statusCfg.label}
+          </span>
+        </div>
+
+        {/* Service + Queue */}
+        <div className="space-y-1.5 pt-2 border-t border-white/8">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-white/40">خدمت:</span>
+            <span className="text-white/85 font-bold truncate max-w-[160px] text-left" dir="ltr">{ticket.serviceTitle}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-white/40">صف:</span>
+            <span className="font-bold text-[11px]" style={{ color: statusCfg.color }}>{ticket.queueName || DEFAULT_QUEUE_NAME}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Action Buttons ── */}
+      {isActive && (
+        <div className="px-5 pb-3 grid grid-cols-3 gap-1.5">
+          <button
+            onClick={() => onStatusChange(ticket.id, 'calling')}
+            disabled={ticket.queueStatus === 'calling'}
+            className="py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer disabled:opacity-40"
+            style={{ background: 'rgba(201,162,39,0.18)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.35)' }}
+          >
+            📢 فراخوانی
+          </button>
+          <button
+            onClick={() => onStatusChange(ticket.id, 'in_progress')}
+            disabled={ticket.queueStatus === 'in_progress'}
+            className="py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer disabled:opacity-40"
+            style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.30)' }}
+          >
+            ▶ شروع خدمت
+          </button>
+          <button
+            onClick={() => onStatusChange(ticket.id, 'completed')}
+            className="py-2 rounded-xl text-[10px] font-black transition-all cursor-pointer"
+            style={{ background: 'rgba(96,165,250,0.12)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)' }}
+          >
+            ✓ پایان
+          </button>
+        </div>
+      )}
+
+      {/* ── Secondary Actions ── */}
+      <div
+        className="flex items-center justify-between gap-2 px-5 pb-4 pt-1 border-t border-white/8"
+        style={{ marginTop: isActive ? 0 : 4 }}
+      >
+        <div className="flex items-center gap-1.5">
+          {/* WhatsApp */}
+          <a
+            href={`https://wa.me/${cleanPhone}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl transition-all hover:scale-105"
+            style={{ background: 'rgba(37,211,102,0.12)', color: '#25D366', border: '1px solid rgba(37,211,102,0.25)' }}
+            title="واتساپ"
+          >
+            <MessageSquare size={13} />
+          </a>
+
+          {/* Phone */}
+          <a
+            href={`tel:${cleanPhone}`}
+            className="p-2 rounded-xl transition-all hover:scale-105"
+            style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.12)' }}
+            title="تماس"
+          >
+            <Phone size={13} />
+          </a>
+
+          {/* Transfer */}
+          <button
+            onClick={() => onTransfer(ticket)}
+            className="p-2 rounded-xl transition-all hover:scale-105 cursor-pointer flex items-center gap-1 pr-2.5 text-[10px] font-bold"
+            style={{ background: 'rgba(129,140,248,0.12)', color: '#818cf8', border: '1px solid rgba(129,140,248,0.25)' }}
+            title="انتقال صف"
+          >
+            <ArrowRightLeft size={13} />
+            <span className="hidden sm:inline">انتقال</span>
+          </button>
+
+          {/* Absent */}
+          {isActive && (
+            <button
+              onClick={() => onStatusChange(ticket.id, 'absent')}
+              className="p-2 rounded-xl transition-all hover:scale-105 cursor-pointer"
+              style={{ background: 'rgba(248,113,113,0.10)', color: '#f87171', border: '1px solid rgba(248,113,113,0.22)' }}
+              title="غایب"
+            >
+              <UserX size={13} />
+            </button>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {/* Documents toggle */}
+          <button
+            onClick={handleExpand}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] font-bold transition-all cursor-pointer"
+            style={{
+              background: expanded ? 'rgba(201,162,39,0.18)' : 'rgba(255,255,255,0.06)',
+              color: expanded ? '#c9a227' : 'rgba(255,255,255,0.5)',
+              border: `1px solid ${expanded ? 'rgba(201,162,39,0.35)' : 'rgba(255,255,255,0.10)'}`,
+            }}
+          >
+            <Paperclip size={11} />
+            <span>مدارک</span>
+            {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+          </button>
+
+          {/* Delete */}
+          <button
+            onClick={() => onDelete(ticket.id)}
+            className="p-2 rounded-xl transition-all hover:scale-105 cursor-pointer"
+            style={{ background: 'rgba(248,113,113,0.08)', color: '#f87171', border: '1px solid rgba(248,113,113,0.18)' }}
+            title="حذف"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Documents Panel ── */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22 }}
+            className="overflow-hidden"
+          >
+            <div
+              className="mx-4 mb-4 rounded-2xl p-3"
+              style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.08)' }}
+            >
+              <p className="text-[10px] font-black text-white/40 mb-2 px-1">
+                📎 مدارک آپلودی — {ticket.phone}
+              </p>
+
+              {loadingFiles ? (
+                <div className="flex items-center justify-center py-4 gap-2 text-white/30 text-xs">
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>در حال بارگذاری...</span>
+                </div>
+              ) : files && files.length > 0 ? (
+                <div className="space-y-0.5">
+                  {files.map((f, i) => <FileRow key={i} file={f} />)}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-white/25 text-xs">
+                  هیچ مدرکی برای این شماره یافت نشد
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ─── Transfer Modal ───────────────────────────────────────────────────────────
+
+function TransferModal({
+  ticket,
+  onClose,
+  onConfirm,
+}: {
+  ticket: QMSTicket;
+  onClose: () => void;
+  onConfirm: (targetQueue: string) => void;
+}) {
+  const [target, setTarget] = useState(QUEUE_OPTIONS.find(q => q !== (ticket.queueName || DEFAULT_QUEUE_NAME)) || QUEUE_OPTIONS[1]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="absolute inset-0 bg-black/70 backdrop-blur-md"
+      />
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+        className="relative z-10 w-full max-w-md rounded-3xl p-6 shadow-2xl"
+        style={{ background: 'linear-gradient(160deg,#0d1b30,#081324)', border: '1px solid rgba(255,255,255,0.12)' }}
+        dir="rtl"
+      >
+        <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-5">
+          <div>
+            <h3 className="text-base font-black text-white">انتقال نوبت #{ticket.queueNumber}</h3>
+            <p className="text-xs text-white/40 mt-0.5">صف کنونی: {ticket.queueName || DEFAULT_QUEUE_NAME}</p>
+          </div>
+          <button onClick={onClose} className="text-white/30 hover:text-white p-1.5 rounded-xl hover:bg-white/10 cursor-pointer transition-all">✕</button>
+        </div>
+
+        <div className="space-y-3 mb-6">
+          <label className="text-xs font-black text-white/60">انتخاب صف مقصد:</label>
+          <div className="grid gap-2">
+            {QUEUE_OPTIONS.filter(q => q !== (ticket.queueName || DEFAULT_QUEUE_NAME)).map(q => (
+              <button
+                key={q}
+                onClick={() => setTarget(q)}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-2xl text-sm font-bold text-right transition-all cursor-pointer"
+                style={{
+                  background: target === q ? 'rgba(201,162,39,0.18)' : 'rgba(255,255,255,0.04)',
+                  border: `1.5px solid ${target === q ? 'rgba(201,162,39,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                  color: target === q ? '#c9a227' : 'rgba(255,255,255,0.6)',
+                }}
+              >
+                <Building2 size={16} />
+                {q}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-3 rounded-2xl border border-white/10 text-white/60 font-bold text-sm hover:bg-white/5 cursor-pointer transition-all"
+          >
+            انصراف
+          </button>
+          <button
+            onClick={() => onConfirm(target)}
+            className="flex-1 py-3 rounded-2xl font-black text-sm cursor-pointer transition-all"
+            style={{ background: 'linear-gradient(135deg,#c9a227,#e4bc3c)', color: '#0f1e37', boxShadow: '0 4px 20px rgba(201,162,39,0.3)' }}
+          >
+            تأیید انتقال
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function AdminQMSPage() {
   const [tickets, setTickets] = useState<QMSTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeQueue, setActiveQueue] = useState<string>(DEFAULT_QUEUE_NAME);
-  const [statusFilter, setStatusFilter] = useState<string>('active'); // 'active' (waiting/calling/in_progress) | 'all' | 'completed'
-  const [callingTicket, setCallingTicket] = useState<QMSTicket | null>(null);
-  const [announcementMsg, setAnnouncementMsg] = useState<string | null>(null);
-  const [selectedTicketForTransfer, setSelectedTicketForTransfer] = useState<QMSTicket | null>(null);
-  const [targetTransferQueue, setTargetTransferQueue] = useState<string>('باجه ۱ - ثبت شرکت');
+  const [showAllQueues, setShowAllQueues] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'active' | 'completed' | 'all'>('active');
+  const [transferTicket, setTransferTicket] = useState<QMSTicket | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [filesMap, setFilesMap] = useState<FilesMap>({});
+  const [loadingFilesMap, setLoadingFilesMap] = useState<LoadingFilesMap>({});
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch tickets
-  const fetchQueueData = useCallback(async () => {
+  // ── Toast helper ──
+  const showToast = useCallback((msg: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
+
+  // ── Fetch queue data ──
+  const fetchQueueData = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await fetch('/api/qms/manage');
       if (res.ok) {
@@ -59,274 +491,319 @@ export default function AdminQMSPage() {
         if (data.success) {
           setTickets(data.requests || []);
         }
+      } else if (res.status === 401) {
+        window.location.href = '/admin';
       }
     } catch (err) {
       console.error('Failed to load QMS queue:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchQueueData();
-    // Auto-refresh queue every 5 seconds for real-time kiosk updates
-    const interval = setInterval(fetchQueueData, 5000);
-    return () => clearInterval(interval);
+    intervalRef.current = setInterval(() => fetchQueueData(true), 10000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [fetchQueueData]);
 
-  // Filter tickets by selected Queue & Status
-  const queueTickets = tickets.filter(t => (t.queueName || DEFAULT_QUEUE_NAME) === activeQueue);
+  // ── Load files for a ticket by phone ──
+  const handleLoadFiles = useCallback(async (ticket: QMSTicket) => {
+    if (filesMap[ticket.id] !== undefined) return;
+    setLoadingFilesMap(prev => ({ ...prev, [ticket.id]: true }));
+    try {
+      const encoded = encodeURIComponent(ticket.phone);
+      const res = await fetch(`/api/qms/manage?phone=${encoded}`);
+      if (res.ok) {
+        const data = await res.json();
+        const allFiles: UploadedFile[] = [];
+        for (const req of (data.requests || [])) {
+          if (req.files && req.files.length > 0) {
+            allFiles.push(...req.files);
+          }
+        }
+        setFilesMap(prev => ({ ...prev, [ticket.id]: allFiles }));
+      }
+    } catch (err) {
+      console.error('Error loading files:', err);
+      setFilesMap(prev => ({ ...prev, [ticket.id]: [] }));
+    } finally {
+      setLoadingFilesMap(prev => ({ ...prev, [ticket.id]: false }));
+    }
+  }, [filesMap]);
 
-  const displayedTickets = queueTickets.filter(t => {
-    const status = t.queueStatus || 'waiting';
-    if (statusFilter === 'active') return status === 'waiting' || status === 'calling' || status === 'in_progress';
-    if (statusFilter === 'completed') return status === 'completed' || status === 'absent';
-    return true; // 'all'
-  });
+  // ── Update status ──
+  const handleStatusChange = useCallback(async (id: string, status: QMSTicket['queueStatus']) => {
+    try {
+      const res = await fetch('/api/qms/manage', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, queueStatus: status }),
+      });
+      if (res.ok) {
+        setTickets(prev => prev.map(t => t.id === id ? { ...t, queueStatus: status } : t));
+      } else {
+        showToast('خطا در تغییر وضعیت', 'error');
+      }
+    } catch {
+      showToast('خطا در اتصال به سرور', 'error');
+    }
+  }, [showToast]);
 
-  // Call Next Ticket in Queue
-  const handleCallNext = async () => {
-    const waitingTickets = queueTickets.filter(t => (t.queueStatus || 'waiting') === 'waiting');
-    if (waitingTickets.length === 0) {
-      setAnnouncementMsg('هیچ نوبت جدیدی در این صف منتظر نیست.');
-      setTimeout(() => setAnnouncementMsg(null), 3000);
+  // ── Call next ──
+  const handleCallNext = useCallback(async () => {
+    const pool = showAllQueues
+      ? tickets
+      : tickets.filter(t => (t.queueName || DEFAULT_QUEUE_NAME) === activeQueue);
+
+    const waiting = pool.filter(t => (t.queueStatus || 'waiting') === 'waiting')
+      .sort((a, b) => (a.queueNumber ?? 999) - (b.queueNumber ?? 999));
+
+    if (waiting.length === 0) {
+      showToast('هیچ نوبت منتظری در این صف وجود ندارد', 'info');
       return;
     }
+    const next = waiting[0];
+    await handleStatusChange(next.id, 'calling');
+    showToast(`📢 نوبت #${next.queueNumber} — ${next.phone} فراخوانده شد`, 'success');
+  }, [tickets, activeQueue, showAllQueues, handleStatusChange, showToast]);
 
-    // Sort by created_at ascending (FIFO)
-    const nextTicket = [...waitingTickets].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
-    
-    await updateStatus(nextTicket.id, 'calling');
-    setCallingTicket(nextTicket);
-    setAnnouncementMsg(`📢 شماره نوبت ${nextTicket.queueNumber} به صف ${activeQueue} فراخوانده شد.`);
-    setTimeout(() => setAnnouncementMsg(null), 5000);
-  };
-
-  // Update Status of a Ticket
-  const updateStatus = async (id: string, newStatus: 'waiting' | 'calling' | 'in_progress' | 'completed' | 'absent') => {
+  // ── Transfer ──
+  const handleTransferConfirm = useCallback(async (targetQueue: string) => {
+    if (!transferTicket) return;
     try {
       const res = await fetch('/api/qms/manage', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, queueStatus: newStatus }),
+        body: JSON.stringify({ id: transferTicket.id, queueName: targetQueue, queueStatus: 'waiting' }),
       });
       if (res.ok) {
-        setTickets(prev => prev.map(t => t.id === id ? { ...t, queueStatus: newStatus } : t));
+        setTickets(prev => prev.map(t =>
+          t.id === transferTicket.id ? { ...t, queueName: targetQueue, queueStatus: 'waiting' } : t
+        ));
+        showToast(`نوبت #${transferTicket.queueNumber} به «${targetQueue}» منتقل شد`, 'success');
+      } else {
+        showToast('خطا در انتقال', 'error');
       }
-    } catch (err) {
-      console.error('Error updating status:', err);
+    } catch {
+      showToast('خطا در اتصال', 'error');
+    } finally {
+      setTransferTicket(null);
     }
-  };
+  }, [transferTicket, showToast]);
 
-  // Transfer Ticket to another Queue
-  const handleTransfer = async () => {
-    if (!selectedTicketForTransfer) return;
-    try {
-      const res = await fetch('/api/qms/manage', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: selectedTicketForTransfer.id, queueName: targetTransferQueue, queueStatus: 'waiting' }),
-      });
-      if (res.ok) {
-        setTickets(prev => prev.map(t => t.id === selectedTicketForTransfer.id ? { ...t, queueName: targetTransferQueue, queueStatus: 'waiting' } : t));
-        setSelectedTicketForTransfer(null);
-        setAnnouncementMsg(`نوبت #${selectedTicketForTransfer.queueNumber} به صف "${targetTransferQueue}" منتقل شد.`);
-        setTimeout(() => setAnnouncementMsg(null), 4000);
-      }
-    } catch (err) {
-      console.error('Error transferring ticket:', err);
-    }
-  };
-
-  // Delete Request
-  const handleDelete = async (id: string) => {
+  // ── Delete ──
+  const handleDelete = useCallback(async (id: string) => {
     if (!confirm('آیا از حذف این نوبت اطمینان دارید؟')) return;
     try {
       const res = await fetch(`/api/requests?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         setTickets(prev => prev.filter(t => t.id !== id));
+        showToast('نوبت حذف شد', 'info');
+      } else {
+        showToast('خطا در حذف', 'error');
       }
-    } catch (err) {
-      console.error('Error deleting ticket:', err);
-    }
-  };
-
-  // Stats calculation
-  const totalToday = tickets.length;
-  const waitingInAmarah = tickets.filter(t => (t.queueName || DEFAULT_QUEUE_NAME) === DEFAULT_QUEUE_NAME && (t.queueStatus || 'waiting') === 'waiting').length;
-  const currentlyAttending = tickets.filter(t => t.queueStatus === 'in_progress' || t.queueStatus === 'calling').length;
-  const completedToday = tickets.filter(t => t.queueStatus === 'completed').length;
-
-  const formatDate = (dateStr: string) => {
-    try {
-      const d = new Date(dateStr);
-      return d.toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
     } catch {
-      return dateStr;
+      showToast('خطا در اتصال', 'error');
     }
-  };
+  }, [showToast]);
+
+  // ── Filtered tickets ──
+  const baseTickets = showAllQueues
+    ? tickets
+    : tickets.filter(t => (t.queueName || DEFAULT_QUEUE_NAME) === activeQueue);
+
+  const displayedTickets = baseTickets.filter(t => {
+    const s = t.queueStatus || 'waiting';
+    if (statusFilter === 'active') return s === 'waiting' || s === 'calling' || s === 'in_progress';
+    if (statusFilter === 'completed') return s === 'completed' || s === 'absent';
+    return true;
+  });
+
+  // Sort: active first ordered by queue number, then completed
+  const sortedTickets = [...displayedTickets].sort((a, b) => {
+    const order = { calling: 0, in_progress: 1, waiting: 2, completed: 3, absent: 4 };
+    const ao = order[a.queueStatus || 'waiting'] ?? 5;
+    const bo = order[b.queueStatus || 'waiting'] ?? 5;
+    if (ao !== bo) return ao - bo;
+    return (a.queueNumber ?? 999) - (b.queueNumber ?? 999);
+  });
+
+  // ── Stats ──
+  const totalWaiting    = tickets.filter(t => (t.queueStatus || 'waiting') === 'waiting').length;
+  const totalCalling    = tickets.filter(t => t.queueStatus === 'calling' || t.queueStatus === 'in_progress').length;
+  const totalCompleted  = tickets.filter(t => t.queueStatus === 'completed').length;
+  const totalToday      = tickets.length;
+
+  // Count waiting per queue for badge
+  const queueWaitCount = (q: string) =>
+    tickets.filter(t => (t.queueName || DEFAULT_QUEUE_NAME) === q && (t.queueStatus || 'waiting') === 'waiting').length;
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-[#07111f] via-[#0f1e37] to-[#091526] text-white font-sans selection:bg-gold selection:text-navy"
-      dir="rtl"
-    >
-      {/* Top Header */}
-      <header className="border-b border-white/10 bg-navy/60 backdrop-blur-xl sticky top-0 z-30 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="min-h-screen text-white font-sans" style={{ background: 'linear-gradient(160deg,#07111f 0%,#0f1e37 55%,#091526 100%)' }} dir="rtl">
+
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-30 border-b border-white/8 backdrop-blur-xl px-6 py-4" style={{ background: 'rgba(7,17,31,0.85)' }}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="flex items-center justify-center h-10 w-10 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/70 hover:text-white transition-all cursor-pointer"
-              title="بازگشت به پنل مدیریت"
+              className="flex items-center justify-center h-10 w-10 rounded-2xl transition-all cursor-pointer"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={20} className="text-white/60" />
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-white tracking-wide">مدیریت صف نوبت‌دهی (QMS)</h1>
-                <span className="bg-gold/20 text-gold border border-gold/40 px-2.5 py-0.5 rounded-full text-[10px] font-black">
-                  صف اصلی: {DEFAULT_QUEUE_NAME}
+                <h1 className="text-lg font-black text-white">مدیریت صف QMS</h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black" style={{ background: 'rgba(201,162,39,0.18)', color: '#c9a227', border: '1px solid rgba(201,162,39,0.35)' }}>
+                  {totalWaiting} در انتظار
                 </span>
               </div>
-              <p className="text-xs text-white/50 mt-0.5">مدیریت پویای نوبت‌های ورودی، فراخوانی باجه و جابه‌جایی صف‌ها</p>
+              <p className="text-[11px] text-white/35 mt-0.5">به‌روزرسانی خودکار هر ۱۰ ثانیه</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
-              onClick={fetchQueueData}
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 text-white/80 hover:text-white text-xs font-bold transition-all cursor-pointer"
+              onClick={() => fetchQueueData()}
+              className="flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.7)' }}
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              <span>به‌روزرسانی صف</span>
+              <span className="hidden sm:inline">بازنشانی</span>
             </button>
             <Link
               href="/qms"
               target="_blank"
-              className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-gold/15 border border-gold/30 text-gold hover:bg-gold/25 text-xs font-bold transition-all"
+              className="flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-bold transition-all"
+              style={{ background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.30)', color: '#c9a227' }}
             >
-              <span>مشاهده کیوسک</span>
               <Sparkles size={14} />
+              <span className="hidden sm:inline">کیوسک</span>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-3xl p-5 border border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-transparent backdrop-blur-md relative overflow-hidden">
-            <div className="flex justify-between items-center">
-              <div>
-                <span className="text-xs font-bold text-amber-300/80">صف اصلی (جناب اماره)</span>
-                <h3 className="text-3xl font-black text-amber-400 mt-2">{waitingInAmarah} نفر</h3>
-              </div>
-              <div className="h-12 w-12 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-black">
-                <Users size={24} />
-              </div>
-            </div>
-            <p className="text-[10px] text-white/40 mt-3">همه نوبت‌های کیوسک ابتدا وارد این صف می‌شوند</p>
-          </div>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-          <div className="rounded-3xl p-5 border border-gold/20 bg-gradient-to-br from-gold/10 to-transparent backdrop-blur-md relative overflow-hidden">
-            <div className="flex justify-between items-center">
+        {/* ── Stats ── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: 'در انتظار', value: totalWaiting,   color: '#fbbf24', icon: Clock },
+            { label: 'در حال ارائه', value: totalCalling, color: '#c9a227', icon: Volume2 },
+            { label: 'تکمیل‌شده',  value: totalCompleted, color: '#34d399', icon: CheckCircle2 },
+            { label: 'کل امروز',   value: totalToday,    color: '#60a5fa', icon: Hash },
+          ].map(({ label, value, color, icon: Icon }) => (
+            <div
+              key={label}
+              className="rounded-3xl p-4 flex items-center justify-between"
+              style={{ background: `${color}10`, border: `1px solid ${color}25` }}
+            >
               <div>
-                <span className="text-xs font-bold text-gold/80">در حال فراخوانی / خدمت</span>
-                <h3 className="text-3xl font-black text-gold mt-2">{currentlyAttending} نفر</h3>
+                <p className="text-[11px] font-bold mb-1" style={{ color: `${color}cc` }}>{label}</p>
+                <p className="text-3xl font-black" style={{ color }}>{value}</p>
               </div>
-              <div className="h-12 w-12 rounded-2xl bg-gold/20 text-gold border border-gold/30 flex items-center justify-center font-black">
-                <Volume2 size={24} />
+              <div className="h-11 w-11 rounded-2xl flex items-center justify-center" style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
+                <Icon size={22} style={{ color }} />
               </div>
             </div>
-            <p className="text-[10px] text-white/40 mt-3">نوبت‌های در حال مراجعه به باجه‌ها</p>
-          </div>
-
-          <div className="rounded-3xl p-5 border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-transparent backdrop-blur-md relative overflow-hidden">
-            <div className="flex justify-between items-center">
-              <div>
-                <span className="text-xs font-bold text-emerald-400/80">تکمیل‌شده‌های امروز</span>
-                <h3 className="text-3xl font-black text-emerald-400 mt-2">{completedToday} نفر</h3>
-              </div>
-              <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center font-black">
-                <CheckCircle2 size={24} />
-              </div>
-            </div>
-            <p className="text-[10px] text-white/40 mt-3">مراجعینی که خدمت خود را دریافت کرده‌اند</p>
-          </div>
-
-          <div className="rounded-3xl p-5 border border-white/10 bg-white/5 backdrop-blur-md relative overflow-hidden">
-            <div className="flex justify-between items-center">
-              <div>
-                <span className="text-xs font-bold text-white/60">کل نوبت‌های امروز</span>
-                <h3 className="text-3xl font-black text-white mt-2">{totalToday} نوبت</h3>
-              </div>
-              <div className="h-12 w-12 rounded-2xl bg-white/10 text-white/80 border border-white/15 flex items-center justify-center font-black">
-                <Clock size={24} />
-              </div>
-            </div>
-            <p className="text-[10px] text-white/40 mt-3">آمار عمومی کلیه نوبت‌های صادر شده</p>
-          </div>
+          ))}
         </div>
 
-        {/* Call Next Banner (Main Action Hero) */}
-        <div className="rounded-3xl p-6 border border-gold/30 bg-gradient-to-r from-gold/15 via-[#132747] to-[#0d1c33] shadow-2xl relative overflow-hidden flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/20 text-gold text-xs font-bold border border-gold/30">
-              <ShieldCheck size={14} />
-              <span>مدیریت صف اصلی: {DEFAULT_QUEUE_NAME}</span>
+        {/* ── Call Next Hero ── */}
+        <div
+          className="rounded-3xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative overflow-hidden"
+          style={{ background: 'linear-gradient(135deg,rgba(201,162,39,0.12) 0%,rgba(13,27,48,0.9) 100%)', border: '1px solid rgba(201,162,39,0.25)' }}
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <ShieldCheck size={16} style={{ color: '#c9a227' }} />
+              <span className="text-xs font-black" style={{ color: '#c9a227' }}>
+                {showAllQueues ? 'همه صف‌ها' : `صف: ${activeQueue}`}
+              </span>
             </div>
-            <h2 className="text-2xl font-black text-white">فراخوانی نوبت بعدی صف اصلی</h2>
-            <p className="text-xs text-white/60">با کلیک روی دکمه زیر، اولین نوبت منتظر در صف «جناب اماره» فراخوانده می‌شود.</p>
+            <h2 className="text-xl font-black text-white">فراخوانی نوبت بعدی</h2>
+            <p className="text-[11px] text-white/40">اولین نوبت «در انتظار» از صف فعلی فراخوانده می‌شود (FIFO)</p>
           </div>
-
           <button
             onClick={handleCallNext}
-            className="px-8 py-5 rounded-2xl font-black text-lg bg-gradient-to-r from-gold via-[#e4bc3c] to-gold text-[#0f1e37] shadow-xl shadow-gold/20 hover:brightness-110 active:scale-98 transition-all flex items-center justify-center gap-3 cursor-pointer shrink-0"
+            className="px-8 py-4 rounded-2xl font-black text-base transition-all active:scale-97 cursor-pointer shrink-0 flex items-center gap-3"
+            style={{ background: 'linear-gradient(135deg,#c9a227,#e4bc3c)', color: '#0f1e37', boxShadow: '0 8px 28px rgba(201,162,39,0.35)' }}
           >
-            <Volume2 size={24} />
-            <span>📢 فراخوانی نوبت بعدی ({DEFAULT_QUEUE_NAME})</span>
+            <Volume2 size={20} />
+            📢 نوبت بعدی
           </button>
         </div>
 
-        {/* Toast / Announcement alert */}
+        {/* ── Toast ── */}
         <AnimatePresence>
-          {announcementMsg && (
+          {toast && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="p-4 rounded-2xl bg-gold/20 border border-gold/40 text-gold text-center text-sm font-bold shadow-lg"
+              exit={{ opacity: 0, y: -8 }}
+              className="p-4 rounded-2xl text-center text-sm font-bold"
+              style={{
+                background: toast.type === 'error' ? 'rgba(248,113,113,0.15)' : toast.type === 'info' ? 'rgba(96,165,250,0.15)' : 'rgba(201,162,39,0.18)',
+                border: `1px solid ${toast.type === 'error' ? 'rgba(248,113,113,0.35)' : toast.type === 'info' ? 'rgba(96,165,250,0.30)' : 'rgba(201,162,39,0.40)'}`,
+                color: toast.type === 'error' ? '#f87171' : toast.type === 'info' ? '#60a5fa' : '#c9a227',
+              }}
             >
-              {announcementMsg}
+              {toast.msg}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Queue Selector Tabs & Filters */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
-          {/* Queues List */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+        {/* ── Queue Tabs ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3 border-b border-white/8">
+          {/* Queue selector */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {/* "All queues" tab */}
+            <button
+              onClick={() => { setShowAllQueues(true); }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
+              style={{
+                background: showAllQueues ? '#c9a227' : 'rgba(255,255,255,0.05)',
+                color: showAllQueues ? '#0f1e37' : 'rgba(255,255,255,0.6)',
+                border: showAllQueues ? 'none' : '1px solid rgba(255,255,255,0.10)',
+                boxShadow: showAllQueues ? '0 4px 14px rgba(201,162,39,0.25)' : 'none',
+              }}
+            >
+              <LayoutGrid size={13} />
+              همه صف‌ها
+              <span
+                className="px-1.5 py-0.5 rounded-full text-[9px] font-black"
+                style={{ background: showAllQueues ? 'rgba(15,30,55,0.3)' : 'rgba(201,162,39,0.18)', color: showAllQueues ? '#0f1e37' : '#c9a227' }}
+              >
+                {totalWaiting}
+              </span>
+            </button>
+
+            <div className="h-5 w-px shrink-0" style={{ background: 'rgba(255,255,255,0.1)' }} />
+
             {QUEUE_OPTIONS.map(q => {
-              const isSelected = activeQueue === q;
-              const count = tickets.filter(t => (t.queueName || DEFAULT_QUEUE_NAME) === q && (t.queueStatus || 'waiting') === 'waiting').length;
+              const isActive = !showAllQueues && activeQueue === q;
+              const count = queueWaitCount(q);
               return (
                 <button
                   key={q}
-                  onClick={() => setActiveQueue(q)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-2 cursor-pointer ${
-                    isSelected
-                      ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15 font-black'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10'
-                  }`}
+                  onClick={() => { setActiveQueue(q); setShowAllQueues(false); }}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer shrink-0"
+                  style={{
+                    background: isActive ? '#c9a227' : 'rgba(255,255,255,0.05)',
+                    color: isActive ? '#0f1e37' : 'rgba(255,255,255,0.6)',
+                    border: isActive ? 'none' : '1px solid rgba(255,255,255,0.10)',
+                    boxShadow: isActive ? '0 4px 14px rgba(201,162,39,0.25)' : 'none',
+                  }}
                 >
-                  <span>{q}</span>
+                  {q}
                   {count > 0 && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
-                      isSelected ? 'bg-[#0f1e37] text-gold' : 'bg-gold/20 text-gold'
-                    }`}>
+                    <span
+                      className="px-1.5 py-0.5 rounded-full text-[9px] font-black"
+                      style={{ background: isActive ? 'rgba(15,30,55,0.3)' : 'rgba(201,162,39,0.18)', color: isActive ? '#0f1e37' : '#c9a227' }}
+                    >
                       {count}
                     </span>
                   )}
@@ -335,216 +812,73 @@ export default function AdminQMSPage() {
             })}
           </div>
 
-          {/* Status Filter */}
+          {/* Status filter */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs text-white/40 font-bold flex items-center gap-1">
-              <Filter size={14} /> فیلتر:
-            </span>
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              className="bg-navy border border-white/15 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
-            >
-              <option value="active">در انتظار و فعال</option>
-              <option value="completed">تکمیل شده و غایب</option>
-              <option value="all">همه نوبت‌ها</option>
-            </select>
+            {(['active', 'completed', 'all'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setStatusFilter(f)}
+                className="px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all cursor-pointer"
+                style={{
+                  background: statusFilter === f ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)',
+                  color: statusFilter === f ? 'white' : 'rgba(255,255,255,0.4)',
+                  border: `1px solid ${statusFilter === f ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.08)'}`,
+                }}
+              >
+                {f === 'active' ? 'فعال' : f === 'completed' ? 'تکمیل شده' : 'همه'}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Tickets Grid / List */}
-        {displayedTickets.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {displayedTickets.map(t => {
-              const statusCfg = STATUS_CONFIG[t.queueStatus || 'waiting'] || STATUS_CONFIG.waiting;
-              const cleanPhone = t.phone.replace(/[^0-9+]/g, '');
-              const whatsappUrl = `https://wa.me/${cleanPhone}`;
-
-              return (
-                <motion.div
-                  key={t.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className={`rounded-3xl p-6 border bg-white/5 backdrop-blur-xl relative overflow-hidden flex flex-col justify-between transition-all hover:bg-white/8 ${
-                    t.queueStatus === 'calling'
-                      ? 'border-gold shadow-xl shadow-gold/10'
-                      : t.queueStatus === 'in_progress'
-                      ? 'border-emerald-500/50'
-                      : 'border-white/10'
-                  }`}
-                >
-                  {/* Top Bar inside Card */}
-                  <div>
-                    <div className="flex justify-between items-start mb-4">
-                      {/* Ticket Number Badge */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex flex-col items-center justify-center h-14 w-14 rounded-2xl bg-gold/15 border border-gold/40 text-gold">
-                          <span className="text-[9px] font-extrabold leading-none text-gold/70">نوبت</span>
-                          <span className="text-2xl font-black leading-none">{t.queueNumber}</span>
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-base">{t.phone}</span>
-                          </div>
-                          <span className="text-[10px] text-white/40 block mt-1">زمان ورود: {formatDate(t.createdAt)}</span>
-                        </div>
-                      </div>
-
-                      {/* Status Badge */}
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${statusCfg.bg} ${statusCfg.text} ${statusCfg.border}`}>
-                        {statusCfg.label}
-                      </span>
-                    </div>
-
-                    {/* Service & Queue info */}
-                    <div className="space-y-2 py-3 border-y border-white/8 my-3">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-white/40">خدمت درخواستی:</span>
-                        <span className="text-gold font-bold">{t.serviceTitle}</span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-white/40">صف مربوطه:</span>
-                        <span className="text-white/80 font-bold">{t.queueName || DEFAULT_QUEUE_NAME}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions Bar */}
-                  <div className="space-y-3 pt-2">
-                    {/* Status change actions */}
-                    <div className="grid grid-cols-3 gap-1.5 text-[10px] font-bold">
-                      <button
-                        onClick={() => updateStatus(t.id, 'calling')}
-                        className="py-2 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold/25 transition-all cursor-pointer"
-                      >
-                        فراخوانی
-                      </button>
-                      <button
-                        onClick={() => updateStatus(t.id, 'in_progress')}
-                        className="py-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all cursor-pointer"
-                      >
-                        شروع خدمت
-                      </button>
-                      <button
-                        onClick={() => updateStatus(t.id, 'completed')}
-                        className="py-2 rounded-xl bg-slate-500/15 text-slate-300 border border-slate-500/30 hover:bg-slate-500/25 transition-all cursor-pointer"
-                      >
-                        پایان خدمت
-                      </button>
-                    </div>
-
-                    {/* Secondary Actions: Transfer, Whatsapp, Call, Delete */}
-                    <div className="flex items-center justify-between border-t border-white/8 pt-3">
-                      <div className="flex items-center gap-2">
-                        <a
-                          href={whatsappUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 rounded-xl bg-[#25D366]/15 text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/25 transition-all"
-                          title="ارسال پیام در واتساپ"
-                        >
-                          <MessageSquare size={14} />
-                        </a>
-                        <a
-                          href={`tel:${cleanPhone}`}
-                          className="p-2 rounded-xl bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white transition-all"
-                          title="تماس تلفنی"
-                        >
-                          <Phone size={14} />
-                        </a>
-                        <button
-                          onClick={() => setSelectedTicketForTransfer(t)}
-                          className="p-2 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500/25 transition-all cursor-pointer flex items-center gap-1 text-[10px] font-bold"
-                          title="انتقال به صف دیگر"
-                        >
-                          <ArrowRightLeft size={14} />
-                          <span>انتقال صف</span>
-                        </button>
-                      </div>
-
-                      <button
-                        onClick={() => handleDelete(t.id)}
-                        className="p-2 rounded-xl bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all cursor-pointer"
-                        title="حذف نوبت"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+        {/* ── Tickets Grid ── */}
+        {loading && tickets.length === 0 ? (
+          <div className="flex items-center justify-center py-20 gap-3 text-white/30">
+            <Loader2 size={28} className="animate-spin" />
+            <span className="font-bold">در حال بارگذاری...</span>
           </div>
+        ) : sortedTickets.length > 0 ? (
+          <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <AnimatePresence mode="popLayout">
+              {sortedTickets.map(ticket => (
+                <TicketCard
+                  key={ticket.id}
+                  ticket={ticket}
+                  onStatusChange={handleStatusChange}
+                  onTransfer={setTransferTicket}
+                  onDelete={handleDelete}
+                  filesMap={filesMap}
+                  loadingFilesMap={loadingFilesMap}
+                  onLoadFiles={handleLoadFiles}
+                />
+              ))}
+            </AnimatePresence>
+          </motion.div>
         ) : (
-          <div className="rounded-3xl p-16 border border-white/10 bg-white/5 backdrop-blur-xl text-center space-y-3">
-            <UserCheck size={48} className="mx-auto text-white/30" />
-            <h3 className="text-lg font-bold text-white">هیچ نوبتی در این بخش وجود ندارد</h3>
-            <p className="text-xs text-white/40">در حال حاضر مراجعی در این صف ثبت نشده است.</p>
+          <div
+            className="rounded-3xl p-16 text-center space-y-3"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <CheckCircle2 size={48} className="mx-auto" style={{ color: 'rgba(255,255,255,0.2)' }} />
+            <h3 className="text-lg font-bold text-white/60">صف خالی است</h3>
+            <p className="text-xs text-white/25">
+              {statusFilter === 'active'
+                ? 'هیچ نوبت فعالی در این صف وجود ندارد'
+                : 'هیچ نوبتی در این بخش ثبت نشده است'}
+            </p>
           </div>
         )}
+
       </main>
 
-      {/* Transfer Queue Modal */}
+      {/* ── Transfer Modal ── */}
       <AnimatePresence>
-        {selectedTicketForTransfer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedTicketForTransfer(null)}
-              className="absolute inset-0 bg-black/70 backdrop-blur-md"
-            />
-
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative z-10 w-full max-w-md bg-[#0d1b30] border border-white/15 rounded-3xl p-6 shadow-2xl space-y-5"
-            >
-              <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                <div>
-                  <h3 className="text-base font-black text-white">انتقال نوبت #{selectedTicketForTransfer.queueNumber}</h3>
-                  <p className="text-xs text-white/50 mt-0.5">صف کنونی: {selectedTicketForTransfer.queueName || DEFAULT_QUEUE_NAME}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedTicketForTransfer(null)}
-                  className="text-white/40 hover:text-white p-1 rounded-lg"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-white/80">انتخاب صف یا باجه مقصد:</label>
-                <select
-                  value={targetTransferQueue}
-                  onChange={e => setTargetTransferQueue(e.target.value)}
-                  className="w-full bg-navy border border-white/20 rounded-2xl p-3.5 text-xs text-white outline-none focus:border-gold cursor-pointer"
-                >
-                  {QUEUE_OPTIONS.map(q => (
-                    <option key={q} value={q}>{q}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setSelectedTicketForTransfer(null)}
-                  className="px-4 py-2.5 rounded-xl border border-white/10 text-white/70 hover:bg-white/10 text-xs font-bold cursor-pointer"
-                >
-                  انصراف
-                </button>
-                <button
-                  onClick={handleTransfer}
-                  className="px-6 py-2.5 rounded-xl bg-gold text-navy font-black text-xs hover:brightness-105 shadow-md shadow-gold/20 cursor-pointer"
-                >
-                  تأیید انتقال نوبت
-                </button>
-              </div>
-            </motion.div>
-          </div>
+        {transferTicket && (
+          <TransferModal
+            ticket={transferTicket}
+            onClose={() => setTransferTicket(null)}
+            onConfirm={handleTransferConfirm}
+          />
         )}
       </AnimatePresence>
     </div>

@@ -18,6 +18,8 @@ export interface ServiceRequest {
   source?: string; // 'web' | 'qms'
   queueName?: string; // e.g. 'جناب اماره' or counter name
   queueStatus?: 'waiting' | 'calling' | 'in_progress' | 'completed' | 'absent';
+  calledAt?: string | null;   // when status changed to 'calling'
+  servedAt?: string | null;   // when status changed to 'in_progress'
 }
 
 export async function getRequests(): Promise<ServiceRequest[]> {
@@ -45,12 +47,53 @@ export async function getRequests(): Promise<ServiceRequest[]> {
         source: row.source || 'web',
         queueName: row.queue_name || (row.source === 'qms' ? 'جناب اماره' : undefined),
         queueStatus: row.queue_status || (row.source === 'qms' ? 'waiting' : undefined),
+        calledAt: row.called_at ?? null,
+        servedAt: row.served_at ?? null,
       }));
     }
   } catch (error) {
     console.error('Error reading requests DB:', error);
   }
   return [];
+}
+
+/**
+ * Fetch all requests (web + qms) that match a given phone number.
+ * Used in QMS admin to show uploaded documents for a visitor.
+ */
+export async function getRequestsByPhone(phone: string): Promise<ServiceRequest[]> {
+  try {
+    // Normalize phone: try exact match and also without country code prefix
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*')
+      .or(`phone.eq.${phone},phone.ilike.%${phone.replace(/^\+968\s?/, '')}%`)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching requests by phone:', error);
+      return [];
+    }
+
+    return (data || []).map((row: any) => ({
+      id: row.id,
+      name: row.name,
+      phone: row.phone,
+      description: row.description,
+      serviceTitle: row.service_title,
+      files: row.files || [],
+      createdAt: row.created_at,
+      queueNumber: row.queue_number ?? null,
+      source: row.source || 'web',
+      queueName: row.queue_name,
+      queueStatus: row.queue_status,
+      calledAt: row.called_at ?? null,
+      servedAt: row.served_at ?? null,
+    }));
+  } catch (error) {
+    console.error('Error in getRequestsByPhone:', error);
+    return [];
+  }
 }
 
 export async function addRequest(request: Omit<ServiceRequest, 'id' | 'createdAt'>): Promise<ServiceRequest> {
@@ -82,11 +125,19 @@ export async function addRequest(request: Omit<ServiceRequest, 'id' | 'createdAt
   };
 }
 
-export async function updateRequestQueue(id: string, updates: { queueName?: string; queueStatus?: string }): Promise<boolean> {
+export async function updateRequestQueue(
+  id: string,
+  updates: { queueName?: string; queueStatus?: string }
+): Promise<boolean> {
   try {
     const dbPayload: Record<string, any> = {};
-    if (updates.queueName !== undefined) dbPayload.queue_name = updates.queueName;
-    if (updates.queueStatus !== undefined) dbPayload.queue_status = updates.queueStatus;
+    if (updates.queueName !== undefined)   dbPayload.queue_name   = updates.queueName;
+    if (updates.queueStatus !== undefined) {
+      dbPayload.queue_status = updates.queueStatus;
+      // Record timestamps when status changes
+      if (updates.queueStatus === 'calling')     dbPayload.called_at = new Date().toISOString();
+      if (updates.queueStatus === 'in_progress') dbPayload.served_at = new Date().toISOString();
+    }
 
     const { error } = await supabase
       .from('requests')
@@ -106,9 +157,9 @@ export async function updateRequestQueue(id: string, updates: { queueName?: stri
 
 export async function deleteRequest(id: string): Promise<boolean> {
   try {
-    const { error, count } = await supabase
+    const { error } = await supabase
       .from('requests')
-      .delete({ count: 'exact' })
+      .delete({ count: 'exact' } as any)
       .eq('id', id);
 
     if (error) {

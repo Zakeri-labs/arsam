@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getRequests, updateRequestQueue } from '@/lib/db-requests';
+import { getRequests, updateRequestQueue, getRequestsByPhone } from '@/lib/db-requests';
 
-// GET (Secure, Admin Only) - Get QMS queue items
+async function isAuthenticated(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const session = cookieStore.get('ofogh_session');
+  return !!(session && session.value === 'authenticated');
+}
+
+// GET (Secure, Admin Only) - Get QMS queue items, or files by phone
 export async function GET(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get('ofogh_session');
-
-    if (!session || session.value !== 'authenticated') {
+    if (!(await isAuthenticated())) {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
         { status: 401 }
@@ -17,17 +20,29 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url);
     const queueNameFilter = searchParams.get('queueName');
+    const phoneFilter = searchParams.get('phone');
 
+    // --- Mode: fetch files/requests by phone number ---
+    if (phoneFilter) {
+      const requests = await getRequestsByPhone(phoneFilter);
+      return NextResponse.json({ success: true, requests });
+    }
+
+    // --- Mode: fetch QMS queue ---
     let allRequests = await getRequests();
     let qmsRequests = allRequests.filter(r => r.source === 'qms');
 
+    // Optional filter by queue name (if not 'all')
     if (queueNameFilter && queueNameFilter !== 'all') {
       qmsRequests = qmsRequests.filter(r => (r.queueName || 'جناب اماره') === queueNameFilter);
     }
 
+    // Sort by queue_number ascending (FIFO)
+    qmsRequests.sort((a, b) => (a.queueNumber ?? 999) - (b.queueNumber ?? 999));
+
     return NextResponse.json({
       success: true,
-      requests: qmsRequests
+      requests: qmsRequests,
     });
   } catch (error: any) {
     console.error('Error fetching QMS queue:', error);
@@ -41,10 +56,7 @@ export async function GET(request: Request) {
 // PATCH (Secure, Admin Only) - Update status or queue name of a ticket
 export async function PATCH(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get('ofogh_session');
-
-    if (!session || session.value !== 'authenticated') {
+    if (!(await isAuthenticated())) {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
         { status: 401 }
