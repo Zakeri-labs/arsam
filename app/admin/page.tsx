@@ -1257,7 +1257,7 @@ export default function AdminPage() {
     return (
       <div className="space-y-6 animate-fadeIn text-white" dir="rtl">
         {/* Quick Stat Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Card 1 */}
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b172a] p-5 shadow-lg">
             <div className="absolute top-0 right-0 h-1 w-full bg-gold"></div>
@@ -1273,20 +1273,6 @@ export default function AdminPage() {
           </div>
 
           {/* Card 2 */}
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b172a] p-5 shadow-lg">
-            <div className="absolute top-0 right-0 h-1 w-full bg-amber-400"></div>
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-white/50">خدمات فعال در امارات</span>
-                <h3 className="mt-2 text-2xl font-black text-white">{db.uaeServiceIds.length} خدمت</h3>
-              </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-400/15 text-amber-300 border border-amber-400/30">
-                <Landmark className="h-5.5 w-5.5" />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3 */}
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b172a] p-5 shadow-lg">
             <div className="absolute top-0 right-0 h-1 w-full bg-emerald-400"></div>
             <div className="flex items-center justify-between">
@@ -1339,10 +1325,8 @@ export default function AdminPage() {
                 onChange={(e) => setSelectedCountryFilter(e.target.value)}
                 className="w-full max-w-full truncate rounded-xl border border-white/10 bg-[#0f1e37] px-3 py-2.5 text-xs text-white outline-none focus:border-gold cursor-pointer"
               >
-                <option value="all">همه کشورها (امارات / عمان)</option>
-                <option value="uae">فقط امارات متحده عربی</option>
+                <option value="all">همه کشورها (سلطان‌نشین عمان)</option>
                 <option value="oman">فقط سلطان‌نشین عمان</option>
-                <option value="both">مشترک در هر دو کشور</option>
               </select>
             </div>
 
@@ -1367,7 +1351,7 @@ export default function AdminPage() {
                   <th className="py-4.5 px-4 font-extrabold">عنوان خدمت (فارسی)</th>
                   <th className="py-4.5 px-4 font-extrabold">دسته‌بندی</th>
                   <th className="py-4.5 px-4 font-extrabold">هزینه خدمات / کارمزد</th>
-                  <th className="py-4.5 px-4 font-extrabold text-center">کشورها</th>
+                  <th className="py-4.5 px-4 font-extrabold text-center">کشور</th>
                   <th className="py-4.5 px-4 font-extrabold text-center">ترجمه‌ها</th>
                   <th className="py-4.5 px-4 font-extrabold text-center">عملیات</th>
                 </tr>
@@ -1398,13 +1382,9 @@ export default function AdminPage() {
 
                         <td className="py-4 px-4 text-center">
                           <div className="flex justify-center gap-1.5">
-                            {inUae && (
-                              <span className="rounded-full bg-gold/15 px-2 py-0.5 text-[10px] font-bold text-gold border border-gold/30">امارات</span>
-                            )}
-                            {inOman && (
+                            {inOman ? (
                               <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">عمان</span>
-                            )}
-                            {!inUae && !inOman && (
+                            ) : (
                               <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/30">غیرفعال</span>
                             )}
                           </div>

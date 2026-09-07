@@ -57,8 +57,8 @@ export const servicesListEN: Service[] = [
     id: 'company-mainland',
     title: 'Company Registration (Mainland)',
     description: 'Establish a company in mainland UAE or Oman with 100% foreign ownership. We process trade name reservation, initial approvals, DED/MOCI registrations, and MOA signing.',
-    serviceFee: 'AED 3,000',
-    governmentFees: 'From AED 12,000',
+    serviceFee: '300 OMR',
+    governmentFees: 'From 1,200 OMR',
     workingDays: '5 Working Days',
     requirements: ['Copy of Passport', 'Copy of Tourist Visa / Entry Stamp', 'Three Proposed Trade Names'],
     category: 'Company Setup Services'
@@ -67,8 +67,8 @@ export const servicesListEN: Service[] = [
     id: 'company-freezone',
     title: 'Company Registration (Freezone)',
     description: 'Set up your business in premium Free Zones with 100% tax exemption, full import/export exemption, and no corporate tax. Includes business license and lease agreement.',
-    serviceFee: 'AED 2,500',
-    governmentFees: 'From AED 9,500',
+    serviceFee: '250 OMR',
+    governmentFees: 'From 950 OMR',
     workingDays: '4 Working Days',
     requirements: ['Copy of Passport', 'Passport-size Photo with White Background', 'Proposed Business Activities'],
     category: 'Company Setup Services'
@@ -77,8 +77,8 @@ export const servicesListEN: Service[] = [
     id: 'trademark-registration',
     title: 'Trademark Registration',
     description: 'Protect your brand identity legally. We handle trademark search, application filing, ministry publications, and final registration certificate issuance.',
-    serviceFee: 'AED 1,500',
-    governmentFees: 'AED 7,500',
+    serviceFee: '150 OMR',
+    governmentFees: '750 OMR',
     workingDays: '15 Working Days',
     requirements: ['Trademark Logo / Design', 'Trade License Copy', 'Power of Attorney'],
     category: 'Company Setup Services'
@@ -87,7 +87,7 @@ export const servicesListEN: Service[] = [
     id: 'business-setup-consulting',
     title: 'Business Setup Consulting',
     description: 'Expert advisory on structural setup, partner distributions, commercial unit selections, and legal setup options for commercial entities.',
-    serviceFee: 'AED 500',
+    serviceFee: '50 OMR',
     workingDays: '3 Working Days',
     requirements: ['Concept Description', 'Initial Capital Planning', 'Proposed Location Ideas'],
     category: 'Company Setup Services'
@@ -96,7 +96,7 @@ export const servicesListEN: Service[] = [
     id: 'feasibility-study',
     title: 'Feasibility Study & Business Plan',
     description: 'Professional feasibility studies and business plans, structured specifically for bank loan applications, ministry approvals, and investor presentations.',
-    serviceFee: 'AED 1,500',
+    serviceFee: '150 OMR',
     workingDays: '8 Working Days',
     requirements: ['Market Concept Description', 'Project Financial Estimates', 'Competitors Information'],
     category: 'Company Setup Services'
@@ -107,8 +107,8 @@ export const servicesListEN: Service[] = [
     id: 'family-residency-visa',
     title: 'Family Residency Visa',
     description: 'Process and issue residency visas for spouse, children, and parents. Includes document attestation, medical screening, Emirates ID processing, and visa stamping.',
-    serviceFee: 'AED 450',
-    governmentFees: 'AED 1,340',
+    serviceFee: '45 OMR',
+    governmentFees: '134 OMR',
     workingDays: '5 Working Days',
     requirements: ['Sponsor Passport & Visa Copy', 'Attestation of Marriage/Birth Certificates', 'Salary Certificate / Ejari'],
     category: 'Family & Business Visas'
@@ -117,8 +117,8 @@ export const servicesListEN: Service[] = [
     id: 'partner-investor-visa',
     title: 'Partner & Investor Visa',
     description: 'Secure long-term investor/partner residency visas for business owners and company shareholders with full local residency rights.',
-    serviceFee: 'AED 650',
-    governmentFees: 'AED 3,200',
+    serviceFee: '65 OMR',
+    governmentFees: '320 OMR',
     workingDays: '4 Working Days',
     requirements: ['Trade License Copy', 'Memorandum of Association (MOA)', 'Partner Passport Copy'],
     category: 'Family & Business Visas'
@@ -127,8 +127,8 @@ export const servicesListEN: Service[] = [
     id: 'business-employment-visa',
     title: 'Business & Employment Visa',
     description: 'Complete quota processing, work permits, and employment visa issuance for corporate employees under mainland or freezone entities.',
-    serviceFee: 'AED 350',
-    governmentFees: 'AED 1,850',
+    serviceFee: '35 OMR',
+    governmentFees: '185 OMR',
     workingDays: '5 Working Days',
     requirements: ['Trade License Copy', 'Establishment Card', 'Employee Passport & Photo'],
     category: 'Family & Business Visas'
@@ -137,8 +137,8 @@ export const servicesListEN: Service[] = [
     id: 'golden-visa-services',
     title: 'Golden Visa Processing (10 Years)',
     description: 'Direct nomination and processing for 10-Year Golden Residency Visas for investors, entrepreneurs, executives, and specialized talents.',
-    serviceFee: 'AED 1,500',
-    governmentFees: 'AED 4,800',
+    serviceFee: '150 OMR',
+    governmentFees: '480 OMR',
     workingDays: '7 Working Days',
     requirements: ['Bank Statement / Property Deed / License', 'Passport Copy', 'EID / Entry Permit'],
     category: 'Family & Business Visas'
@@ -149,7 +149,7 @@ export const servicesListEN: Service[] = [
     id: 'tourist-visa-30-days',
     title: '30 Days Tourist Visa Extension',
     description: 'Extend your 30-day tourist visa swiftly without hassle. Direct application processing with immigration portals.',
-    serviceFee: 'AED 290',
+    serviceFee: '29 OMR',
     workingDays: '2 Working Days',
     requirements: ['Passport Copy', 'Current Tourist Visa Copy', 'Passport Photo'],
     category: 'Tourist Visa Extension Services'
@@ -158,7 +158,7 @@ export const servicesListEN: Service[] = [
     id: 'tourist-visa-60-days',
     title: '60 Days Tourist Visa Extension',
     description: 'Secure an extended 60-day tourist visa renewal for family holidays, business exploration, or extended stays.',
-    serviceFee: 'AED 490',
+    serviceFee: '49 OMR',
     workingDays: '2 Working Days',
     requirements: ['Passport Copy', 'Current Tourist Visa Copy', 'Passport Photo'],
     category: 'Tourist Visa Extension Services'
@@ -167,7 +167,7 @@ export const servicesListEN: Service[] = [
     id: 'tourist-visa-multi-60-days',
     title: 'Multi-Entry 60 Days Visa Extension',
     description: 'Multi-entry 60-day visa extension processed rapidly for frequent business travelers entering and leaving the country.',
-    serviceFee: 'AED 790',
+    serviceFee: '79 OMR',
     workingDays: '1 Working Day',
     requirements: ['Passport Copy', 'Current Tourist Visa Copy', 'Passport Photo'],
     category: 'Tourist Visa Extension Services'
@@ -176,7 +176,7 @@ export const servicesListEN: Service[] = [
     id: 'tourist-visa-renewal',
     title: 'In-Country Visa Extension (No Exit)',
     description: 'Extend your tourist visa without exiting the country. Complete in-country status change and extension up to 4 months total stay.',
-    serviceFee: 'AED 1,090',
+    serviceFee: '109 OMR',
     workingDays: '1 Working Day',
     requirements: ['Passport Copy', 'Current Tourist Visa Copy', 'Passport Photo'],
     category: 'Tourist Visa Extension Services'
@@ -187,8 +187,8 @@ export const servicesListEN: Service[] = [
     id: 'trade-license-renewal',
     title: 'Mainland Trade License Renewal',
     description: 'Maintain your commercial operations without fines. We process trade license renewal, register Ejari contracts, and secure department approvals.',
-    serviceFee: 'AED 300',
-    governmentFees: 'From AED 4,270',
+    serviceFee: '30 OMR',
+    governmentFees: 'From 427 OMR',
     workingDays: '3 Working Days',
     requirements: ['Ejari Must be Valid', 'Valid Establishment Card', 'Pay Voucher Approval'],
     category: 'License Renewal Services'
@@ -197,8 +197,8 @@ export const servicesListEN: Service[] = [
     id: 'establishment-card-renewal',
     title: 'Establishment Card & Chamber Renewal',
     description: 'Ensure active corporate status by timely renewing your Establishment Card and Chamber of Commerce registration for smooth visa processing.',
-    serviceFee: 'AED 150',
-    governmentFees: 'AED 581',
+    serviceFee: '15 OMR',
+    governmentFees: '58 OMR',
     workingDays: '2 Working Days',
     requirements: ['Trade License Copy', 'Physical EID / Civil ID Required', 'Company Registration'],
     category: 'License Renewal Services'
@@ -207,7 +207,7 @@ export const servicesListEN: Service[] = [
     id: 'ejari-1-year',
     title: 'Ejari & Tenancy Contract Renewal',
     description: 'Official annual Ejari registration and commercial tenancy contract renewal for office, retail shop, and warehouse spaces.',
-    serviceFee: 'AED 1,950',
+    serviceFee: '195 OMR',
     workingDays: '1 Working Day',
     requirements: ['Title Deed Copy', 'Landlord ID Copy', 'Trade License Copy'],
     category: 'License Renewal Services'
@@ -216,7 +216,7 @@ export const servicesListEN: Service[] = [
     id: 'baladiya-tenancy',
     title: 'Municipal (Baladiya) Contract Renewal',
     description: 'Renew your commercial tenancy contract with the Oman Municipality (Baladiya) for company registration and CR compliance.',
-    serviceFee: 'AED 1,500',
+    serviceFee: '150 OMR',
     workingDays: '2 Working Days',
     requirements: ['Copy of Krooki', 'Landlord Civil ID', 'Company Commercial Registration (CR)'],
     category: 'License Renewal Services'
@@ -227,7 +227,7 @@ export const servicesListEN: Service[] = [
     id: 'car-rental-daily-monthly',
     title: 'Daily & Monthly Car Rental',
     description: 'Rent economy, sedan, and executive cars on daily, weekly, or monthly basis. Comprehensive insurance and fast delivery.',
-    serviceFee: 'AED 120 / Day',
+    serviceFee: '12 OMR / Day',
     workingDays: 'Instant Delivery',
     requirements: ['Passport & Tourist Visa Copy', 'Home Driving License / IDP', 'Credit Card / Cash Deposit'],
     category: 'Car Rental Services'
@@ -236,7 +236,7 @@ export const servicesListEN: Service[] = [
     id: 'luxury-car-rental',
     title: 'Luxury & Sport Car Rental',
     description: 'Experience premium luxury and sports vehicles (Lamborghini, Ferrari, Rolls Royce, Porsche, Mercedes) for VIP travel and corporate events.',
-    serviceFee: 'AED 800 / Day',
+    serviceFee: '80 OMR / Day',
     workingDays: 'Instant Delivery',
     requirements: ['Valid Passport & Visa', 'International Driving Permit (IDP)', 'Security Deposit'],
     category: 'Car Rental Services'
@@ -245,7 +245,7 @@ export const servicesListEN: Service[] = [
     id: 'chauffeur-car-rental',
     title: 'Chauffeur Driven Car Rental',
     description: 'Luxury transportation with private multi-lingual drivers for airport transfers, corporate delegations, and city business tours.',
-    serviceFee: 'AED 350 / 5 Hours',
+    serviceFee: '35 OMR / 5 Hours',
     workingDays: 'Instant Booking',
     requirements: ['Flight Details / Pickup Address', 'Passenger Count', 'Booking Confirmation'],
     category: 'Car Rental Services'
@@ -254,7 +254,7 @@ export const servicesListEN: Service[] = [
     id: 'suv-family-car-rental',
     title: 'SUV & Family Car Rental',
     description: 'Spacious 7-seater SUVs and family vehicles for group travel and long-distance city transfers with full insurance coverage.',
-    serviceFee: 'AED 250 / Day',
+    serviceFee: '25 OMR / Day',
     workingDays: 'Instant Delivery',
     requirements: ['Passport Copy', 'Valid Driving License', 'Security Deposit'],
     category: 'Car Rental Services'
@@ -265,7 +265,7 @@ export const servicesListEN: Service[] = [
     id: 'business-account-high-risk',
     title: 'Business Account Opening - High Risk Activities',
     description: 'Professional corporate bank account opening for high-risk business sectors. We manage compliance, background checks, and bank coordination.',
-    serviceFee: 'AED 3,950',
+    serviceFee: '395 OMR',
     workingDays: '20 Working Days',
     requirements: ['License Must Be Valid', 'All Partners Visa Must Be Valid', 'Required For Residency Renew'],
     category: 'Banking Services'
@@ -274,7 +274,7 @@ export const servicesListEN: Service[] = [
     id: 'business-account-low-risk',
     title: 'Business Account Opening - Low Risk Activities',
     description: 'Fast track corporate banking setup for low-risk business sectors. Swift approvals from top-tier local and international banks.',
-    serviceFee: 'AED 2,950',
+    serviceFee: '295 OMR',
     workingDays: '5 Working Days',
     requirements: ['License Must Be Valid', 'All Partners Visa Must Be Valid', 'Required For Residency Renew'],
     category: 'Banking Services'
@@ -283,7 +283,7 @@ export const servicesListEN: Service[] = [
     id: 'personal-account-guidance',
     title: 'Personal Bank Account Guidance',
     description: 'Open personal checking or savings accounts with top local banks. We review your profile, compile documents, and secure fast approvals.',
-    serviceFee: 'AED 950',
+    serviceFee: '95 OMR',
     workingDays: '5 Working Days',
     requirements: ['Valid Residency Visa & EID', 'Passport with Entry Stamp', 'Salary Certificate or Proof of Funds'],
     category: 'Banking Services'
@@ -294,7 +294,7 @@ export const servicesListEN: Service[] = [
     id: 'corporate-tax-registration',
     title: 'Corporate Tax Registration',
     description: 'Official corporate tax registration with the Federal Tax Authority (FTA). Avoid penalties by registering within legal timelines.',
-    serviceFee: 'AED 180',
+    serviceFee: '18 OMR',
     workingDays: '3 Working Days',
     requirements: ['Within 87 Days', 'Mandatory For all Companies', 'Avoid Fine'],
     category: 'Tax Services'
@@ -303,7 +303,7 @@ export const servicesListEN: Service[] = [
     id: 'corporate-tax-filing',
     title: 'Corporate Tax Return Filing',
     description: 'Accurate corporate tax return preparation and submission within the legal deadline to prevent monthly penalties.',
-    serviceFee: 'AED 380',
+    serviceFee: '38 OMR',
     workingDays: '2 Working Days',
     requirements: ['Within 9 Months', 'Mandatory For all Companies', 'Monthly Penalty Avoidance'],
     category: 'Tax Services'
@@ -312,7 +312,7 @@ export const servicesListEN: Service[] = [
     id: 'vat-registration',
     title: 'VAT Registration',
     description: 'Official Value Added Tax (VAT) registration with tax authority. Mandatory for businesses exceeding legal revenue threshold.',
-    serviceFee: 'AED 350',
+    serviceFee: '35 OMR',
     workingDays: '3 Working Days',
     requirements: ['Trade License Copy', 'Financial Statement', 'Passport & Visa of Manager'],
     category: 'Tax Services'
@@ -321,7 +321,7 @@ export const servicesListEN: Service[] = [
     id: 'fta-profile-update',
     title: 'FTA Profile Update',
     description: 'Official update of Federal Tax Authority profile following updates in trade license, managing partners, or office location.',
-    serviceFee: 'AED 280',
+    serviceFee: '28 OMR',
     workingDays: '2 Working Days',
     requirements: ['License Must Be Updated', 'Manager Visa Must Be Updated', 'Company Location Must Be Updated'],
     category: 'Tax Services'
@@ -330,7 +330,7 @@ export const servicesListEN: Service[] = [
     id: 'tax-reconsideration',
     title: 'Request For Tax Reconsideration',
     description: 'Submit professional appeals and waiver requests for tax penalties under tax authority laws.',
-    serviceFee: 'AED 380',
+    serviceFee: '38 OMR',
     workingDays: '2 Working Days',
     requirements: ['Penalty Reconsideration', 'According to Tax Laws', 'Legal Review'],
     category: 'Tax Services'
@@ -339,7 +339,7 @@ export const servicesListEN: Service[] = [
     id: 'industrial-tax-exemptions',
     title: 'Industrial Tax Exemptions',
     description: 'Obtain official industrial tax exemption certificates for raw materials, machinery, or industrial operations.',
-    serviceFee: 'AED 950',
+    serviceFee: '95 OMR',
     workingDays: '10 Working Days',
     requirements: ['Industrial License Copy', 'List of Raw Materials & Equipment', 'Environmental Approval'],
     category: 'Tax Services'
@@ -350,8 +350,8 @@ export const servicesListEN: Service[] = [
     id: 'driving-license-guidance',
     title: 'Driving License Guidance',
     description: 'Step-by-step guidance for converting your home country driving license or starting a new file. We arrange eye tests and appointments.',
-    serviceFee: 'AED 350',
-    governmentFees: 'AED 850',
+    serviceFee: '35 OMR',
+    governmentFees: '85 OMR',
     workingDays: '5 Working Days',
     requirements: ['Valid ID Copy', 'Original Home Country Driving License', 'Eye Test Certificate'],
     category: 'General Government Services'
@@ -360,8 +360,8 @@ export const servicesListEN: Service[] = [
     id: 'dubai-municipality-permits',
     title: 'Dubai Municipality Permits',
     description: 'Secure commercial, advertising, or fit-out permits from Dubai Municipality. We handle technical plan approvals.',
-    serviceFee: 'AED 650',
-    governmentFees: 'From AED 1,500',
+    serviceFee: '65 OMR',
+    governmentFees: 'From 150 OMR',
     workingDays: '5 Working Days',
     requirements: ['Trade License Copy', 'Tenancy Contract / Ejari', 'Layout Plan of Office/Shop'],
     category: 'General Government Services'
@@ -370,8 +370,8 @@ export const servicesListEN: Service[] = [
     id: 'sports-council-permits',
     title: 'Dubai Sports Council Permits',
     description: 'Obtain official activity approvals and licenses for sports events, gyms, or academies from Dubai Sports Council.',
-    serviceFee: 'AED 850',
-    governmentFees: 'From AED 2,500',
+    serviceFee: '85 OMR',
+    governmentFees: 'From 250 OMR',
     workingDays: '7 Working Days',
     requirements: ['Trade License Copy', 'Trainer Certificates / Qualifications', 'Premises Safety Certificate'],
     category: 'General Government Services'
@@ -380,8 +380,8 @@ export const servicesListEN: Service[] = [
     id: 'rera-permits',
     title: 'RERA (Real Estate Permits)',
     description: 'Secure real estate commercial activity approvals, broker licenses, or property advertisement permits.',
-    serviceFee: 'AED 950',
-    governmentFees: 'From AED 3,500',
+    serviceFee: '95 OMR',
+    governmentFees: 'From OMR 3,500',
     workingDays: '5 Working Days',
     requirements: ['Trade License Copy', 'Manager Broker Card / Certificate', 'Ejari of Commercial Office'],
     category: 'General Government Services'
@@ -390,7 +390,7 @@ export const servicesListEN: Service[] = [
     id: 'customs-bayan',
     title: 'Customs Clearance (Bayan)',
     description: 'Fast and professional customs cargo clearance through official Bayan Customs System in Oman.',
-    serviceFee: 'AED 450',
+    serviceFee: '45 OMR',
     workingDays: '2 Working Days',
     requirements: ['Import/Export License', 'Commercial Invoice & Packing List', 'Certificate of Origin'],
     category: 'General Government Services'
@@ -399,7 +399,7 @@ export const servicesListEN: Service[] = [
     id: 'made-in-oman',
     title: 'Made in Oman Certificate',
     description: 'Secure official "Made in Oman" quality certificate for locally manufactured products to qualify for procurement advantages.',
-    serviceFee: 'AED 550',
+    serviceFee: '55 OMR',
     workingDays: '5 Working Days',
     requirements: ['Industrial/Trade License Copy', 'Proof of Local Value Addition', 'Product Test Report'],
     category: 'General Government Services'
@@ -408,7 +408,7 @@ export const servicesListEN: Service[] = [
     id: 'riyada-card',
     title: 'Riyada Card Guidance',
     description: 'Comprehensive assistance for securing Omani Riyada Card for small and medium enterprises (SMEs).',
-    serviceFee: 'AED 250',
+    serviceFee: '25 OMR',
     workingDays: '3 Working Days',
     requirements: ['Omani Ownership Proof', 'Valid Trade License', 'Active Social Insurance Registration'],
     category: 'General Government Services'
@@ -417,8 +417,8 @@ export const servicesListEN: Service[] = [
     id: 'pacda-permits',
     title: 'PACDA Safety Permits',
     description: 'Obtain official fire safety approvals and municipal safety permits from Civil Defense authority.',
-    serviceFee: 'AED 450',
-    governmentFees: 'From AED 1,000',
+    serviceFee: '45 OMR',
+    governmentFees: 'From 100 OMR',
     workingDays: '4 Working Days',
     requirements: ['Trade License Copy', 'Tenancy Contract', 'Fire Fighting Equipment Certificate'],
     category: 'General Government Services'
@@ -427,7 +427,7 @@ export const servicesListEN: Service[] = [
     id: 'product-standards',
     title: 'Product Standards Certificate',
     description: 'Secure official product standards approvals and G-mark quality certifications from Directorate for Specifications.',
-    serviceFee: 'AED 550',
+    serviceFee: '55 OMR',
     workingDays: '5 Working Days',
     requirements: ['Product Specifications Sheet', 'ISO / Quality Certificates Copy', 'Importer/Exporter License'],
     category: 'General Government Services'
@@ -436,7 +436,7 @@ export const servicesListEN: Service[] = [
     id: 'government-land-rental',
     title: 'Government Land Rental Guidance',
     description: 'Assistance in securing government-leased land for industrial, warehouse, or farming projects in industrial estates.',
-    serviceFee: 'AED 950',
+    serviceFee: '95 OMR',
     workingDays: '10 Working Days',
     requirements: ['Valid Industrial/Commercial License', 'Project Feasibility Summary', 'Application Letter'],
     category: 'General Government Services'
@@ -445,7 +445,7 @@ export const servicesListEN: Service[] = [
     id: 'accounting-auditing',
     title: 'Accounting & Auditing Services',
     description: 'Professional bookkeeping, financial statements preparation, auditing, and accounting reviews to remain compliant.',
-    serviceFee: 'AED 450',
+    serviceFee: '45 OMR',
     workingDays: '3 Working Days',
     requirements: ['Company Ledger / Bank Statements', 'Previous Tax Invoices List', 'Expenses Proof Documents'],
     category: 'General Government Services'
@@ -454,7 +454,7 @@ export const servicesListEN: Service[] = [
     id: 'omanisation-management',
     title: 'Omanisation Management',
     description: 'Ensure fully compliant recruitment in Oman. Align Omani and expat hiring distributions with ministry standards.',
-    serviceFee: 'AED 650',
+    serviceFee: '65 OMR',
     workingDays: '4 Working Days',
     requirements: ['Trade License Copy', 'Active Employee Visa List', 'Desired Nationalization Target'],
     category: 'General Government Services'
@@ -463,7 +463,7 @@ export const servicesListEN: Service[] = [
     id: 'icv-certificate',
     title: 'In-Country Value (ICV) Certificate',
     description: 'Guidance and preparation for securing official In-Country Value (ICV) certificate for government tenders.',
-    serviceFee: 'AED 1,500',
+    serviceFee: '150 OMR',
     workingDays: '7 Working Days',
     requirements: ['Audited Financial Statements', 'Omanisation Ratio Report', 'Local Purchase Invoices'],
     category: 'General Government Services'
@@ -477,8 +477,8 @@ export const servicesListFA: Service[] = [
     id: 'company-mainland',
     title: 'ثبت شرکت در سرزمین اصلی (Mainland)',
     description: 'ثبت شرکت در سرزمین اصلی امارات یا عمان با مالکیت ۱۰۰ درصد خارجی. انجام تمامی مراحل رزرواسیون نام تجاری، موافقت اولیه، ثبت در دپارتمان اقتصادی و امضای اساسنامه.',
-    serviceFee: '۳,۰۰۰ درهم',
-    governmentFees: 'از ۱۲,۰۰۰ درهم',
+    serviceFee: '۳۰۰ ریال عمان',
+    governmentFees: 'از ۱,۲۰۰ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کپی پاسپورت سهام‌داران', 'کپی ویزای توریستی یا مهر ورود', 'سه نام پیشنهادی برای شرکت'],
     category: 'Company Setup Services'
@@ -487,8 +487,8 @@ export const servicesListFA: Service[] = [
     id: 'company-freezone',
     title: 'ثبت شرکت در منطقه آزاد (Freezone)',
     description: 'راه‌اندازی کسب‌وکار در مناطق آزاد با معافیت ۱۰۰٪ مالیاتی و گمرکی و مالکیت کامل بدون نیاز به کفیل محلی. شامل صدور لایسنس، گواهی ثبت و اجاره‌نامه اداری.',
-    serviceFee: '۲,۵۰۰ درهم',
-    governmentFees: 'از ۹,۵۰۰ درهم',
+    serviceFee: '۲۵۰ ریال عمان',
+    governmentFees: 'از ۹۵۰ ریال عمان',
     workingDays: '۴ روز کاری',
     requirements: ['کپی پاسپورت سهام‌داران', 'عکس پرسنلی با زمینه سفید', 'لیست فعالیت‌های تجاری مورد نظر'],
     category: 'Company Setup Services'
@@ -497,8 +497,8 @@ export const servicesListFA: Service[] = [
     id: 'trademark-registration',
     title: 'ثبت برند و علامت تجاری',
     description: 'حفاظت قانونی از هویت برند و لوگوی شما. انجام استعلام قبلی برند، ثبت پرونده در وزارت اقتصاد، انتشار در روزنامه رسمی و صدور سند ثبت نهایی.',
-    serviceFee: '۱,۵۰۰ درهم',
-    governmentFees: '۷,۵۰۰ درهم',
+    serviceFee: '۱۵۰ ریال عمان',
+    governmentFees: '۷۵۰ ریال عمان',
     workingDays: '۱۵ روز کاری',
     requirements: ['طرح یا لوگوی برند', 'کپی لایسنس تجاری شرکت', 'وکالت‌نامه رسمی'],
     category: 'Company Setup Services'
@@ -507,7 +507,7 @@ export const servicesListFA: Service[] = [
     id: 'business-setup-consulting',
     title: 'مشاوره تخصصی راه‌اندازی کسب‌وکار',
     description: 'مشاوره تخصصی ساختار شرکت، سهم الشرکه شرکا، انتخاب نوع فعالیت تجاری و جانمایی ملکی شرکت‌های تجاری و صنعتی.',
-    serviceFee: '۵۰۰ درهم',
+    serviceFee: '۵۰ ریال عمان',
     workingDays: '۳ روز کاری',
     requirements: ['خلاصه ایده بیزینس', 'برنامه‌ریزی سرمایه اولیه', 'پیشنهاد مکان قرارگیری شرکت'],
     category: 'Company Setup Services'
@@ -516,7 +516,7 @@ export const servicesListFA: Service[] = [
     id: 'feasibility-study',
     title: 'طرح توجیهی و بیزینس پلن رسمی',
     description: 'تنظیم طرح‌های توجیهی فنی و اقتصادی و بیزینس پلن‌های حرفه‌ای ساختاریافته جهت ارائه به بانک‌ها، وزارتخانه‌ها و جذب سرمایه‌گذار.',
-    serviceFee: '۱,۵۰۰ درهم',
+    serviceFee: '۱۵۰ ریال عمان',
     workingDays: '۸ روز کاری',
     requirements: ['توضیحات مدل کسب‌وکار', 'برآورد مالی و پیش‌بینی سودآوری', 'معرفی رقبا و بازار هدف'],
     category: 'Company Setup Services'
@@ -527,8 +527,8 @@ export const servicesListFA: Service[] = [
     id: 'family-residency-visa',
     title: 'ویزای اقامت خانوادگی',
     description: 'اخذ و تمدید ویزای اقامت رسمی همسر، فرزندان و والدین. انجام کلیه مراحل تایید مدارک، تست پزشکی، کارت ملی (EID/Civil ID) و ثبت ویزا.',
-    serviceFee: '۴۵۰ درهم',
-    governmentFees: '۱,۳۴۰ درهم',
+    serviceFee: '۴۵ ریال عمان',
+    governmentFees: '۱۳۴ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کپی پاسپورت و ویزای اسپانسر', 'تاییدیه سند ازدواج / شناسنامه فرزندان', 'گواهی حقوق یا عقد ایجاری'],
     category: 'Family & Business Visas'
@@ -537,8 +537,8 @@ export const servicesListFA: Service[] = [
     id: 'partner-investor-visa',
     title: 'ویزای اقامت شریک و سرمایه‌گذار',
     description: 'اخذ و تمدید ویزای اقامت رسمی سرمایه‌گذار و شریک تجاری برای صاحبان کسب‌وکار و سهام‌داران با برخوردی از کلیه مزایای شهروندی حقوقی.',
-    serviceFee: '۶۵۰ درهم',
-    governmentFees: '۳,۲۰۰ درهم',
+    serviceFee: '۶۵ ریال عمان',
+    governmentFees: '۳۲۰ ریال عمان',
     workingDays: '۴ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'اساسنامه شرکت (MOA/CR)', 'کپی پاسپورت سهام‌دار'],
     category: 'Family & Business Visas'
@@ -547,8 +547,8 @@ export const servicesListFA: Service[] = [
     id: 'business-employment-visa',
     title: 'ویزای کار و تجاری کارمندان',
     description: 'مدیریت و صدور مجوزهای کار (Work Permit) و ویزای استخدامی پرسنل شرکت‌های فری‌زون و سرزمین اصلی.',
-    serviceFee: '۳۵۰ درهم',
-    governmentFees: '۱,۸۵۰ درهم',
+    serviceFee: '۳۵ ریال عمان',
+    governmentFees: '۱۸۵ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'استبلیشمنت کارت شرکت', 'عکس و پاسپورت کارمند'],
     category: 'Family & Business Visas'
@@ -557,8 +557,8 @@ export const servicesListFA: Service[] = [
     id: 'golden-visa-services',
     title: 'خدمات اخذ ویزای ۱۰ ساله طلایی (Golden Visa)',
     description: 'فرآیند ثبت‌نام و اخذ ویزای طلایی ۱۰ ساله برای سرمایه‌گذاران، کارآفرینان، مدیران ارشد و متخصصان برجسته.',
-    serviceFee: '۱,۵۰۰ درهم',
-    governmentFees: '۴,۸۰۰ درهم',
+    serviceFee: '۱۵۰ ریال عمان',
+    governmentFees: '۴۸۰ ریال عمان',
     workingDays: '۷ روز کاری',
     requirements: ['تمکن مالی / سند ملک / لایسنس شرکت', 'کپی پاسپورت', 'کارت ملی / ویزای فعال'],
     category: 'Family & Business Visas'
@@ -569,7 +569,7 @@ export const servicesListFA: Service[] = [
     id: 'tourist-visa-30-days',
     title: 'تمدید ویزای توریستی ۳۰ روزه',
     description: 'تمدید فوری و بدون دغدغه ویزای گردشگری ۳۰ روزه از طریق پرتال‌های رسمی اداره مهاجرت جهت حفظ وضعیت قانونی.',
-    serviceFee: '۲۹۰ درهم',
+    serviceFee: '۲۹ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['کپی پاسپورت', 'کپی ویزای توریستی فعلی', 'عکس پرسنلی'],
     category: 'Tourist Visa Extension Services'
@@ -578,7 +578,7 @@ export const servicesListFA: Service[] = [
     id: 'tourist-visa-60-days',
     title: 'تمدید ویزای توریستی ۶۰ روزه',
     description: 'تمدید ویزای توریستی ۶۰ روزه برای اقامت‌های طولانی‌تر خانوادگی یا پیگیری امور اداری و تجاری.',
-    serviceFee: '۴۹۰ درهم',
+    serviceFee: '۴۹ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['کپی پاسپورت', 'کپی ویزای توریستی فعلی', 'عکس پرسنلی'],
     category: 'Tourist Visa Extension Services'
@@ -587,7 +587,7 @@ export const servicesListFA: Service[] = [
     id: 'tourist-visa-multi-60-days',
     title: 'تمدید ویزای ۶۰ روزه چند بار ورود (مولتی)',
     description: 'تمدید سریع ویزای ۶۰ روزه مولتی با امکان چندین بار ورود و خروج برای بازرگانان و مسافران کثیرالسفر.',
-    serviceFee: '۷۹۰ درهم',
+    serviceFee: '۷۹ ریال عمان',
     workingDays: '۱ روز کاری',
     requirements: ['کپی پاسپورت', 'کپی ویزای توریستی فعلی', 'عکس پرسنلی'],
     category: 'Tourist Visa Extension Services'
@@ -596,7 +596,7 @@ export const servicesListFA: Service[] = [
     id: 'tourist-visa-renewal',
     title: 'تمدید ویزای توریستی در داخل کشور (بدون خروج)',
     description: 'تمدید ویزای توریستی و تغییر وضعیت اقامتی بدون نیاز به خروج از مرز تا سقف ۴ ماه اقامت کلی.',
-    serviceFee: '۱,۰۹۰ درهم',
+    serviceFee: '۱۰۹ ریال عمان',
     workingDays: '۱ روز کاری',
     requirements: ['کپی پاسپورت', 'کپی ویزای توریستی فعلی', 'عکس پرسنلی'],
     category: 'Tourist Visa Extension Services'
@@ -607,8 +607,8 @@ export const servicesListFA: Service[] = [
     id: 'trade-license-renewal',
     title: 'تمدید لایسنس تجاری (Mainland & Freezone)',
     description: 'تمدید لایسنس تجاری شرکت‌های امارات و عمان، تمدید عقد ایجاری و صدور فیش‌های پرداختی دولتی بدون جریمه.',
-    serviceFee: '۳۰۰ درهم',
-    governmentFees: 'از ۴,۲۷۰ درهم',
+    serviceFee: '۳۰ ریال عمان',
+    governmentFees: 'از ۴۲۷ ریال عمان',
     workingDays: '۳ روز کاری',
     requirements: ['عقد ایجاری / بلدیه معتبر', 'استبلیشمنت کارت معتبر شرکت', 'تاییدیه فیش‌های دولتی'],
     category: 'License Renewal Services'
@@ -617,8 +617,8 @@ export const servicesListFA: Service[] = [
     id: 'establishment-card-renewal',
     title: 'تمدید استبلیشمنت کارت و کارت بازرگانی',
     description: 'تمدید به موقع کارت تاسیس شرکت (Establishment Card) و عضویت اتاق بازرگانی جهت فعال ماندن پرتال‌های استخدامی.',
-    serviceFee: '۱۵۰ درهم',
-    governmentFees: '۵۸۱ درهم',
+    serviceFee: '۱۵ ریال عمان',
+    governmentFees: '۵۸ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'کارت ملی امارات / عمان فیزیکی', 'ثبت قانونی شرکت'],
     category: 'License Renewal Services'
@@ -627,7 +627,7 @@ export const servicesListFA: Service[] = [
     id: 'ejari-1-year',
     title: 'تمدید قرارداد رسمی ایجاری سالانه',
     description: 'ثبت و تمدید قرارداد رسمی ایجاری سالانه واحدهای اداری، تجاری و انبارها به همراه پشتیبانی بازرسی.',
-    serviceFee: '۱,۹۵۰ درهم',
+    serviceFee: '۱۹۵ ریال عمان',
     workingDays: '۱ روز کاری',
     requirements: ['کپی سند ملک', 'کپی کارت ملی مالک', 'کپی لایسنس شرکت'],
     category: 'License Renewal Services'
@@ -636,7 +636,7 @@ export const servicesListFA: Service[] = [
     id: 'baladiya-tenancy',
     title: 'تمدید قرارداد اجاره شهرداری (بلدیه عمان)',
     description: 'تمدید رسمی قرارداد اجاره ملک تجاری در شهرداری عمان (بلدیه) جهت فعال نگه داشتن سجل تجاری (CR).',
-    serviceFee: '۱,۵۰۰ درهم',
+    serviceFee: '۱۵۰ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['کپی کروکی ملک', 'کپی کارت ملی مالک ملک', 'سجل تجاری شرکت (CR)'],
     category: 'License Renewal Services'
@@ -647,7 +647,7 @@ export const servicesListFA: Service[] = [
     id: 'car-rental-daily-monthly',
     title: 'اجاره خودرو روزانه و ماهانه (اقتصادی و سواری)',
     description: 'اجاره انواع خودروهای سواری و اقتصادی به‌صورت روزانه، هفتگی و ماهانه با بیمه کامل و تحویل سریع.',
-    serviceFee: '۱۲۰ درهم / روزانه',
+    serviceFee: '۱۲ ریال عمان / روزانه',
     workingDays: 'تحویل فوری',
     requirements: ['کپی پاسپورت و ویزا', 'گواهینامه رانندگی / بین‌المللی', 'دیپوزیت / کارت اعتباری'],
     category: 'Car Rental Services'
@@ -656,7 +656,7 @@ export const servicesListFA: Service[] = [
     id: 'luxury-car-rental',
     title: 'اجاره خودروهای لوکس و اسپرت',
     description: 'رنت آخرین مدل خودروهای لوکس و اسپرت دنیا (لامبورگینی، فراری، رولزرویس، پورشه، بنز) برای تشریفات و قرار‌های تجاری.',
-    serviceFee: '۸۰۰ درهم / روزانه',
+    serviceFee: '۸۰ ریال عمان / روزانه',
     workingDays: 'تحویل فوری',
     requirements: ['پاسپورت و ویزای معتبر', 'گواهینامه بین‌المللی', 'ودائع تامینی (دیپوزیت)'],
     category: 'Car Rental Services'
@@ -665,7 +665,7 @@ export const servicesListFA: Service[] = [
     id: 'chauffeur-car-rental',
     title: 'اجاره خودرو تشریفاتی با راننده اختصاصی',
     description: 'خدمات ترانسفر لوکس با راننده مسلط به چند زبان جهت ترانسفر فرودگاهی، هیئت‌های تجاری و تورهای شهری.',
-    serviceFee: '۳۵۰ درهم / ۵ ساعت',
+    serviceFee: '۳۵ ریال عمان / ۵ ساعت',
     workingDays: 'رزرو فوری',
     requirements: ['مشخصات پرواز / آدرس مبدا', 'تعداد مسافران', 'تاییدیه رزرو'],
     category: 'Car Rental Services'
@@ -674,7 +674,7 @@ export const servicesListFA: Service[] = [
     id: 'suv-family-car-rental',
     title: 'اجاره خودروهای شاسی‌بلند و خانوادگی (۷ نفره)',
     description: 'خودروهای شاسی‌بلند و خانوادگی جادار برای سفرهای گروهی، گردشگری و تردد بین‌شهری با بیمه کامل بدنه.',
-    serviceFee: '۲۵۰ درهم / روزانه',
+    serviceFee: '۲۵ ریال عمان / روزانه',
     workingDays: 'تحویل فوری',
     requirements: ['کپی پاسپورت', 'گواهینامه رانندگی معتبر', 'دیپوزیت'],
     category: 'Car Rental Services'
@@ -685,7 +685,7 @@ export const servicesListFA: Service[] = [
     id: 'business-account-high-risk',
     title: 'افتتاح حساب شرکتی - فعالیت‌های با ریسک بالا',
     description: 'افتتاح حساب بانکی تجاری برای بیزینس‌هایی با فعالیت‌های پرریسک. مدیریت کامل مدارک، تهیه پورتفولیو شرکت و قوانین انطباق بانکی.',
-    serviceFee: '۳,۹۵۰ درهم',
+    serviceFee: '۳۹۵ ریال عمان',
     workingDays: '۲۰ روز کاری',
     requirements: ['لایسنس شرکت باید معتبر باشد', 'ویزای کلیه شرکا باید معتبر باشد', 'الزامی جهت فرآیند تمدید اقامت'],
     category: 'Banking Services'
@@ -694,7 +694,7 @@ export const servicesListFA: Service[] = [
     id: 'business-account-low-risk',
     title: 'افتتاح حساب شرکتی - فعالیت‌های با ریسک معمولی',
     description: 'راه‌اندازی سریع حساب بانکی شرکتی برای بیزینس‌های کم‌ریسک. اخذ تاییدیه از معتبرترین بانک‌های امارات و عمان.',
-    serviceFee: '۲,۹۵۰ درهم',
+    serviceFee: '۲۹۵ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['لایسنس شرکت باید معتبر باشد', 'ویزای کلیه شرکا باید معتبر باشد', 'الزامی جهت فرآیند تمدید اقامت'],
     category: 'Banking Services'
@@ -703,7 +703,7 @@ export const servicesListFA: Service[] = [
     id: 'personal-account-guidance',
     title: 'راهنمایی افتتاح حساب شخصی',
     description: 'افتتاح حساب بانکی شخصی پس‌انداز یا جاری در بهترین بانک‌های داخلی. ارزیابی مدارک و دریافت سریع تاییدیه افتتاح حساب.',
-    serviceFee: '۹۵۰ درهم',
+    serviceFee: '۹۵ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['ویزای اقامت و کارت ملی معتبر', 'پاسپورت با مهر ورود', 'فیش حقوقی یا گواهی تمکن مالی'],
     category: 'Banking Services'
@@ -714,7 +714,7 @@ export const servicesListFA: Service[] = [
     id: 'corporate-tax-registration',
     title: 'ثبت‌نام مالیات شرکت‌ها (Corporate Tax)',
     description: 'ثبت‌نام رسمی شرکت در سیستم مالیاتی سازمان مالیات فدرال (FTA). جلوگیری از جریمه سنگین با ثبت‌نام در بازه قانونی.',
-    serviceFee: '۱۸۰ درهم',
+    serviceFee: '۱۸ ریال عمان',
     workingDays: '۳ روز کاری',
     requirements: ['ثبت‌نام حداکثر طی ۸۷ روز از ثبت شرکت', 'الزامی برای کلیه شرکت‌ها', 'جلوگیری از جریمه مالیاتی'],
     category: 'Tax Services'
@@ -723,7 +723,7 @@ export const servicesListFA: Service[] = [
     id: 'corporate-tax-filing',
     title: 'ارسال اظهارنامه مالیاتی شرکت',
     description: 'تنظیم و ارسال اظهارنامه مالیاتی شرکت طبق استانداردهای حسابداری رسمی در مهلت قانونی جهت جلوگیری از جریمه‌های ماهانه.',
-    serviceFee: '۳۸۰ درهم',
+    serviceFee: '۳۸ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['ارسال در بازه حداکثر ۹ ماهه', 'الزامی برای کلیه شرکت‌های ثبت شده', 'جلوگیری از جریمه ماهانه'],
     category: 'Tax Services'
@@ -732,7 +732,7 @@ export const servicesListFA: Service[] = [
     id: 'vat-registration',
     title: 'ثبت‌نام مالیات بر ارزش افزوده (VAT)',
     description: 'ثبت‌نام رسمی در پرتال مالیات بر ارزش افزوده (VAT). الزامی برای شرکت‌هایی که میزان فروش آن‌ها از حد مجاز قانونی فراتر رفته است.',
-    serviceFee: '۳۵۰ درهم',
+    serviceFee: '۳۵ ریال عمان',
     workingDays: '۳ روز کاری',
     requirements: ['کپی لایسنس تجاری شرکت', 'تراز مالی رسمی فروش', 'پاسپورت و ویزای مدیر شرکت'],
     category: 'Tax Services'
@@ -741,7 +741,7 @@ export const servicesListFA: Service[] = [
     id: 'fta-profile-update',
     title: 'به‌روزرسانی پروفایل مالیاتی (FTA)',
     description: 'اصلاح و به‌روزرسانی مشخصات شرکت در پرتال سازمان مالیات پس از اعمال تغییرات لایسنس، آدرس یا مدیریت.',
-    serviceFee: '۲۸۰ درهم',
+    serviceFee: '۲۸ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['اطلاعات لایسنس باید به‌روز باشد', 'ویزای مدیر مسئول باید به‌روز باشد', 'محل شرکت باید به روز باشد'],
     category: 'Tax Services'
@@ -750,7 +750,7 @@ export const servicesListFA: Service[] = [
     id: 'tax-reconsideration',
     title: 'درخواست بازنگری جرایم مالیاتی',
     description: 'ثبت رسمی درخواست تجدیدنظر و بخشش جرایم مالیاتی طبق قوانین رسمی. تنظیم لوایح دفاعی قانونی جهت معافیت از جریمه.',
-    serviceFee: '۳۸۰ درهم',
+    serviceFee: '۳۸ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['اعتراض به جرایم صادره مالیاتی', 'بررسی بر اساس قوانین سازمان مالیاتی', 'تنظیم لایحه دفاعی'],
     category: 'Tax Services'
@@ -759,7 +759,7 @@ export const servicesListFA: Service[] = [
     id: 'industrial-tax-exemptions',
     title: 'اخذ معافیت‌های مالیاتی صنعتی',
     description: 'اخذ گواهی رسمی معافیت‌های مالیاتی صنعتی برای تجهیزات، ماشین‌آلات تولیدی و مواد اولیه جهت کاهش هزینه‌های کارخانه‌ها.',
-    serviceFee: '۹۵۰ درهم',
+    serviceFee: '۹۵ ریال عمان',
     workingDays: '۱۰ روز کاری',
     requirements: ['کپی لایسنس صنعتی معتبر', 'لیست تجهیزات و مواد اولیه وارداتی', 'مجوز زیست‌محیطی معتبر'],
     category: 'Tax Services'
@@ -770,8 +770,8 @@ export const servicesListFA: Service[] = [
     id: 'driving-license-guidance',
     title: 'گواهینامه رانندگی',
     description: 'کمک گام‌به‌گام برای تبدیل گواهینامه معتبر یا باز کردن پرونده جدید رانندگی. هماهنگی تست چشم و نوبت‌های اداری.',
-    serviceFee: '۳۵۰ درهم',
-    governmentFees: '۸۵۰ درهم',
+    serviceFee: '۳۵ ریال عمان',
+    governmentFees: '۸۵ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کارت ملی معتبر', 'اصل گواهینامه رانندگی کشور مبدا', 'گواهی معاینه چشم معتبر'],
     category: 'General Government Services'
@@ -780,8 +780,8 @@ export const servicesListFA: Service[] = [
     id: 'dubai-municipality-permits',
     title: 'مجوزهای شهرداری دبی',
     description: 'اخذ مجوزهای تجاری، تبلیغاتی یا دکوراسیون اداری از شهرداری دبی. پیگیری تایید نقشه‌های فنی.',
-    serviceFee: '۶۵۰ درهم',
-    governmentFees: 'از ۱,۵۰۰ درهم',
+    serviceFee: '۶۵ ریال عمان',
+    governmentFees: 'از ۱۵۰ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'قرارداد ایجاری معتبر', 'نقشه جانمایی دفتر یا مغازه'],
     category: 'General Government Services'
@@ -790,8 +790,8 @@ export const servicesListFA: Service[] = [
     id: 'sports-council-permits',
     title: 'مجوزهای شورای ورزشی دبی',
     description: 'اخذ تاییدیه و مجوزهای رسمی فعالیت باشگاه‌ها، مسابقات ورزشی و آکادمی‌های ورزشی از شورای ورزشی دبی.',
-    serviceFee: '۸۵۰ درهم',
-    governmentFees: 'از ۲,۵۰۰ درهم',
+    serviceFee: '۸۵ ریال عمان',
+    governmentFees: 'از ۲۵۰ ریال عمان',
     workingDays: '۷ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'مدارک و مدارک مربیگری', 'گواهی ایمنی مکان ورزشی'],
     category: 'General Government Services'
@@ -800,8 +800,8 @@ export const servicesListFA: Service[] = [
     id: 'rera-permits',
     title: 'مجوزهای املاک (RERA)',
     description: 'اخذ مجوزهای فعالیت‌های تجاری املاک، کارت کارگزاری و مجوزهای تبلیغات ملک از دپارتمان املاک (RERA).',
-    serviceFee: '۹۵۰ درهم',
-    governmentFees: 'از ۳,۵۰۰ درهم',
+    serviceFee: '۹۵ ریال عمان',
+    governmentFees: 'از ۳,۵۰ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'کارت کارگزاری مدیر', 'قرارداد دفتر تجاری'],
     category: 'General Government Services'
@@ -810,7 +810,7 @@ export const servicesListFA: Service[] = [
     id: 'customs-bayan',
     title: 'ترخیص گمرکی بیان (Bayan)',
     description: 'ترخیص کالا و مرسولات گمرکی در عمان از طریق سیستم رسمی گمرک بیان جهت تسریع ترخیص در بنادر.',
-    serviceFee: '۴۵۰ درهم',
+    serviceFee: '۴۵ ریال عمان',
     workingDays: '۲ روز کاری',
     requirements: ['لایسنس صادرات/واردات', 'فاکتور تجاری و پکینگ لیست', 'گواهی مبدا کالا'],
     category: 'General Government Services'
@@ -819,7 +819,7 @@ export const servicesListFA: Service[] = [
     id: 'made-in-oman',
     title: 'گواهی ساخت عمان (Made in Oman)',
     description: 'اخذ گواهی کیفیت رسمی "ساخت عمان" برای محصولات تولیدی داخلی جهت بهره‌مندی از اولویت مناقصات.',
-    serviceFee: '۵۵۰ درهم',
+    serviceFee: '۵۵ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کپی لایسنس صنعتی/تجاری', 'تاییدیه ارزش افزوده داخلی', 'گزارش تست محصول'],
     category: 'General Government Services'
@@ -828,7 +828,7 @@ export const servicesListFA: Service[] = [
     id: 'riyada-card',
     title: 'کارت ریاده (Riyada Card)',
     description: 'خدمات دریافت کارت ریاده برای کسب‌وکارهای کوچک و متوسط (SME) در عمان جهت بهره‌مندی از معافیت‌ها و مناقصات.',
-    serviceFee: '۲۵۰ درهم',
+    serviceFee: '۲۵ ریال عمان',
     workingDays: '۳ روز کاری',
     requirements: ['اثبات مالکیت عمانی', 'لایسنس تجاری معتبر', 'ثبت‌نام فعال بیمه تامین اجتماعی'],
     category: 'General Government Services'
@@ -837,8 +837,8 @@ export const servicesListFA: Service[] = [
     id: 'pacda-permits',
     title: 'مجوز ایمنی دفاع مدنی (PACDA)',
     description: 'اخذ تاییدیه‌های ایمنی آتش‌نشانی و مجوزهای ایمنی شهری از سازمان دفاع مدنی و آمبولانس.',
-    serviceFee: '۴۵۰ درهم',
-    governmentFees: 'از ۱,۰۰۰ درهم',
+    serviceFee: '۴۵ ریال عمان',
+    governmentFees: 'از ۱۰۰ ریال عمان',
     workingDays: '۴ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'قرارداد اجاره ملک', 'گواهی تجهیزات اطفاء حریق'],
     category: 'General Government Services'
@@ -847,7 +847,7 @@ export const servicesListFA: Service[] = [
     id: 'product-standards',
     title: 'گواهی استاندارد محصول',
     description: 'اخذ تاییدیه‌های رسمی استاندارد و گواهی علامت کیفیت G-mark از اداره کل استاندارد.',
-    serviceFee: '۵۵۰ درهم',
+    serviceFee: '۵۵ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['مشخصات فنی محصول', 'کپی گواهی‌های ایزو', 'لایسنس واردات/صادرات'],
     category: 'General Government Services'
@@ -856,7 +856,7 @@ export const servicesListFA: Service[] = [
     id: 'government-land-rental',
     title: 'راهنمایی اجاره زمین دولتی',
     description: 'راهنمایی گام‌به‌گام دریافت زمین‌های اجاره‌ای دولتی برای پروژه‌های صنعتی، انبارداری و کشاورزی در شهرک‌های صنعتی.',
-    serviceFee: '۹۵۰ درهم',
+    serviceFee: '۹۵ ریال عمان',
     workingDays: '۱۰ روز کاری',
     requirements: ['لایسنس صنعتی/تجاری معتبر', 'خلاصه طرح توجیهی', 'درخواست رسمی به وزارتخانه'],
     category: 'General Government Services'
@@ -865,7 +865,7 @@ export const servicesListFA: Service[] = [
     id: 'accounting-auditing',
     title: 'خدمات حسابداری و حسابرسی',
     description: 'دفترنویسی حرفه‌ای، تنظیم صورت‌های مالی، حسابرسی سالانه و بررسی دفاتر جهت انطباق با قوانین مالی.',
-    serviceFee: '۴۵۰ درهم',
+    serviceFee: '۴۵ ریال عمان',
     workingDays: '۳ روز کاری',
     requirements: ['دفاتر و پرینت حساب شرکت', 'لیست فاکتورهای رسمی', 'مدارک هزینه‌ها'],
     category: 'General Government Services'
@@ -874,7 +874,7 @@ export const servicesListFA: Service[] = [
     id: 'omanisation-management',
     title: 'مدیریت عمان‌سازی و استخدامی',
     description: 'تنظیم دقیق نسبت استخدام نیروی کار بومی و خارجی طبق استانداردهای رسمی وزارت کار جهت جلوگیری از مسدودی پرتال.',
-    serviceFee: '۶۵۰ درهم',
+    serviceFee: '۶۵ ریال عمان',
     workingDays: '۴ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'لیست ویزاهای فعال پرسنل', 'هدف‌گذاری نسبت عمان‌سازی'],
     category: 'General Government Services'
@@ -883,7 +883,7 @@ export const servicesListFA: Service[] = [
     id: 'icv-certificate',
     title: 'گواهی ارزش افزوده داخلی (ICV)',
     description: 'آماده‌سازی و اخذ گواهی رسمی ICV عمان جهت شرکت در مناقصات بزرگ دولتی و نفت و گاز.',
-    serviceFee: '۱,۵۰۰ درهم',
+    serviceFee: '۱۵۰ ریال عمان',
     workingDays: '۷ روز کاری',
     requirements: ['صورت‌های مالی حسابرسی شده', 'گزارش عمان‌سازی', 'فاکتورهای خرید داخلی'],
     category: 'General Government Services'
@@ -897,8 +897,8 @@ export const servicesListAR: Service[] = [
     id: 'company-mainland',
     title: 'تأسيس شركة في البر الرئيسي (Mainland)',
     description: 'تأسيس شركة في البر الرئيسي للإمارات أو عمان بملكية أجنبية 100%. حجز الاسم التجاري والموافقات الأولية وتوقيع عقد التأسيس.',
-    serviceFee: '3,000 درهم',
-    governmentFees: 'من 12,000 درهم',
+    serviceFee: '3,000 ریال عمان',
+    governmentFees: 'من 12,000 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية / ختم الدخول', 'ثلاثة أسماء تجارية مقترحة'],
     category: 'Company Setup Services'
@@ -907,8 +907,8 @@ export const servicesListAR: Service[] = [
     id: 'company-freezone',
     title: 'تأسيس شركة في المنطقة الحرة (Freezone)',
     description: 'تأسيس أعمالك في أفضل المناطق الحرة مع معافاة ضريبية 100% وملكية كاملة دون الحاجة لشريك محلي. تشمل الرخصة وعقد الإيجار.',
-    serviceFee: '2,500 درهم',
-    governmentFees: 'من 9,500 درهم',
+    serviceFee: '2,500 ریال عمان',
+    governmentFees: 'من 9,500 ریال عمان',
     workingDays: '4 أيام عمل',
     requirements: ['صورة جواز السفر', 'صورة شخصية خلفية بيضاء', 'قائمة الأنشطة التجارية المقترحة'],
     category: 'Company Setup Services'
@@ -917,8 +917,8 @@ export const servicesListAR: Service[] = [
     id: 'trademark-registration',
     title: 'تسجيل العلامة التجارية',
     description: 'حماية هوية علامتك التجارية قانونياً. إجراء الاستعلام المسبق، تقديم الطلب في وزارة الاقتصاد، وإصدار شهادة التسجيل.',
-    serviceFee: '1,500 درهم',
-    governmentFees: '7,500 درهم',
+    serviceFee: '1,500 ریال عمان',
+    governmentFees: '7,500 ریال عمان',
     workingDays: '15 يوم عمل',
     requirements: ['شعار العلامة التجارية', 'صورة الرخصة التجارية', 'وكالة رسمية'],
     category: 'Company Setup Services'
@@ -927,7 +927,7 @@ export const servicesListAR: Service[] = [
     id: 'business-setup-consulting',
     title: 'استشارات تأسيس الأعمال',
     description: 'استشارات متخصصة في هيكلة الشركات وتوزيع الحصص وتحديد الأنشطة التجارية والاختيار الأمثل للموقع.',
-    serviceFee: '500 درهم',
+    serviceFee: '500 ریال عمان',
     workingDays: '3 أيام عمل',
     requirements: ['وصف فكرة المشروع', 'تخطيط رأس المال الأول', 'اقتراح موقع الشركة'],
     category: 'Company Setup Services'
@@ -936,7 +936,7 @@ export const servicesListAR: Service[] = [
     id: 'feasibility-study',
     title: 'دراسة الجدوى وخطة العمل الرسمية',
     description: 'إعداد دراسات جدوى وافية وخطط عمل احترافية مخصصة للتقديم للبنوك والجهات الحكومية وجذب المستثمرين.',
-    serviceFee: '1,500 درهم',
+    serviceFee: '1,500 ریال عمان',
     workingDays: '8 أيام عمل',
     requirements: ['وصف نموذج العمل', 'التقديرات المالية والمبيعات', 'معلومات المنافسين والظروف السوقية'],
     category: 'Company Setup Services'
@@ -947,8 +947,8 @@ export const servicesListAR: Service[] = [
     id: 'family-residency-visa',
     title: 'تأشيرة الإقامة العائلية',
     description: 'إصدار وتجديد إقامة الزوجة والأبناء والوالدين. تشمل توثيق المستندات والفحص الطبي وبطاقة الهوية وتثبيت التأشيرة.',
-    serviceFee: '450 درهم',
-    governmentFees: '1,340 درهم',
+    serviceFee: '450 ریال عمان',
+    governmentFees: '1,340 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['صورة جواز إقامة الكفيل', 'توثيق عقد الزواج / شهادات الميلاد', 'شهادة الراتب / عقد إيجاري'],
     category: 'Family & Business Visas'
@@ -957,8 +957,8 @@ export const servicesListAR: Service[] = [
     id: 'partner-investor-visa',
     title: 'تأشيرة الشريك والمستثمر',
     description: 'إصدار وتجديد إقامة المستثمر والشريك التجاري لأصحاب الأعمال والمساهمين مع كافة الامتيازات القانونية.',
-    serviceFee: '650 درهم',
-    governmentFees: '3,200 درهم',
+    serviceFee: '650 ریال عمان',
+    governmentFees: '3,200 ریال عمان',
     workingDays: '4 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'عقد التأسيس (MOA/CR)', 'صورة جواز السفر للشريك'],
     category: 'Family & Business Visas'
@@ -967,8 +967,8 @@ export const servicesListAR: Service[] = [
     id: 'business-employment-visa',
     title: 'تأشيرات العمل والموظفين',
     description: 'إصدار تصاريح العمل وتأشيرات التوظيف لموظفي ومستنجدي الشركات في المناطق الحرة والبر الرئيسي.',
-    serviceFee: '350 درهم',
-    governmentFees: '1,850 درهم',
+    serviceFee: '350 ریال عمان',
+    governmentFees: '1,850 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'بطاقة المنشأة', 'صورة شخصية وجواز الموظف'],
     category: 'Family & Business Visas'
@@ -977,8 +977,8 @@ export const servicesListAR: Service[] = [
     id: 'golden-visa-services',
     title: 'خدمات الإقامة الذهبية (10 سنوات)',
     description: 'إجراءات الترشيح وإصدار الإقامة الذهبية لمدة 10 سنوات للمستثمرين ورواد الأعمال والرؤساء التنفيذيين والموهوبين.',
-    serviceFee: '1,500 درهم',
-    governmentFees: '4,800 درهم',
+    serviceFee: '1,500 ریال عمان',
+    governmentFees: '4,800 ریال عمان',
     workingDays: '7 أيام عمل',
     requirements: ['كشف حساب / ملكية عقار / رخصة تجارية', 'صورة جواز السفر', 'الهوية / تصريح الدخول'],
     category: 'Family & Business Visas'
@@ -989,7 +989,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-30-days',
     title: 'تجديد التأشيرة السياحية 30 يوماً',
     description: 'تجديد سريع وسلس للتأشيرة السياحية لمدة 30 يوماً عبر البوابات الرسمية للهجرة لضمان الوضع القانوني.',
-    serviceFee: '290 درهم',
+    serviceFee: '290 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -998,7 +998,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-60-days',
     title: 'تجديد التأشيرة السياحية 60 يوماً',
     description: 'تجديد التأشيرة السياحية لمدة 60 يوماً للإقامات الطويلة أو متابعة المعاملات التجارية والأسرية.',
-    serviceFee: '490 درهم',
+    serviceFee: '490 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -1007,7 +1007,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-multi-60-days',
     title: 'تجديد التأشيرة 60 يوماً متعددة الدخول',
     description: 'تجديد سريع للتأشيرة متعددة الدخول لمدة 60 يوماً لرجال الأعمال والمسافرين بشكل متكرر.',
-    serviceFee: '790 درهم',
+    serviceFee: '790 ریال عمان',
     workingDays: '1 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -1016,7 +1016,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-renewal',
     title: 'تجديد التأشيرة من داخل الدولة (بدون مغادرة)',
     description: 'تعديل الوضع وتجديد التأشيرة السياحية من داخل الدولة دون الحاجة للمغادرة حتى 4 أشهر إجمالاً.',
-    serviceFee: '1,090 درهم',
+    serviceFee: '1,090 ریال عمان',
     workingDays: '1 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -1027,8 +1027,8 @@ export const servicesListAR: Service[] = [
     id: 'trade-license-renewal',
     title: 'تجديد الرخصة التجارية (Mainland & Freezone)',
     description: 'تجديد الرخص التجارية للشركات وإصدار إذن الدفع الإلكتروني وتوثيق عقود الإيجار لتفادي الغرامات.',
-    serviceFee: '300 درهم',
-    governmentFees: 'من 4,270 درهم',
+    serviceFee: '300 ریال عمان',
+    governmentFees: 'من 4,270 ریال عمان',
     workingDays: '3 أيام عمل',
     requirements: ['عقد إيجاري / بلدي ساري', 'بطاقة المنشأة سارية المفعول', 'الموافقة على إذن الدفع'],
     category: 'License Renewal Services'
@@ -1037,8 +1037,8 @@ export const servicesListAR: Service[] = [
     id: 'establishment-card-renewal',
     title: 'تجديد بطاقة المنشأة وغرفة التجارة',
     description: 'تجديد بطاقة المنشأة والانتساب لغرفة التجارة لضمان استمرارية المعاملات وتصاريح العمل.',
-    serviceFee: '150 درهم',
-    governmentFees: '581 درهم',
+    serviceFee: '150 ریال عمان',
+    governmentFees: '581 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['صورة الرخصة التجارية', 'الهوية الأصلية للمفوض', 'السجل التجاري للشركة'],
     category: 'License Renewal Services'
@@ -1047,7 +1047,7 @@ export const servicesListAR: Service[] = [
     id: 'ejari-1-year',
     title: 'تجديد عقد الإيجاري السنوي',
     description: 'تسجيل وتجديد عقد الإيجاري السنوي الرسمي للمكاتب والمحلات والمستودعات لاستيفاء متطلبات البلدية.',
-    serviceFee: '1,950 درهم',
+    serviceFee: '1,950 ریال عمان',
     workingDays: '1 يوم عمل',
     requirements: ['صورة ملكية العقار', 'صورة هوية المؤجر', 'صورة الرخصة التجارية'],
     category: 'License Renewal Services'
@@ -1056,7 +1056,7 @@ export const servicesListAR: Service[] = [
     id: 'baladiya-tenancy',
     title: 'تجديد عقد الإيجار البلدي (عمان)',
     description: 'تجديد عقد الإيجار التجاري في بلدية عمان لضمان استمرار السجل التجاري والأنشطة.',
-    serviceFee: '1,500 درهم',
+    serviceFee: '1,500 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['صورة الرسم المساحي (الكروكي)', 'صورة الهوية للمؤجر', 'السجل التجاري (CR)'],
     category: 'License Renewal Services'
@@ -1067,7 +1067,7 @@ export const servicesListAR: Service[] = [
     id: 'car-rental-daily-monthly',
     title: 'تأجير السيارات اليومي والشهري',
     description: 'تأجير مختلف أنواع السيارات الاقتصادية والسيدان بشكل يومي أو أسبوعي أو شهري مع التأمين الشامل والتسليم السريع.',
-    serviceFee: '120 درهم / يومياً',
+    serviceFee: '120 ریال عمان / يومياً',
     workingDays: 'تسليم فوري',
     requirements: ['صورة الجواز والتأشيرة', 'رخصة القيادة / الدولية', 'مبلغ التأمين / بطاقة ائتمان'],
     category: 'Car Rental Services'
@@ -1076,7 +1076,7 @@ export const servicesListAR: Service[] = [
     id: 'luxury-car-rental',
     title: 'تأجير السيارات الفارهة والرياضية',
     description: 'استئجار أحدث موديلات السيارات الفاخرة والرياضية (لامبورغيني، فيراري، رولز رويس، بورش، مرسيدس) للمناسبات والوفود.',
-    serviceFee: '800 درهم / يومياً',
+    serviceFee: '800 ریال عمان / يومياً',
     workingDays: 'تسليم فوري',
     requirements: ['جواز وتأشيرة سارية', 'رخصة قيادة دولية', 'وديعة تأمين'],
     category: 'Car Rental Services'
@@ -1085,7 +1085,7 @@ export const servicesListAR: Service[] = [
     id: 'chauffeur-car-rental',
     title: 'تأجير السيارات الفاخرة مع سائق خاص',
     description: 'خدمات التنقل الفاخرة مع سائقين خاصين يتحدثون لغات متعددة للتوصيل من وإلى المطار والجولات التجارية.',
-    serviceFee: '350 درهم / 5 ساعات',
+    serviceFee: '350 ریال عمان / 5 ساعات',
     workingDays: 'حجز فوري',
     requirements: ['تفاصيل الرحلة / عنوان الاستلام', 'عدد الراكبين', 'تأكيد الحجز'],
     category: 'Car Rental Services'
@@ -1094,7 +1094,7 @@ export const servicesListAR: Service[] = [
     id: 'suv-family-car-rental',
     title: 'تأجير السيارات العائلية والدفع الرباعي',
     description: 'سيارات الدفع الرباعي والعائلية واسعة (7 ركاب) للتنقلات الجماعية والرحلات بين المدن مع تأمين شامل.',
-    serviceFee: '250 درهم / يومياً',
+    serviceFee: '250 ریال عمان / يومياً',
     workingDays: 'تسليم فوري',
     requirements: ['صورة جواز السفر', 'رخصة قيادة سارية', 'تأمين'],
     category: 'Car Rental Services'
@@ -1105,7 +1105,7 @@ export const servicesListAR: Service[] = [
     id: 'business-account-high-risk',
     title: 'فتح حساب شركتاً - أنشطة عالية المخاطر',
     description: 'فتح حسابات بنكية تجارية للقطاعات عالية المخاطر مع إدارة الامتثال والتدقيق وتنسيق المعاملات مع البنوك.',
-    serviceFee: '3,950 درهم',
+    serviceFee: '3,950 ریال عمان',
     workingDays: '20 يوم عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'تأشيرة جميع الشركاء سارية', 'مطلوب لتجديد الإقامة'],
     category: 'Banking Services'
@@ -1114,7 +1114,7 @@ export const servicesListAR: Service[] = [
     id: 'business-account-low-risk',
     title: 'فتح حساب شركتاً - أنشطة منخفضة المخاطر',
     description: 'تسهيل فتح الحسابات البنكية التجارية للأنشطة منخفضة المخاطر بسرعة لدى أفضل البنوك المحلية والدولية.',
-    serviceFee: '2,950 درهم',
+    serviceFee: '2,950 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'تأشيرة جميع الشركاء سارية', 'مطلوب لتجديد الإقامة'],
     category: 'Banking Services'
@@ -1123,7 +1123,7 @@ export const servicesListAR: Service[] = [
     id: 'personal-account-guidance',
     title: 'إرشادات فتح الحساب الشخصي',
     description: 'فتح حساب شخصي جاري أو توفير لدى أفضل البنوك مع مراجعة المستندات واستخراج الموافقات السريعة.',
-    serviceFee: '950 درهم',
+    serviceFee: '950 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['تأشيرة إقامة وهوية سارية', 'جواز السفر مع ختم الدخول', 'شهادة الراتب أو إثبات الدخل'],
     category: 'Banking Services'
@@ -1134,7 +1134,7 @@ export const servicesListAR: Service[] = [
     id: 'corporate-tax-registration',
     title: 'التسجيل في ضريبة الشركات (Corporate Tax)',
     description: 'التسجيل الرسمي للشركة لدى الهيئة الاتحادية للضرائب لتفادي الغرامات المالية بالتسجيل في المواعيد المحددة.',
-    serviceFee: '180 درهم',
+    serviceFee: '180 ریال عمان',
     workingDays: '3 أيام عمل',
     requirements: ['التسجيل خلال 87 يوماً', 'إلزامي لجميع الشركات', 'تفادي الغرامة المالية'],
     category: 'Tax Services'
@@ -1143,7 +1143,7 @@ export const servicesListAR: Service[] = [
     id: 'corporate-tax-filing',
     title: 'تقديم الإقرار الضريبي للشركات',
     description: 'إعداد وتقديم الإقرارات الضريبية وفق المعايير المعتمدة خلال المهلة القانونية لتفادي الغرامات الشهرية.',
-    serviceFee: '380 درهم',
+    serviceFee: '380 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['التقديم خلال 9 أشهر', 'إلزامي لجميع الشركات المسجلة', 'تفادي الغرامة الشهرية'],
     category: 'Tax Services'
@@ -1152,7 +1152,7 @@ export const servicesListAR: Service[] = [
     id: 'vat-registration',
     title: 'التسجيل في ضريبة القيمة المضافة (VAT)',
     description: 'التسجيل الرسمي في بوابة ضريبة القيمة المضافة للشركات التي تتجاوز إيراداتها الحد القانوني الخاضع للضريبة.',
-    serviceFee: '350 درهم',
+    serviceFee: '350 ریال عمان',
     workingDays: '3 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'كشف الحساب المالي المعتمد', 'جواز وتأشيرة المدير'],
     category: 'Tax Services'
@@ -1161,7 +1161,7 @@ export const servicesListAR: Service[] = [
     id: 'fta-profile-update',
     title: 'تحديث الملف الضريبي (FTA)',
     description: 'تعديل وتحديث البيانات الرسمية لدى الهيئة الاتحادية للضرائب بعد تعديل الرخصة أو العنوان أو الإدارة.',
-    serviceFee: '280 درهم',
+    serviceFee: '280 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['تحديث بيانات الرخصة أولاً', 'تحديث تأشيرة المدير المسؤول', 'تحديث موقع وعنوان الشركة'],
     category: 'Tax Services'
@@ -1170,7 +1170,7 @@ export const servicesListAR: Service[] = [
     id: 'tax-reconsideration',
     title: 'طلب إعادة النظر في الغرامات الضريبية',
     description: 'تقديم طلبات التظلم وإعادة النظر الرسمية في الغرامات الضريبية وفق القوانين واللوائح التنفيذية.',
-    serviceFee: '380 درهم',
+    serviceFee: '380 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['تقديم طلب تظلم من الغرامة', 'الصياغة وفق القوانين الضريبية', 'دراسة قانونية للطلب'],
     category: 'Tax Services'
@@ -1179,7 +1179,7 @@ export const servicesListAR: Service[] = [
     id: 'industrial-tax-exemptions',
     title: 'الإعفاءات الضريبية الصناعية',
     description: 'الحصول على شهادات الإعفاء الضريبي الصناعي للمعدات والآلات والمواد الخام لتخفيض التكاليف الإنتاجية.',
-    serviceFee: '950 درهم',
+    serviceFee: '950 ریال عمان',
     workingDays: '10 أيام عمل',
     requirements: ['صورة الرخصة الصناعية', 'قائمة المعدات والمواد الخام', 'الموافقة البيئية'],
     category: 'Tax Services'
@@ -1190,8 +1190,8 @@ export const servicesListAR: Service[] = [
     id: 'driving-license-guidance',
     title: 'إرشادات رخصة القيادة',
     description: 'مساعدة خطوة بخطوة لتحويل رخصة القيادة الأصلية أو فتح ملف جديد وتنسيق فحوصات النظر والمواعيد.',
-    serviceFee: '350 درهم',
-    governmentFees: '850 درهم',
+    serviceFee: '350 ریال عمان',
+    governmentFees: '850 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['بطاقة الهوية السارية', 'رخصة القيادة الأصلية من البلد الأم', 'فحص نظر معتمد'],
     category: 'General Government Services'
@@ -1200,8 +1200,8 @@ export const servicesListAR: Service[] = [
     id: 'dubai-municipality-permits',
     title: 'تصاريح بلدية دبي',
     description: 'استخراج التصاريح التجارية والإعلانية وتصاريح الديكور الداخلي من بلدية دبي واعتماد المخططات الفنية.',
-    serviceFee: '650 درهم',
-    governmentFees: 'من 1,500 درهم',
+    serviceFee: '650 ریال عمان',
+    governmentFees: 'من 1,500 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'عقد إيجاري ساري', 'مخطط التصميم الداخلي'],
     category: 'General Government Services'
@@ -1210,8 +1210,8 @@ export const servicesListAR: Service[] = [
     id: 'sports-council-permits',
     title: 'تصاريح مجلس دبي الرياضي',
     description: 'الحصول على الموافقات والتصاريح الرسمية للأكاديميات والفعاليات والأندية الرياضية من مجلس دبي الرياضي.',
-    serviceFee: '850 درهم',
-    governmentFees: 'من 2,500 درهم',
+    serviceFee: '850 ریال عمان',
+    governmentFees: 'من 2,500 ریال عمان',
     workingDays: '7 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'شهادات مؤهلات المدربين', 'شهادة سلامة المقر'],
     category: 'General Government Services'
@@ -1220,8 +1220,8 @@ export const servicesListAR: Service[] = [
     id: 'rera-permits',
     title: 'تصاريح مؤسسة التنظيم العقاري (RERA)',
     description: 'استخراج تصاريح الأنشطة العقارية وبطاقات الوساطة وتصاريح الإعلانات العقارية من مؤسسة RERA.',
-    serviceFee: '950 درهم',
-    governmentFees: 'من 3,500 درهم',
+    serviceFee: '950 ریال عمان',
+    governmentFees: 'من 3,500 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'بطاقة الوسيط للمدير', 'عقد إيجار المكتب'],
     category: 'General Government Services'
@@ -1230,7 +1230,7 @@ export const servicesListAR: Service[] = [
     id: 'customs-bayan',
     title: 'التخليص الجمركي (بيان)',
     description: 'تخليص البضائع والشحنات الجمركية عبر نظام بيان الجمركي الرسمي لسرعة الإفراج في الموانئ.',
-    serviceFee: '450 درهم',
+    serviceFee: '450 ریال عمان',
     workingDays: '2 يوم عمل',
     requirements: ['رخصة الاستيراد والتصدير', 'الفاتورة التجارية وقائمة التعبئة', 'شهادة المنشأ'],
     category: 'General Government Services'
@@ -1239,7 +1239,7 @@ export const servicesListAR: Service[] = [
     id: 'made-in-oman',
     title: 'شهادة صنع في عمان',
     description: 'الحصول على شهادة الجودة الرسمية "صنع في عمان" للمنتجات المصنعة محلياً للاستفادة من أولوية التوريد.',
-    serviceFee: '550 درهم',
+    serviceFee: '550 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة الصناعية/التجارية', 'إثبات القيمة المضافة المحلية', 'تقرير فحص المنتج'],
     category: 'General Government Services'
@@ -1248,7 +1248,7 @@ export const servicesListAR: Service[] = [
     id: 'riyada-card',
     title: 'بطاقة ريادة الأعمال (ريادة)',
     description: 'خدمات استخراج بطاقة ريادة الأعمال للمؤسسات الصغيرة والمتوسطة للاستفادة من التسهيلات والمناقصات.',
-    serviceFee: '250 درهم',
+    serviceFee: '250 ریال عمان',
     workingDays: '3 أيام عمل',
     requirements: ['إثبات الملكية العمانية', 'رخصة تجارية سارية', 'تسجيل التأمينات الاجتماعية النشط'],
     category: 'General Government Services'
@@ -1257,8 +1257,8 @@ export const servicesListAR: Service[] = [
     id: 'pacda-permits',
     title: 'تصاريح السلامة للدفاع المدني (PACDA)',
     description: 'استخراج موافقات الوقاية وتصاريح السلامة من هيئة الدفاع المدني والإسعاف للمحلات والمكاتب.',
-    serviceFee: '450 درهم',
-    governmentFees: 'من 1,000 درهم',
+    serviceFee: '450 ریال عمان',
+    governmentFees: 'من 1,000 ریال عمان',
     workingDays: '4 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'عقد إيجار العقار', 'شهادة معدات الإطفاء'],
     category: 'General Government Services'
@@ -1267,7 +1267,7 @@ export const servicesListAR: Service[] = [
     id: 'product-standards',
     title: 'شهادات مطابقة المنتجات',
     description: 'الحصول على موافقات المواصفات وشهادات شارة المطابقة الخليجية G-mark من المديرية العامة للمواصفات.',
-    serviceFee: '550 درهم',
+    serviceFee: '550 ریال عمان',
     workingDays: '5 أيام عمل',
     requirements: ['كتيب المواصفات الفنية', 'نسخة شهادات الأيزو', 'رخصة الاستيراد/التصدير'],
     category: 'General Government Services'
@@ -1276,7 +1276,7 @@ export const servicesListAR: Service[] = [
     id: 'government-land-rental',
     title: 'إرشادات استئجار الأراضي الحكومية',
     description: 'مساعدة شاملة للحصول على الأراضي الحكومية المستأجرة للأغراض الصناعية والمستودعات في المدن الصناعية.',
-    serviceFee: '950 درهم',
+    serviceFee: '950 ریال عمان',
     workingDays: '10 أيام عمل',
     requirements: ['رخصة صناعية/تجارية سارية', 'ملخص دراسة الجدوى', 'رسالة طلب رسمية للوزارة'],
     category: 'General Government Services'
@@ -1285,7 +1285,7 @@ export const servicesListAR: Service[] = [
     id: 'accounting-auditing',
     title: 'خدمات المحاسبة والتدقيق',
     description: 'مسك الدفاتر المحاسبية وإعداد القوائم المالية والتدقيق السنوي لضمان الامتثال للأنظمة المالية.',
-    serviceFee: '450 درهم',
+    serviceFee: '450 ریال عمان',
     workingDays: '3 أيام عمل',
     requirements: ['دفاتر وكشوفات حساب الشركة', 'قائمة الفواتير الضريبية', 'مستندات المصاريف'],
     category: 'General Government Services'
@@ -1294,7 +1294,7 @@ export const servicesListAR: Service[] = [
     id: 'omanisation-management',
     title: 'إدارة التعمين والتوظيف',
     description: 'ضبط واستيفاء نسب التعمين والتوظيف طبقاً للاشتراطات الرسمية لوزارة العمل لتجنب حظر المعاملات.',
-    serviceFee: '650 درهم',
+    serviceFee: '650 ریال عمان',
     workingDays: '4 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'قائمة تأشيرات الموظفين', 'نسبة التعمين المستهدفة'],
     category: 'General Government Services'
@@ -1303,7 +1303,7 @@ export const servicesListAR: Service[] = [
     id: 'icv-certificate',
     title: 'شهادة القيمة المضافة المحلية (ICV)',
     description: 'إعداد واقتناص شهادة ICV الرسمية للشركات للتنافس في المناقصات الحكومية وشركات النفط والغاز.',
-    serviceFee: '1,500 درهم',
+    serviceFee: '1,500 ریال عمان',
     workingDays: '7 أيام عمل',
     requirements: ['القوائم المالية المدققة', 'تقرير نسبة التعمين', 'فواتير الشراء المحلية'],
     category: 'General Government Services'
@@ -1311,38 +1311,8 @@ export const servicesListAR: Service[] = [
 ];
 
 // ─── MASTER ID LISTS ─────────────────────────────────────────────────────────
-export const uaeServiceIds = [
-  'company-mainland',
-  'company-freezone',
-  'trademark-registration',
-  'family-residency-visa',
-  'partner-investor-visa',
-  'business-employment-visa',
-  'golden-visa-services',
-  'tourist-visa-30-days',
-  'tourist-visa-60-days',
-  'tourist-visa-multi-60-days',
-  'tourist-visa-renewal',
-  'trade-license-renewal',
-  'establishment-card-renewal',
-  'ejari-1-year',
-  'car-rental-daily-monthly',
-  'luxury-car-rental',
-  'chauffeur-car-rental',
-  'suv-family-car-rental',
-  'business-account-high-risk',
-  'business-account-low-risk',
-  'personal-account-guidance',
-  'corporate-tax-registration',
-  'corporate-tax-filing',
-  'vat-registration',
-  'fta-profile-update',
-  'tax-reconsideration',
-  'driving-license-guidance',
-  'dubai-municipality-permits',
-  'sports-council-permits',
-  'rera-permits'
-];
+// ─── MASTER ID LISTS ─────────────────────────────────────────────────────────
+export const uaeServiceIds: string[] = [];
 
 export const omanServiceIds = [
   'company-mainland',
@@ -1360,6 +1330,7 @@ export const omanServiceIds = [
   'tourist-visa-renewal',
   'trade-license-renewal',
   'establishment-card-renewal',
+  'ejari-1-year',
   'baladiya-tenancy',
   'car-rental-daily-monthly',
   'luxury-car-rental',
@@ -1375,6 +1346,9 @@ export const omanServiceIds = [
   'tax-reconsideration',
   'industrial-tax-exemptions',
   'driving-license-guidance',
+  'dubai-municipality-permits',
+  'sports-council-permits',
+  'rera-permits',
   'customs-bayan',
   'made-in-oman',
   'icv-certificate',
@@ -1386,7 +1360,7 @@ export const omanServiceIds = [
   'omanisation-management'
 ];
 
-// Helper function to map AED services list to OMR for Oman
+// Helper function to map OMR services list to OMR for Oman
 export function convertToOmanServices(services: Service[], language: Language): Service[] {
   const toEnglishDigits = (str: string): string => {
     const persianDigits = [/۰/g, /۱/g, /۲/g, /۳/g, /۴/g, /۵/g, /۶/g, /۷/g, /۸/g, /۹/g];
@@ -1488,6 +1462,9 @@ export function convertToOmanServices(services: Service[], language: Language): 
     // Convert prices
     const convertPrice = (priceStr?: string): string | undefined => {
       if (!priceStr) return undefined;
+      if (priceStr.includes('ریال عمان') || priceStr.includes('OMR') || priceStr.includes('ريال عماني')) {
+        return priceStr;
+      }
       const normalizedStr = toEnglishDigits(priceStr);
       const numMatch = normalizedStr.replace(/,/g, '').match(/\d+/);
       if (!numMatch) return priceStr;
