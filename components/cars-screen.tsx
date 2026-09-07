@@ -7,7 +7,7 @@ import {
   Edit3, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Clock,
   AlertTriangle, Upload, FileText, UserCheck, Phone, ShieldCheck,
   CreditCard, Landmark, Wallet, Check, X, Info, ExternalLink, Image as ImageIcon,
-  ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter
+  ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Car, CarReservation, CarTransaction } from '@/lib/db-cars';
@@ -17,8 +17,25 @@ interface CRMClient {
   phone: string;
 }
 
+export interface CarContract {
+  id: string;
+  reservationId: string;
+  carTitle: string;
+  plateNumber: string;
+  customerName: string;
+  customerPhone: string;
+  initialOdometer: number;
+  returnOdometer?: number;
+  fuelLevel: 'full' | 'three_quarters' | 'half' | 'quarter' | 'empty';
+  depositAmount: number;
+  depositStatus: 'held' | 'refunded' | 'partially_refunded';
+  handoverStatus: 'delivered' | 'pending_delivery' | 'returned' | 'inspection_required';
+  notes?: string;
+  createdAt: string;
+}
+
 export default function CarsScreen() {
-  const [activeTab, setActiveTab] = useState<'fleet' | 'calendar' | 'accounting'>('calendar');
+  const [activeTab, setActiveTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>('calendar');
 
   // Data States
   const [cars, setCars] = useState<Car[]>([]);
@@ -27,13 +44,35 @@ export default function CarsScreen() {
   const [crmClients, setCrmClients] = useState<CRMClient[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Contracts Mock Data & State
+  const [contracts, setContracts] = useState<CarContract[]>([
+    {
+      id: 'cnt-101',
+      reservationId: 'res-1',
+      carTitle: 'دوج چارجر GT',
+      plateNumber: 'Dubai - M 12345',
+      customerName: 'رضا علوی',
+      customerPhone: '+971501234567',
+      initialOdometer: 42500,
+      returnOdometer: 42850,
+      fuelLevel: 'full',
+      depositAmount: 1200,
+      depositStatus: 'held',
+      handoverStatus: 'delivered',
+      notes: 'تحویل داده شد با بدنه سالم و فول بنزین',
+      createdAt: new Date().toISOString()
+    }
+  ]);
+
+  // Hover Tooltip State for Calendar Gantt Bar
+  const [hoveredRes, setHoveredRes] = useState<{ res: CarReservation; car: Car; x: number; y: number } | null>(null);
+
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
 
-  // Calendar Timeline Navigation State
-  // Default anchor: today. Start of view: -7 days, End of view: +21 days (29 days total)
+  // Calendar Timeline Navigation State (-7 days to +21 days = 29 days total)
   const [calendarAnchorDate, setCalendarAnchorDate] = useState<Date>(new Date());
 
   // Modal States
@@ -44,6 +83,7 @@ export default function CarsScreen() {
   const [selectedResDetails, setSelectedResDetails] = useState<CarReservation | null>(null);
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
 
   // Form States - Car
   const [carForm, setCarForm] = useState<Partial<Car>>({
@@ -270,7 +310,6 @@ export default function CarsScreen() {
     setIsReservationModalOpen(true);
   };
 
-  // Recalculate price on car or date change
   const updateResPrice = (carId: string, sDate: string, eDate: string) => {
     const car = cars.find(c => c.id === carId);
     if (!car) return;
@@ -316,7 +355,7 @@ export default function CarsScreen() {
           });
         }
 
-        // Also add automatic transaction record for the deposit or rent fee
+        // Also add automatic transaction record
         if (resForm.totalPrice && resForm.totalPrice > 0) {
           fetch('/api/cars/transactions', {
             method: 'POST',
@@ -493,54 +532,67 @@ export default function CarsScreen() {
   return (
     <div className="space-y-5 animate-fadeIn text-white font-sans w-full max-w-full overflow-x-hidden min-w-0" dir="rtl">
 
-      {/* ── TOP ACTION HEADER & SUB-TABS NAVIGATION ── */}
-      <div className="bg-[#0b172a] p-3.5 sm:p-4 rounded-2xl border border-white/10 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full min-w-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shadow-lg shadow-gold/10 shrink-0">
-            <CarIcon size={22} />
+      {/* ── TOP ACTION HEADER & SUB-PAGES NAVIGATION ── */}
+      <div className="bg-[#0b172a] p-3.5 sm:p-5 rounded-2xl border border-white/10 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full min-w-0">
+        <div className="flex items-center gap-3.5 min-w-0">
+          <div className="h-11 w-11 rounded-2xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shadow-lg shadow-gold/10 shrink-0">
+            <CarIcon size={24} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-sm sm:text-lg font-black text-white tracking-wide truncate">مدیریت و رزرو خودروها (Car Rental System)</h1>
-            <p className="text-[10px] sm:text-xs text-white/50 truncate">مدیریت کامل ناوگان، تقویم اشغال روزانه، سیستم رزرو CRM و حسابداری مالی اجاره</p>
+            <h1 className="text-base sm:text-xl font-black text-white tracking-wide truncate">مدیریت و رزرو خودروها (Car Rental System)</h1>
+            <p className="text-[11px] sm:text-xs text-white/50 truncate">سیستم جامع ناوگان رنتال، کلندر اشغال گانت، تحویل قراردادها و حسابداری اجاره</p>
           </div>
         </div>
 
-        {/* TAB BUTTONS (Scrollable on Mobile) */}
-        <div className="flex items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1 overflow-x-auto w-full md:w-auto max-w-full shrink-0 no-scrollbar">
+        {/* 4 SUB-PAGES TABS (Responsive Scrollable Pills) */}
+        <div className="flex items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1.5 overflow-x-auto w-full md:w-auto max-w-full shrink-0 no-scrollbar">
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'calendar'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
-            <CalendarIcon size={14} />
+            <CalendarIcon size={15} />
             <span>تقویم و رزروها</span>
           </button>
 
           <button
             onClick={() => setActiveTab('fleet')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'fleet'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
-            <CarIcon size={14} />
-            <span>ناوگان خودروها</span>
+            <CarIcon size={15} />
+            <span>تعریف خودروها</span>
             <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{cars.length}</span>
           </button>
 
           <button
+            onClick={() => setActiveTab('contracts')}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+              activeTab === 'contracts'
+                ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <ClipboardList size={15} />
+            <span>قراردادها & تحویل</span>
+            <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{contracts.length}</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('accounting')}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'accounting'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
-            <DollarSign size={14} />
+            <DollarSign size={15} />
             <span>حسابداری اجاره</span>
           </button>
         </div>
@@ -548,7 +600,7 @@ export default function CarsScreen() {
 
 
       {/* ==================================================================== */}
-      {/* TAB 1: CALENDAR & BOOKINGS MATRIX VIEW                               */}
+      {/* SUB-PAGE 1: CALENDAR & BOOKINGS GANTT MATRIX VIEW                   */}
       {/* ==================================================================== */}
       {activeTab === 'calendar' && (
         <div className="space-y-4">
@@ -585,12 +637,12 @@ export default function CarsScreen() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {/* Status Legend */}
-              <div className="hidden lg:flex items-center gap-3 text-[11px] font-bold text-white/60 bg-[#07111f] px-3 py-1.5 rounded-xl border border-white/10">
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> آزاد</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span> رزرو/اشغال</span>
-                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> سرویس</span>
+              <div className="hidden lg:flex items-center gap-3 text-[11px] font-bold text-white/70 bg-[#07111f] px-3.5 py-1.5 rounded-xl border border-white/10">
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> آزاد</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span> رزرو / اجاره</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> سرویس</span>
               </div>
 
               <button
@@ -603,31 +655,31 @@ export default function CarsScreen() {
             </div>
           </div>
 
-          {/* CALENDAR TIMELINE MATRIX TABLE */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-2xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-right border-collapse text-xs table-fixed">
+          {/* CALENDAR TIMELINE GANTT MATRIX TABLE */}
+          <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-2xl overflow-hidden relative">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-right border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-white/10 text-white/70 font-extrabold text-[11px] bg-[#07111f]">
+                  <tr className="border-b border-white/10 text-white/80 font-extrabold text-[11px] bg-[#07111f]">
                     {/* Fixed Car Column */}
-                    <th className="py-3 px-4 w-52 sticky right-0 bg-[#07111f] z-20 border-l border-white/10 shadow-md">
-                      لیست خودروها ({cars.length})
+                    <th className="py-3.5 px-4 w-60 min-w-[240px] sticky right-0 bg-[#07111f] z-20 border-l border-white/10 shadow-md">
+                      خودروهای رنتال ({cars.length})
                     </th>
 
                     {/* Timeline Days Headers */}
                     {calendarDays.map(day => (
                       <th
                         key={day.dateStr}
-                        className={`py-2 px-1 text-center min-w-[42px] border-l border-white/5 font-mono ${
+                        className={`py-2 px-1 text-center min-w-[48px] border-l border-white/5 font-sans ${
                           day.isToday
                             ? 'bg-gold/20 text-gold font-black border-b-2 border-b-gold'
                             : day.isWeekend
                             ? 'bg-rose-500/10 text-rose-300'
-                            : 'text-white/60'
+                            : 'text-white/70'
                         }`}
                       >
                         <div className="text-[10px] font-sans text-white/50">{day.dayName}</div>
-                        <div className="text-xs font-bold mt-0.5">{day.dayNum}</div>
+                        <div className="text-xs font-black mt-0.5">{day.dayNum}</div>
                       </th>
                     ))}
                   </tr>
@@ -635,19 +687,18 @@ export default function CarsScreen() {
 
                 <tbody className="divide-y divide-white/5">
                   {cars.map(car => {
-                    const statusBadge = getCarStatusBadge(car.status);
                     const carReservations = reservations.filter(r => r.carId === car.id && r.status !== 'cancelled');
 
                     return (
                       <tr key={car.id} className="hover:bg-white/[0.02] transition-colors">
                         {/* Car Name & Plate Column */}
                         <td className="py-3 px-4 sticky right-0 bg-[#0b172a] z-10 border-l border-white/10 shadow-md">
-                          <div className="flex items-center gap-2.5">
-                            <div className="h-9 w-12 rounded-lg bg-black/40 border border-white/10 overflow-hidden relative shrink-0">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-14 rounded-lg bg-black/40 border border-white/10 overflow-hidden relative shrink-0">
                               {car.imageUrl ? (
                                 <img src={car.imageUrl} alt={car.title} className="w-full h-full object-cover" />
                               ) : (
-                                <div className="flex items-center justify-center h-full text-gold"><CarIcon size={18} /></div>
+                                <div className="flex items-center justify-center h-full text-gold"><CarIcon size={20} /></div>
                               )}
                             </div>
 
@@ -657,15 +708,14 @@ export default function CarsScreen() {
                                 <span className="text-[10px] font-mono text-gold bg-gold/10 px-1.5 py-0.2 rounded border border-gold/20">
                                   {car.plateNumber}
                                 </span>
-                                <span className="text-[9px] text-white/50">{car.dailyRate} AED/روز</span>
+                                <span className="text-[10px] text-emerald-400 font-bold">{car.dailyRate.toLocaleString()} درهم</span>
                               </div>
                             </div>
                           </div>
                         </td>
 
-                        {/* Timeline Grid Cells */}
+                        {/* Timeline Gantt Cells */}
                         {calendarDays.map(day => {
-                          // Find matching reservation for this car on this day
                           const activeRes = carReservations.find(r => r.startDate <= day.dateStr && r.endDate >= day.dateStr);
 
                           const isStart = activeRes && activeRes.startDate === day.dateStr;
@@ -674,29 +724,40 @@ export default function CarsScreen() {
                           return (
                             <td
                               key={day.dateStr}
-                              className={`p-1 text-center border-l border-white/5 relative h-14 ${
+                              className={`p-0 text-center border-l border-white/5 relative h-14 ${
                                 day.isToday ? 'bg-gold/[0.04]' : ''
                               }`}
                             >
                               {activeRes ? (
-                                <button
+                                <div
                                   onClick={() => setSelectedResDetails(activeRes)}
-                                  className={`w-full h-10 rounded-lg text-[10px] font-bold flex flex-col items-center justify-center transition-all hover:scale-105 cursor-pointer shadow-md text-white p-0.5 ${
+                                  onMouseEnter={(e) => setHoveredRes({ res: activeRes, car, x: e.clientX, y: e.clientY })}
+                                  onMouseLeave={() => setHoveredRes(null)}
+                                  className={`w-full h-10 my-2 flex items-center justify-center transition-all cursor-pointer relative shadow-sm ${
+                                    isStart && isEnd
+                                      ? 'rounded-lg mx-1 w-[calc(100%-8px)]'
+                                      : isStart
+                                      ? 'rounded-r-lg mr-1 w-[calc(100%-4px)]'
+                                      : isEnd
+                                      ? 'rounded-l-lg ml-1 w-[calc(100%-4px)]'
+                                      : 'w-full'
+                                  } ${
                                     activeRes.status === 'completed'
-                                      ? 'bg-emerald-600/80 border border-emerald-400/50'
-                                      : 'bg-rose-600/85 border border-rose-400/60 shadow-rose-900/30'
+                                      ? 'bg-gradient-to-l from-emerald-600 to-emerald-500 border-y border-emerald-400/40'
+                                      : 'bg-gradient-to-l from-rose-600 to-rose-500 border-y border-rose-400/40 shadow-rose-900/30'
                                   }`}
-                                  title={`رزرو شده برای ${activeRes.customerName} (${activeRes.customerPhone}) - کلیک جهت جزییات`}
                                 >
-                                  <span className="truncate w-full font-black px-1">{activeRes.customerName}</span>
-                                  <span className="text-[8px] opacity-80 font-mono hidden sm:inline">{activeRes.customerPhone}</span>
-                                </button>
+                                  {isStart && (
+                                    <span className="w-2 h-2 rounded-full bg-white animate-pulse absolute right-1.5"></span>
+                                  )}
+                                </div>
                               ) : (
                                 <button
                                   onClick={() => handleOpenAddReservation(car.id)}
-                                  className="w-full h-full opacity-0 hover:opacity-100 flex items-center justify-center bg-emerald-500/10 text-emerald-400 rounded-lg text-[9px] font-bold border border-dashed border-emerald-500/30 transition-all cursor-pointer"
+                                  className="w-full h-full opacity-0 hover:opacity-100 flex items-center justify-center bg-emerald-500/10 text-emerald-400 rounded-lg text-[10px] font-bold border border-dashed border-emerald-500/30 transition-all cursor-pointer"
+                                  title="افزودن رزرو جدید"
                                 >
-                                  + رزرو
+                                  +
                                 </button>
                               )}
                             </td>
@@ -709,6 +770,23 @@ export default function CarsScreen() {
               </table>
             </div>
           </div>
+
+          {/* FLOATING HOVER TOOLTIP FOR GANTT BAR */}
+          {hoveredRes && (
+            <div
+              className="fixed z-50 p-3 rounded-2xl bg-[#0f1e37] border border-gold/40 shadow-2xl text-xs space-y-1 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-2 backdrop-blur-md"
+              style={{ left: hoveredRes.x, top: hoveredRes.y - 10 }}
+            >
+              <div className="flex justify-between items-center gap-4">
+                <span className="font-extrabold text-white">{hoveredRes.res.customerName}</span>
+                <span className="text-gold font-bold">{hoveredRes.car.title}</span>
+              </div>
+              <p className="text-white/60 text-[11px]">{hoveredRes.res.customerPhone}</p>
+              <div className="text-[10px] text-emerald-400 font-bold pt-1 border-t border-white/10">
+                {hoveredRes.res.startDate} الی {hoveredRes.res.endDate} ({hoveredRes.res.totalPrice.toLocaleString()} درهم)
+              </div>
+            </div>
+          )}
 
           {/* RESERVATION LIST CARDS SUMMARY */}
           <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg space-y-3">
@@ -727,7 +805,7 @@ export default function CarsScreen() {
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="font-extrabold text-xs text-white block">{res.customerName}</span>
-                        <span className="text-[11px] text-white/50 font-mono dir-ltr inline-block">{res.customerPhone}</span>
+                        <span className="text-[11px] text-white/50 dir-ltr inline-block">{res.customerPhone}</span>
                       </div>
                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
                         res.status === 'active' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
@@ -745,11 +823,11 @@ export default function CarsScreen() {
                       </div>
                       <div className="flex justify-between">
                         <span>بازه زمانی:</span>
-                        <span className="font-mono text-white">{res.startDate} تا {res.endDate}</span>
+                        <span className="text-white">{res.startDate} تا {res.endDate}</span>
                       </div>
                       <div className="flex justify-between font-bold pt-1 border-t border-white/5 text-white">
                         <span>مبلغ کل اجاره:</span>
-                        <span className="text-emerald-400">{res.totalPrice.toLocaleString()} AED</span>
+                        <span className="text-emerald-400">{res.totalPrice.toLocaleString()} درهم</span>
                       </div>
                     </div>
 
@@ -774,7 +852,7 @@ export default function CarsScreen() {
 
 
       {/* ==================================================================== */}
-      {/* TAB 2: FLEET MANAGEMENT (LIST & SPECIFICATIONS)                      */}
+      {/* SUB-PAGE 2: FLEET MANAGEMENT & CAR SPECS                            */}
       {/* ==================================================================== */}
       {activeTab === 'fleet' && (
         <div className="space-y-4">
@@ -867,7 +945,7 @@ export default function CarsScreen() {
                       <div className="pt-2 border-t border-white/10 flex items-center justify-between">
                         <div>
                           <p className="text-[10px] text-white/50">اجاره روزانه:</p>
-                          <p className="text-base font-black text-gold">{car.dailyRate.toLocaleString()} <span className="text-xs font-normal">درهم</span></p>
+                          <p className="text-base font-extrabold text-gold">{car.dailyRate.toLocaleString()} <span className="text-xs font-normal text-white/60">درهم</span></p>
                         </div>
 
                         <div className="flex items-center gap-1.5">
@@ -897,7 +975,84 @@ export default function CarsScreen() {
 
 
       {/* ==================================================================== */}
-      {/* TAB 3: RENTAL FINANCIALS & ACCOUNTING (REZA AMARE & MOHAMMADI ACCOUNTS) */}
+      {/* SUB-PAGE 3: CONTRACTS & CAR HANDOVER LOGS                            */}
+      {/* ==================================================================== */}
+      {activeTab === 'contracts' && (
+        <div className="space-y-4">
+          <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-base font-black text-white flex items-center gap-2">
+                <ClipboardList className="text-gold" size={18} />
+                <span>مدیریت قراردادها و تحویل/عودت خودرو</span>
+              </h2>
+              <p className="text-xs text-white/50 mt-0.5">ثبت کیلومتر اولیه، وضعیت بنزین، چک‌لیست سلامت خودرو و وضعیت ودیعه</p>
+            </div>
+
+            <button
+              onClick={() => toast.info('قرارداد جدید بر اساس رزرو ثبت شده صادر می‌گردد.')}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <Plus size={16} />
+              <span>ثبت صورتجلسه تحویل جدید</span>
+            </button>
+          </div>
+
+          {/* CONTRACTS TABLE */}
+          <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden w-full">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[700px] text-right border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-gold font-extrabold text-[11px] bg-[#07111f]">
+                    <th className="py-3.5 px-4">شماره قرارداد</th>
+                    <th className="py-3.5 px-4">خودرو & پلاک</th>
+                    <th className="py-3.5 px-4">مشتری</th>
+                    <th className="py-3.5 px-4">کیلومتر تحویل/عودت</th>
+                    <th className="py-3.5 px-4">بنزین</th>
+                    <th className="py-3.5 px-4">وضعیت ودیعه</th>
+                    <th className="py-3.5 px-4">وضعیت تحویل</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {contracts.map(cnt => (
+                    <tr key={cnt.id} className="hover:bg-white/5 transition-colors">
+                      <td className="py-3.5 px-4 font-mono font-bold text-gold">{cnt.id}</td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold text-white block">{cnt.carTitle}</span>
+                        <span className="text-[10px] text-white/50 font-mono">{cnt.plateNumber}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="font-bold text-white block">{cnt.customerName}</span>
+                        <span className="text-[10px] text-white/50 dir-ltr inline-block">{cnt.customerPhone}</span>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="text-white font-bold">{cnt.initialOdometer.toLocaleString()} km</span>
+                        {cnt.returnOdometer && <span className="text-white/50 text-[10px] block">عودت: {cnt.returnOdometer.toLocaleString()} km</span>}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                          ⛽ فول (Full)
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-emerald-400">
+                        {cnt.depositAmount.toLocaleString()} درهم (دریافت شده)
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                          🟢 تحویل داده شده
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ==================================================================== */}
+      {/* SUB-PAGE 4: RENTAL FINANCIALS & ACCOUNTING (REZA AMARE & MOHAMMADI ACCOUNTS) */}
       {/* ==================================================================== */}
       {activeTab === 'accounting' && (
         <div className="space-y-5">
@@ -908,7 +1063,7 @@ export default function CarsScreen() {
             <div className="bg-[#0b172a] p-4 rounded-2xl border border-gold/30 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-full blur-xl"></div>
               <p className="text-[11px] font-bold text-gold mb-1">مجموع خالص کل درآمد اجاره</p>
-              <p className="text-2xl font-black text-white">{accountingStats.totalIncome.toLocaleString()} <span className="text-xs font-normal text-white/50">AED</span></p>
+              <p className="text-2xl font-black text-white">{accountingStats.totalIncome.toLocaleString()} <span className="text-xs font-normal text-white/50">درهم</span></p>
             </div>
 
             {/* Bank Reza Amare */}
@@ -974,9 +1129,9 @@ export default function CarsScreen() {
           </div>
 
           {/* TRANSACTIONS TABLE */}
-          <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-right border-collapse text-xs">
+          <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden w-full">
+            <div className="overflow-x-auto w-full">
+              <table className="w-full min-w-[700px] text-right border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-white/10 text-gold font-extrabold text-[11px] bg-[#07111f]">
                     <th className="py-3 px-4">تاریخ</th>
@@ -998,7 +1153,7 @@ export default function CarsScreen() {
 
                       return (
                         <tr key={tx.id} className="hover:bg-white/5 transition-colors">
-                          <td className="py-3 px-4 font-mono text-white/60">{tx.transactionDate}</td>
+                          <td className="py-3 px-4 text-white/70">{tx.transactionDate}</td>
                           <td className="py-3 px-4 font-bold text-white">{tx.description}</td>
                           <td className="py-3 px-4 text-white/80">{tx.customerName || '-'}</td>
                           <td className="py-3 px-4">
@@ -1013,8 +1168,8 @@ export default function CarsScreen() {
                                tx.type === 'deposit_refund' ? 'عودت ودیعه' : 'هزینه سرویس'}
                             </span>
                           </td>
-                          <td className={`py-3 px-4 font-black font-mono text-sm ${isNegative ? 'text-rose-400' : 'text-emerald-400'}`}>
-                            {isNegative ? '-' : '+'}{tx.amount.toLocaleString()}
+                          <td className={`py-3 px-4 font-extrabold text-sm ${isNegative ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {isNegative ? '-' : '+'}{tx.amount.toLocaleString()} درهم
                           </td>
                           <td className="py-3 px-4">
                             <span
@@ -1114,7 +1269,7 @@ export default function CarsScreen() {
                       required
                       value={carForm.dailyRate || 0}
                       onChange={e => setCarForm({ ...carForm, dailyRate: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1124,7 +1279,7 @@ export default function CarsScreen() {
                       type="number"
                       value={carForm.depositAmount || 0}
                       onChange={e => setCarForm({ ...carForm, depositAmount: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1262,7 +1417,7 @@ export default function CarsScreen() {
                   >
                     {cars.map(c => (
                       <option key={c.id} value={c.id}>
-                        {c.title} ({c.plateNumber}) - {c.dailyRate} AED/روز
+                        {c.title} ({c.plateNumber}) - {c.dailyRate.toLocaleString()} درهم/روز
                       </option>
                     ))}
                   </select>
@@ -1332,7 +1487,7 @@ export default function CarsScreen() {
                     value={resForm.customerPhone || ''}
                     onChange={e => setResForm({ ...resForm, customerPhone: e.target.value })}
                     placeholder="+971 50 123 4567"
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono"
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold dir-ltr"
                   />
                 </div>
 
@@ -1345,7 +1500,7 @@ export default function CarsScreen() {
                       required
                       value={resForm.startDate || ''}
                       onChange={e => updateResPrice(resForm.carId!, e.target.value, resForm.endDate!)}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1356,7 +1511,7 @@ export default function CarsScreen() {
                       required
                       value={resForm.endDate || ''}
                       onChange={e => updateResPrice(resForm.carId!, resForm.startDate!, e.target.value)}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
                     />
                   </div>
                 </div>
@@ -1365,15 +1520,15 @@ export default function CarsScreen() {
                 <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-black/40 border border-white/10">
                   <div>
                     <label className="block text-white/60 text-[11px]">مبلغ کل اجاره (محاسبه خودکار):</label>
-                    <p className="text-lg font-black text-emerald-400 mt-1">{resForm.totalPrice?.toLocaleString()} AED</p>
+                    <p className="text-lg font-black text-emerald-400 mt-1">{resForm.totalPrice?.toLocaleString()} درهم</p>
                   </div>
                   <div>
-                    <label className="block text-white/60 text-[11px]">مبلغ ودیعه دریافتی (AED):</label>
+                    <label className="block text-white/60 text-[11px]">مبلغ ودیعه دریافتی (درهم):</label>
                     <input
                       type="number"
                       value={resForm.depositPaid || 0}
                       onChange={e => setResForm({ ...resForm, depositPaid: Number(e.target.value) })}
-                      className="mt-1 w-full rounded-lg border border-white/15 bg-[#07111f] p-1.5 text-white outline-none focus:border-gold font-mono"
+                      className="mt-1 w-full rounded-lg border border-white/15 bg-[#07111f] p-1.5 text-white outline-none focus:border-gold"
                     />
                   </div>
                 </div>
@@ -1424,7 +1579,7 @@ export default function CarsScreen() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white/50">تلفن همراه:</span>
-                  <span className="font-mono text-gold dir-ltr">{selectedResDetails.customerPhone}</span>
+                  <span className="text-gold dir-ltr">{selectedResDetails.customerPhone}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white/50">خودرو:</span>
@@ -1432,11 +1587,11 @@ export default function CarsScreen() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white/50">تاریخ تحویل تا عودت:</span>
-                  <span className="font-mono text-white">{selectedResDetails.startDate} الی {selectedResDetails.endDate}</span>
+                  <span className="text-white">{selectedResDetails.startDate} الی {selectedResDetails.endDate}</span>
                 </div>
                 <div className="flex justify-between font-bold text-sm text-emerald-400 pt-2 border-t border-white/10">
                   <span>مبلغ کل:</span>
-                  <span>{selectedResDetails.totalPrice.toLocaleString()} AED</span>
+                  <span>{selectedResDetails.totalPrice.toLocaleString()} درهم</span>
                 </div>
               </div>
 
@@ -1489,7 +1644,7 @@ export default function CarsScreen() {
                     value={txForm.amount || ''}
                     onChange={e => setTxForm({ ...txForm, amount: Number(e.target.value) })}
                     placeholder="مثال: 1500"
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono text-sm"
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold text-sm"
                   />
                 </div>
 
@@ -1530,7 +1685,7 @@ export default function CarsScreen() {
                       type="date"
                       value={txForm.transactionDate}
                       onChange={e => setTxForm({ ...txForm, transactionDate: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
                     />
                   </div>
                 </div>

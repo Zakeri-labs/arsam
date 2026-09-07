@@ -1825,7 +1825,7 @@ export default function AdminPage() {
 
           {/* DESKTOP BRAND BANNER */}
           <header className="hidden md:block w-full border-b border-white/10 bg-[#0b172a]/80 py-4.5 px-6 select-none backdrop-blur-md">
-            <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
+            <div className="max-w-[1650px] mx-auto w-full flex items-center justify-between">
               <div>
                 <h1 className="text-base font-extrabold text-white leading-none">
                   {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : activeScreen === 'customers' ? 'مدیریت مشتریان (CRM)' : 'مدیریت و رزرو خودروها'}
@@ -1843,7 +1843,7 @@ export default function AdminPage() {
 
           {/* Dynamic Content Panel */}
           <main className="flex-1 px-3 py-4 md:px-6 w-full min-w-0">
-            <div className="max-w-6xl mx-auto w-full min-w-0">
+            <div className="max-w-[1650px] mx-auto w-full min-w-0">
               {isEditorOpen ? (
                 renderServiceEditor()
               ) : activeScreen === 'services' ? (
