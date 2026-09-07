@@ -53,48 +53,48 @@ export interface CarTransaction {
 
 // In-Memory Fallback Stores
 let memoryCars: Car[] = [
-  // 1. MG GT (3 units)
+  // 1. MG GT (3 units - All Model Year 2026, All White)
   {
     id: 'car-mg-gt-1',
-    title: 'ام‌جی GT 2023 (زرد اسپرت)',
+    title: 'ام‌جی GT 2026 (سفید صدفی #1)',
     brand: 'MG',
-    modelYear: '2023',
+    modelYear: '2026',
     plateNumber: 'مسقط - 48123',
-    color: 'زرد اسپرت',
-    dailyRate: 14,
+    color: 'سفید صدفی',
+    dailyRate: 15,
     depositAmount: 50,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
     imageUrl: '/cars/mg-gt.png',
-    features: ['موتور 1.5 توربو', 'دنده اتوماتیک 7 سرعته', 'سقف پانوراما', 'دوربین 360', 'مانیتور لمسی 10 اینچ'],
-    notes: 'خودرو نو، صفر کیلومتر جهت اجاره در مسقط',
+    features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'دنده اتوماتیک 7 سرعته', 'سقف پانوراما', 'دوربین 360'],
+    notes: 'خودرو نو، صفر کیلومتر 2026 جهت اجاره در مسقط',
     createdAt: new Date().toISOString()
   },
   {
     id: 'car-mg-gt-2',
-    title: 'ام‌جی GT 2023 (خاکستری متالیک)',
+    title: 'ام‌جی GT 2026 (سفید صدفی #2)',
     brand: 'MG',
-    modelYear: '2023',
+    modelYear: '2026',
     plateNumber: 'مسقط - 48124',
-    color: 'خاکستری متالیک',
-    dailyRate: 14,
+    color: 'سفید صدفی',
+    dailyRate: 15,
     depositAmount: 50,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'rented',
     imageUrl: '/cars/mg-gt.png',
-    features: ['موتور 1.5 توربو', 'صندلی چرم', 'شیفتر پشت فرمان', 'GPS'],
+    features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'صندلی چرم', 'GPS'],
     notes: 'در حال اجاره فعلی',
     createdAt: new Date().toISOString()
   },
   {
     id: 'car-mg-gt-3',
-    title: 'ام‌جی GT 2024 (سفید صدفی)',
+    title: 'ام‌جی GT 2026 (سفید صدفی #3)',
     brand: 'MG',
-    modelYear: '2024',
+    modelYear: '2026',
     plateNumber: 'مسقط - 48125',
     color: 'سفید صدفی',
     dailyRate: 15,
@@ -104,7 +104,7 @@ let memoryCars: Car[] = [
     capacity: 5,
     status: 'available',
     imageUrl: '/cars/mg-gt.png',
-    features: ['مدل 2024', 'کروز کنترل هوشمند', 'ترمز پارک برقی'],
+    features: ['مدل 2026 جدید', 'کروز کنترل هوشمند', 'ترمز پارک برقی'],
     notes: 'آماده رزرو تحویل فوری',
     createdAt: new Date().toISOString()
   },
@@ -239,14 +239,14 @@ let memoryCars: Car[] = [
     createdAt: new Date().toISOString()
   },
 
-  // 4. Nissan Micra (1 unit)
+  // 4. Nissan Micra (1 unit - Model 2019, White)
   {
     id: 'car-nissan-micra-1',
-    title: 'نیسان میکرا 2022 (آبی)',
+    title: 'نیسان میکرا 2019 (سفید)',
     brand: 'Nissan',
-    modelYear: '2022',
+    modelYear: '2019',
     plateNumber: 'مسقط - 31920',
-    color: 'آبی',
+    color: 'سفید',
     dailyRate: 9,
     depositAmount: 35,
     transmission: 'automatic',
@@ -254,46 +254,46 @@ let memoryCars: Car[] = [
     capacity: 4,
     status: 'available',
     imageUrl: '/cars/nissan-micra.png',
-    features: ['هاچ‌بک جمع‌وجور', 'پارک بسیار آسان', 'مصرف سوخت فوق‌العاده پایین'],
+    features: ['مدل 2019 سفید', 'هاچ‌بک جمع‌وجور', 'پارک بسیار آسان', 'مصرف سوخت فوق‌العاده پایین'],
     notes: 'مناسب‌ترین گزینه اقتصادی برای سفر و تردد شهری',
     createdAt: new Date().toISOString()
   },
 
-  // 5. Renault Duster (2 units)
+  // 5. Renault Duster (2 units - 2016 Silver & 2019 White)
   {
     id: 'car-renault-duster-1',
-    title: 'رنو داستر 2023 (برنز #1)',
+    title: 'رنو داستر 2016 (نقره‌ای)',
     brand: 'Renault',
-    modelYear: '2023',
+    modelYear: '2016',
     plateNumber: 'مسقط - 88401',
-    color: 'برنز',
-    dailyRate: 16,
+    color: 'نقره‌ای',
+    dailyRate: 14,
     depositAmount: 50,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/renault-duster.png',
-    features: ['شاسی‌بلند SUV', 'دیفرانسیل قوی', 'صندوق عقب جادار', 'ارتفاع مناسب برای جاده‌های کوهستانی عمان'],
-    notes: 'شاسی‌بلند عالی برای سفرهای عُمانی و تورهای مسقط به صلاله',
+    imageUrl: '/cars/renault-duster-2016.png',
+    features: ['مدل 2016', 'شاسی‌بلند SUV', 'دیفرانسیل قوی', 'صندوق عقب جادار'],
+    notes: 'شاسی‌بلند اقتصادی برای سفرهای عُمانی',
     createdAt: new Date().toISOString()
   },
   {
     id: 'car-renault-duster-2',
-    title: 'رنو داستر 2024 (سفید #2)',
+    title: 'رنو داستر 2019 (سفید)',
     brand: 'Renault',
-    modelYear: '2024',
+    modelYear: '2019',
     plateNumber: 'مسقط - 88402',
     color: 'سفید',
-    dailyRate: 17,
+    dailyRate: 15,
     depositAmount: 50,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/renault-duster.png',
-    features: ['مدل 2024 SUV', 'رینگ اسپرت', 'سیستم کنترل پایداری ESC', 'مانیتور و رادار'],
-    notes: 'شاسی‌بلند جدید و مدرن 2024',
+    imageUrl: '/cars/renault-duster-2019.png',
+    features: ['مدل 2019 سفید', 'شاسی‌بلند SUV', 'رینگ اسپرت', 'سیستم کنترل پایداری ESC'],
+    notes: 'شاسی‌بلند سفید مدل 2019',
     createdAt: new Date().toISOString()
   }
 ];
