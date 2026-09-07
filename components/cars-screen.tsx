@@ -35,8 +35,18 @@ export interface CarContract {
   createdAt: string;
 }
 
-export default function CarsScreen() {
-  const [activeTab, setActiveTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>('calendar');
+interface CarsScreenProps {
+  initialTab?: 'calendar' | 'fleet' | 'contracts' | 'accounting';
+}
+
+export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
+  const [activeTab, setActiveTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>(initialTab || 'calendar');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // Data States
   const [cars, setCars] = useState<Car[]>([]);

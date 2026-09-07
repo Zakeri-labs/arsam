@@ -7,7 +7,7 @@ import {
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
   Trash2, Edit3, Globe, Save, LogOut, Check, X, FileText, 
   Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink, Menu,
-  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare
+  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare, ChevronDown
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
@@ -88,6 +88,8 @@ export default function AdminPage() {
 
   // Layout & Navigation State
   const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars'>('services');
+  const [carSubTab, setCarSubTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>('calendar');
+  const [isCarMenuOpen, setIsCarMenuOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Dashboard state
@@ -848,22 +850,102 @@ export default function AdminPage() {
           </span>
         </button>
 
-        <button
-          onClick={() => {
-            setActiveScreen('cars');
-            setIsMobileMenuOpen(false);
-          }}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-            activeScreen === 'cars'
-              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
-              : 'text-white/70 hover:bg-white/5 hover:text-white'
-          }`}
-        >
-          <span className="flex items-center gap-3">
-            <Briefcase className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
-            مدیریت خودروها
-          </span>
-        </button>
+        {/* CAR MANAGEMENT WITH SUBCATEGORIES */}
+        <div className="space-y-1">
+          <button
+            onClick={() => {
+              setActiveScreen('cars');
+              setIsCarMenuOpen(!isCarMenuOpen);
+            }}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+              activeScreen === 'cars'
+                ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                : 'text-white/70 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <span className="flex items-center gap-3">
+              <Briefcase className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
+              <span>مدیریت خودروها</span>
+            </span>
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isCarMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Subcategories */}
+          <AnimatePresence>
+            {(isCarMenuOpen || activeScreen === 'cars') && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="pr-3 pl-1 space-y-1 py-1 border-r-2 border-gold/30 mr-3 overflow-hidden"
+              >
+                <button
+                  onClick={() => {
+                    setActiveScreen('cars');
+                    setCarSubTab('calendar');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    activeScreen === 'cars' && carSubTab === 'calendar'
+                      ? 'bg-gold/25 text-gold border border-gold/40'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Calendar size={13} className="text-gold shrink-0" />
+                  <span>📅 تقویم و رزروها</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveScreen('cars');
+                    setCarSubTab('fleet');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    activeScreen === 'cars' && carSubTab === 'fleet'
+                      ? 'bg-gold/25 text-gold border border-gold/40'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Briefcase size={13} className="text-emerald-400 shrink-0" />
+                  <span>🚗 ناوگان خودروها</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveScreen('cars');
+                    setCarSubTab('contracts');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    activeScreen === 'cars' && carSubTab === 'contracts'
+                      ? 'bg-gold/25 text-gold border border-gold/40'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <FileText size={13} className="text-blue-400 shrink-0" />
+                  <span>📋 قراردادها و تحویل</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setActiveScreen('cars');
+                    setCarSubTab('accounting');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    activeScreen === 'cars' && carSubTab === 'accounting'
+                      ? 'bg-gold/25 text-gold border border-gold/40'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <DollarSign size={13} className="text-emerald-400 shrink-0" />
+                  <span>💰 حسابداری اجاره</span>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </nav>
 
       {/* Sidebar Footer / Action buttons */}
@@ -1855,7 +1937,7 @@ export default function AdminPage() {
               ) : activeScreen === 'customers' ? (
                 <CustomersScreen />
               ) : (
-                <CarsScreen />
+                <CarsScreen initialTab={carSubTab} />
               )}
             </div>
           </main>
