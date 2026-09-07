@@ -10,7 +10,7 @@ import {
   ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Car, CarReservation, CarTransaction } from '@/lib/db-cars';
+import { Car, CarReservation, CarTransaction, cleanCarTitle, cleanCarPlate } from '@/lib/db-cars';
 import OMRIcon from '@/components/omr-icon';
 
 interface CRMClient {
@@ -1563,7 +1563,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
               className="w-full max-w-xl rounded-2xl border border-white/15 bg-[#0b172a] p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-xs"
             >
               {/* Header */}
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <div className="flex justify-between items-center pb-1">
                 <div className="flex items-center gap-2.5">
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
                     <CalendarIcon size={18} />
@@ -1597,14 +1597,14 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   >
                     {cars.map(c => (
                       <option key={c.id} value={c.id}>
-                        {c.title} ({c.plateNumber}) - پایه: {c.dailyRate.toLocaleString()} OMR/روز
+                        {cleanCarTitle(c.title)} ({cleanCarPlate(c.plateNumber)}) - پایه: {c.dailyRate.toLocaleString()} OMR/روز
                       </option>
                     ))}
                   </select>
                 </div>
 
                 {/* 2. CUSTOMER SELECTION */}
-                <div className="space-y-2 pt-1 border-t border-white/5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <label className="text-white/90 font-bold text-[11px] flex items-center gap-1.5">
                       <UserCheck size={14} className="text-emerald-400" />
@@ -1744,7 +1744,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 </div>
 
                 {/* 3. DATES & DAILY RATE (GRID 3 COLUMNS) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 border-t border-white/5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   <div>
                     <label className="block text-white/80 font-bold text-[11px] mb-1">تاریخ تحویل *</label>
                     <input
@@ -1782,7 +1782,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 </div>
 
                 {/* 4. DISCOUNT & DEPOSIT */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-white/5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <div>
                     <div className="flex justify-between items-center mb-1">
                       <label className="text-white/80 font-bold text-[11px]">تخفیف اجاره:</label>
@@ -1853,7 +1853,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 })()}
 
                 {/* Actions */}
-                <div className="pt-2 border-t border-white/10 flex justify-end gap-2">
+                <div className="pt-2 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsReservationModalOpen(false)}
