@@ -926,22 +926,6 @@ export default function AdminPage() {
                 <button
                   onClick={() => {
                     changeActiveScreen('cars');
-                    changeCarSubTab('fleet');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                    activeScreen === 'cars' && carSubTab === 'fleet'
-                      ? 'bg-gold/25 text-gold border border-gold/40'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <Car size={13} className="text-emerald-400 shrink-0" />
-                  <span>ناوگان خودروها</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    changeActiveScreen('cars');
                     changeCarSubTab('contracts');
                     setIsMobileMenuOpen(false);
                   }}
@@ -969,6 +953,22 @@ export default function AdminPage() {
                 >
                   <DollarSign size={13} className="text-emerald-400 shrink-0" />
                   <span>حسابداری اجاره</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    changeActiveScreen('cars');
+                    changeCarSubTab('fleet');
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                    activeScreen === 'cars' && carSubTab === 'fleet'
+                      ? 'bg-gold/25 text-gold border border-gold/40'
+                      : 'text-white/60 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  <Car size={13} className="text-emerald-400 shrink-0" />
+                  <span>ناوگان خودروها</span>
                 </button>
               </motion.div>
             )}

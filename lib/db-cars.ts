@@ -345,16 +345,16 @@ let memoryTransactions: CarTransaction[] = [
 ];
 
 export function resolveCarImageUrl(title: string, brand: string, imageUrl?: string): string {
-  if (imageUrl && imageUrl.startsWith('/cars/')) {
+  if (imageUrl && (imageUrl.startsWith('data:') || imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
     return imageUrl;
   }
   const t = (title + ' ' + brand).toLowerCase();
   if (t.includes('gt') || t.includes('ام‌جی gt') || t.includes('mg gt')) return '/cars/mg-gt.png';
   if (t.includes('mg 5') || t.includes('ام‌جی 5') || (t.includes('5') && t.includes('mg'))) return '/cars/mg-5.png';
-  if (t.includes('sunny') || t.includes('سانی')) return '/cars/nissan-sunny.png';
   if (t.includes('micra') || t.includes('میکرا') || t.includes('bicra')) return '/cars/nissan-micra.png';
-  if (t.includes('2016') && (t.includes('duster') || t.includes('داستر'))) return '/cars/renault-duster-2016.png';
+  if ((t.includes('duster') || t.includes('داستر')) && (t.includes('2016') || t.includes('نقره') || t.includes('silver'))) return '/cars/renault-duster-2016.png';
   if (t.includes('duster') || t.includes('داستر')) return '/cars/renault-duster-2019.png';
+  if (t.includes('sunny') || t.includes('سانی')) return '/cars/nissan-sunny.png';
   return imageUrl || '/cars/nissan-sunny.png';
 }
 

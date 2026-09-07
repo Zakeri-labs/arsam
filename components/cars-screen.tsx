@@ -503,6 +503,14 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         toast.success('رزرو خودرو با موفقیت ثبت گردید');
         setIsReservationModalOpen(false);
 
+        if (data.reservation) {
+          setReservations(prev => [data.reservation, ...prev.filter(r => r.id !== data.reservation.id)]);
+          const d = new Date(resForm.startDate);
+          if (!isNaN(d.getTime())) {
+            setCalendarAnchorDate(d);
+          }
+        }
+
         // Update car status to rented if reservation is active today
         const todayStr = new Date().toISOString().split('T')[0];
         if (resForm.startDate! <= todayStr && resForm.endDate! >= todayStr) {
@@ -511,6 +519,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: resForm.carId, status: 'rented' })
           });
+          setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
         }
 
         // Also add automatic transaction record
@@ -519,7 +528,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              reservationId: data.reservation.id,
+              reservationId: data.reservation?.id || 'res-' + Date.now(),
               carId: resForm.carId,
               customerName: resForm.customerName,
               amount: resForm.totalPrice,
@@ -717,19 +726,6 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           </button>
 
           <button
-            onClick={() => handleTabChange('fleet')}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
-              activeTab === 'fleet'
-                ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <CarIcon size={15} />
-            <span>تعریف خودروها</span>
-            <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{cars.length}</span>
-          </button>
-
-          <button
             onClick={() => handleTabChange('contracts')}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'contracts'
@@ -752,6 +748,19 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           >
             <DollarSign size={15} />
             <span>حسابداری اجاره</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('fleet')}
+            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+              activeTab === 'fleet'
+                ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <CarIcon size={15} />
+            <span>ناوگان خودروها</span>
+            <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{cars.length}</span>
           </button>
         </div>
       </div>
@@ -1542,82 +1551,67 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
 
       {/* ==================================================================== */}
-      {/* MODAL 2: NEW RESERVATION WITH ENHANCED PRICING & UNIQUE CRM CLIENTS  */}
+      {/* MODAL 2: NEW RESERVATION WITH SLEEK COMPACT LAYOUT                   */}
       {/* ==================================================================== */}
       <AnimatePresence>
         {isReservationModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="w-full max-w-2xl rounded-3xl border border-white/15 bg-[#0a1220] p-6 sm:p-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-xs"
+              exit={{ opacity: 0, scale: 0.96, y: 8 }}
+              className="w-full max-w-xl rounded-2xl border border-white/15 bg-[#0b172a] p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-xs"
             >
               {/* Header */}
-              <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
-                    <CalendarIcon size={20} />
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                    <CalendarIcon size={18} />
                   </div>
                   <div>
-                    <h3 className="text-base font-black text-white">ثبت رزرو جدید خودرو</h3>
-                    <p className="text-[11px] text-white/50 font-bold mt-0.5">تعیین مشخصات اجاره، مشتری و محاسبات مالی</p>
+                    <h3 className="text-sm font-black text-white">ثبت رزرو جدید خودرو</h3>
+                    <p className="text-[10.5px] text-white/50">مشخصات اجاره، مشتری و جزییات مالی</p>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setIsReservationModalOpen(false)}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveReservation} className="space-y-5">
+              <form onSubmit={handleSaveReservation} className="space-y-3.5">
                 {/* 1. SELECT CAR */}
-                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3">
-                  <label className="block text-white/90 font-black text-xs flex items-center gap-1.5">
-                    <CarIcon size={15} className="text-gold" />
-                    <span>انتخاب خودرو از ناوگان *</span>
+                <div className="space-y-1.5">
+                  <label className="block text-white/90 font-bold text-[11px] flex items-center gap-1.5">
+                    <CarIcon size={14} className="text-gold" />
+                    <span>خودرو مورد نظر *</span>
                   </label>
-                  
                   <select
                     required
                     value={resForm.carId || ''}
                     onChange={e => updateResFormPricing({ carId: e.target.value })}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] px-3 py-2.5 text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] px-3 py-2 text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
                   >
                     {cars.map(c => (
                       <option key={c.id} value={c.id}>
-                        {c.title} ({c.plateNumber}) - نرخ پایه: {c.dailyRate.toLocaleString()} ر.ع/روز
+                        {c.title} ({c.plateNumber}) - پایه: {c.dailyRate.toLocaleString()} OMR/روز
                       </option>
                     ))}
                   </select>
-
-                  {/* Selected Car Details Pill */}
-                  {(() => {
-                    const selCar = cars.find(c => c.id === resForm.carId);
-                    if (!selCar) return null;
-                    return (
-                      <div className="flex items-center justify-between bg-black/40 px-3.5 py-2 rounded-xl border border-white/8 text-[11px]">
-                        <span className="text-white/70 font-semibold">{selCar.title} | پلاک: {selCar.plateNumber}</span>
-                        <span className="font-extrabold text-gold flex items-center gap-1">
-                          نرخ پایه پیش‌فرض: {selCar.dailyRate} <OMRIcon size="sm" /> / روز
-                        </span>
-                      </div>
-                    );
-                  })()}
                 </div>
 
-                {/* 2. CUSTOMER SELECTION & VERIFICATION */}
-                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3.5">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                    <label className="block text-white/90 font-black text-xs flex items-center gap-1.5">
-                      <UserCheck size={15} className="text-emerald-400" />
-                      <span>مشخصات مشتری *</span>
+                {/* 2. CUSTOMER SELECTION */}
+                <div className="space-y-2 pt-1 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-white/90 font-bold text-[11px] flex items-center gap-1.5">
+                      <UserCheck size={14} className="text-emerald-400" />
+                      <span>اطلاعات مشتری *</span>
                     </label>
 
-                    {/* Mode Selector Tabs */}
-                    <div className="flex bg-[#07111f] p-1 rounded-xl border border-white/10 gap-1">
+                    <div className="flex bg-[#07111f] p-0.5 rounded-lg border border-white/10 gap-1">
                       <button
                         type="button"
                         onClick={() => {
@@ -1626,11 +1620,11 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                             setResForm(prev => ({ ...prev, customerName: selectedClient.name, customerPhone: selectedClient.phone }));
                           }
                         }}
-                        className={`px-3 py-1 rounded-lg font-extrabold text-[10.5px] transition-all cursor-pointer ${
-                          customerSelectMode === 'existing' ? 'bg-gold text-black shadow-md' : 'text-white/60 hover:text-white'
+                        className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                          customerSelectMode === 'existing' ? 'bg-gold text-black' : 'text-white/50 hover:text-white'
                         }`}
                       >
-                        انتخاب از مشتریان (CRM)
+                        مشتریان CRM
                       </button>
                       <button
                         type="button"
@@ -1639,35 +1633,22 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                           setSelectedClient(null);
                           setResForm(prev => ({ ...prev, customerName: '', customerPhone: '' }));
                         }}
-                        className={`px-3 py-1 rounded-lg font-extrabold text-[10.5px] transition-all cursor-pointer ${
-                          customerSelectMode === 'new' ? 'bg-emerald-500 text-white shadow-md' : 'text-white/60 hover:text-white'
+                        className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                          customerSelectMode === 'new' ? 'bg-emerald-500 text-white' : 'text-white/50 hover:text-white'
                         }`}
                       >
-                        + مشتری جدید
+                        + جدید
                       </button>
                     </div>
                   </div>
 
-                  {/* Mode A: Select Existing Customer */}
-                  {customerSelectMode === 'existing' && (
-                    <div className="space-y-2">
+                  {customerSelectMode === 'existing' ? (
+                    <div>
                       {selectedClient ? (
-                        <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl animate-fadeIn">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-sm border border-emerald-500/30">
-                              {selectedClient.name.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="font-extrabold text-white text-xs flex items-center gap-2">
-                                <span>{selectedClient.name}</span>
-                                <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30">
-                                  ✓ مشتری عضو سیستم
-                                </span>
-                              </div>
-                              <div className="text-white/60 font-mono text-[11px] dir-ltr text-right mt-0.5">
-                                {selectedClient.phone}
-                              </div>
-                            </div>
+                        <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-white">{selectedClient.name}</span>
+                            <span className="text-gold font-mono text-[11px] dir-ltr">({selectedClient.phone})</span>
                           </div>
                           <button
                             type="button"
@@ -1675,34 +1656,27 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                               setSelectedClient(null);
                               setResForm(prev => ({ ...prev, customerName: '', customerPhone: '' }));
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10.5px] font-bold transition-all cursor-pointer"
+                            className="text-[10px] text-white/60 hover:text-white underline cursor-pointer"
                           >
-                            تغییر مشتری
+                            تغییر
                           </button>
                         </div>
                       ) : (
                         <div className="relative">
-                          <div className="relative">
-                            <Search size={14} className="absolute right-3 top-3 text-white/40 pointer-events-none" />
-                            <input
-                              type="text"
-                              value={clientSearchQuery}
-                              onChange={e => {
-                                setClientSearchQuery(e.target.value);
-                                setShowClientDropdown(true);
-                              }}
-                              onFocus={() => setShowClientDropdown(true)}
-                              placeholder="جستجو نام یا شماره تلفن مشتری در CRM..."
-                              className="w-full rounded-xl border border-white/15 bg-[#07111f] pr-9 pl-4 py-2.5 text-xs text-white placeholder-white/40 outline-none focus:border-gold"
-                            />
-                          </div>
+                          <input
+                            type="text"
+                            value={clientSearchQuery}
+                            onChange={e => {
+                              setClientSearchQuery(e.target.value);
+                              setShowClientDropdown(true);
+                            }}
+                            onFocus={() => setShowClientDropdown(true)}
+                            placeholder="جستجوی نام یا شماره تلفن مشتری..."
+                            className="w-full rounded-xl border border-white/15 bg-[#07111f] px-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-gold"
+                          />
 
                           {showClientDropdown && (
-                            <div className="absolute right-0 left-0 top-full mt-1.5 bg-[#0f1e37] border border-gold/40 rounded-2xl shadow-2xl z-30 max-h-56 overflow-y-auto divide-y divide-white/5">
-                              <div className="px-3 py-2 bg-black/40 text-[10px] text-gold font-bold flex justify-between items-center">
-                                <span>مشتریان یافت شده ({allClients.length} مخاطب):</span>
-                                <button type="button" onClick={() => setShowClientDropdown(false)} className="text-white/40 hover:text-white"><X size={12} /></button>
-                              </div>
+                            <div className="absolute right-0 left-0 top-full mt-1 bg-[#0f1e37] border border-gold/40 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto divide-y divide-white/5">
                               {allClients
                                 .filter(c => 
                                   !clientSearchQuery || 
@@ -1717,10 +1691,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                                       setResForm(prev => ({ ...prev, customerName: client.name, customerPhone: client.phone }));
                                       setShowClientDropdown(false);
                                     }}
-                                    className="p-3 hover:bg-gold/15 cursor-pointer flex justify-between items-center transition-colors"
+                                    className="p-2.5 hover:bg-gold/15 cursor-pointer flex justify-between items-center text-[11px]"
                                   >
-                                    <span className="font-extrabold text-white text-xs">{client.name}</span>
-                                    <span className="font-mono text-gold text-[11px] dir-ltr">{client.phone}</span>
+                                    <span className="font-bold text-white">{client.name}</span>
+                                    <span className="font-mono text-gold dir-ltr">{client.phone}</span>
                                   </div>
                                 ))}
                               {allClients.filter(c => 
@@ -1728,17 +1702,17 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                                 c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) || 
                                 c.phone.includes(clientSearchQuery)
                               ).length === 0 && (
-                                <div className="p-4 text-center text-white/50 text-xs">
-                                  مشتری با این مشخصات یافت نشد.{' '}
+                                <div className="p-3 text-center text-white/50 text-[11px]">
+                                  مشتری یافت نشد.{' '}
                                   <button
                                     type="button"
                                     onClick={() => {
                                       setCustomerSelectMode('new');
                                       setShowClientDropdown(false);
                                     }}
-                                    className="text-gold font-bold underline cursor-pointer"
+                                    className="text-gold underline font-bold"
                                   >
-                                    تعریف مشتری جدید
+                                    ثبت مشتری جدید
                                   </button>
                                 </div>
                               )}
@@ -1747,188 +1721,112 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {/* Mode B: Define New Customer */}
-                  {customerSelectMode === 'new' && (
-                    <div className="space-y-3 animate-fadeIn">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-white/80 font-bold mb-1">نام و نام خانوادگی مشتری *</label>
-                          <input
-                            type="text"
-                            required
-                            value={resForm.customerName || ''}
-                            onChange={e => setResForm(prev => ({ ...prev, customerName: e.target.value }))}
-                            placeholder="مثلا: علی رضایی"
-                            className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-white/80 font-bold mb-1">شماره تلفن همراه (یونیک) *</label>
-                          <input
-                            type="text"
-                            required
-                            value={resForm.customerPhone || ''}
-                            onChange={e => setResForm(prev => ({ ...prev, customerPhone: e.target.value }))}
-                            placeholder="+968 9123 4567"
-                            className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold dir-ltr"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Unique Phone Check Warning */}
-                      {matchedExistingClient && (
-                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 animate-fadeIn">
-                          <div className="flex items-center gap-2 text-amber-300 font-bold text-[11px]">
-                            <AlertTriangle size={15} className="shrink-0 text-amber-400" />
-                            <span>این شماره تماس متعلق به «{matchedExistingClient.name}» است.</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedClient(matchedExistingClient);
-                              setCustomerSelectMode('existing');
-                              setResForm(prev => ({
-                                ...prev,
-                                customerName: matchedExistingClient.name,
-                                customerPhone: matchedExistingClient.phone
-                              }));
-                            }}
-                            className="px-3 py-1.5 rounded-xl bg-amber-400 text-black font-black text-[10.5px] hover:brightness-110 transition-all shrink-0 cursor-pointer shadow-md"
-                          >
-                            استفاده از پرونده {matchedExistingClient.name}
-                          </button>
-                        </div>
-                      )}
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <input
+                        type="text"
+                        required
+                        value={resForm.customerName || ''}
+                        onChange={e => setResForm(prev => ({ ...prev, customerName: e.target.value }))}
+                        placeholder="نام و نام خانوادگی *"
+                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                      />
+                      <input
+                        type="text"
+                        required
+                        value={resForm.customerPhone || ''}
+                        onChange={e => setResForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        placeholder="شماره تماس (+968 91234567) *"
+                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold dir-ltr"
+                      />
                     </div>
                   )}
                 </div>
 
-                {/* 3. DATES & CUSTOM DAILY RATE */}
-                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3.5">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-2.5">
-                    <label className="block text-white/90 font-black text-xs flex items-center gap-1.5">
-                      <Clock size={15} className="text-gold" />
-                      <span>تاریخ تحویل و نرخ روزانه اجاره</span>
-                    </label>
-                    
-                    {/* Days Count Badge */}
-                    <span className="rounded-full bg-gold/15 px-3 py-1 text-[11px] font-black text-gold border border-gold/30">
-                      مدت زمان: {calculatePricing(resForm.carId, resForm.startDate, resForm.endDate, resForm.customDailyRate, resForm.discountType, resForm.discountValue).days} روز
-                    </span>
+                {/* 3. DATES & DAILY RATE (GRID 3 COLUMNS) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 border-t border-white/5">
+                  <div>
+                    <label className="block text-white/80 font-bold text-[11px] mb-1">تاریخ تحویل *</label>
+                    <input
+                      type="date"
+                      required
+                      value={resForm.startDate || ''}
+                      onChange={e => updateResFormPricing({ startDate: e.target.value })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                    />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-white/80 font-bold mb-1">تاریخ تحویل (شروع) *</label>
-                      <input
-                        type="date"
-                        required
-                        value={resForm.startDate || ''}
-                        onChange={e => updateResFormPricing({ startDate: e.target.value })}
-                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-white/80 font-bold text-[11px] mb-1">تاریخ عودت *</label>
+                    <input
+                      type="date"
+                      required
+                      value={resForm.endDate || ''}
+                      onChange={e => updateResFormPricing({ endDate: e.target.value })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                    />
+                  </div>
 
-                    <div>
-                      <label className="block text-white/80 font-bold mb-1">تاریخ عودت (پایان) *</label>
-                      <input
-                        type="date"
-                        required
-                        value={resForm.endDate || ''}
-                        onChange={e => updateResFormPricing({ endDate: e.target.value })}
-                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-white/80 font-bold mb-1">نرخ اجاره روزانه (OMR) *</label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        required
-                        value={resForm.customDailyRate}
-                        onChange={e => updateResFormPricing({ customDailyRate: Number(e.target.value) })}
-                        className="w-full rounded-xl border border-gold/30 bg-[#07111f] p-2.5 text-gold font-black outline-none focus:border-gold"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-white/80 font-bold text-[11px] mb-1">نرخ روزانه (OMR) *</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      required
+                      value={resForm.customDailyRate}
+                      onChange={e => updateResFormPricing({ customDailyRate: Number(e.target.value) })}
+                      className="w-full rounded-xl border border-gold/40 bg-[#07111f] p-2 text-xs text-gold font-bold outline-none focus:border-gold"
+                    />
                   </div>
                 </div>
 
                 {/* 4. DISCOUNT & DEPOSIT */}
-                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3.5">
-                  <label className="block text-white/90 font-black text-xs flex items-center gap-1.5 border-b border-white/10 pb-2.5">
-                    <ShieldCheck size={15} className="text-emerald-400" />
-                    <span>تخفیف و ودیعه دریافتی</span>
-                  </label>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* Discount Box */}
-                    <div className="space-y-2 bg-[#07111f] p-3 rounded-xl border border-white/10">
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/80 font-bold text-[11px]">تخفیف اجاره:</span>
-                        {/* Discount Type Toggle */}
-                        <div className="flex bg-black/40 p-0.5 rounded-lg border border-white/10">
-                          <button
-                            type="button"
-                            onClick={() => updateResFormPricing({ discountType: 'amount' })}
-                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                              resForm.discountType === 'amount' ? 'bg-gold text-black' : 'text-white/50 hover:text-white'
-                            }`}
-                          >
-                            مبلغی (OMR)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => updateResFormPricing({ discountType: 'percent' })}
-                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                              resForm.discountType === 'percent' ? 'bg-gold text-black' : 'text-white/50 hover:text-white'
-                            }`}
-                          >
-                            درصدی (%)
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min="0"
-                          value={resForm.discountValue}
-                          onChange={e => updateResFormPricing({ discountValue: Number(e.target.value) })}
-                          placeholder="0"
-                          className="w-full rounded-xl border border-white/15 bg-[#0a1220] p-2.5 text-white font-black outline-none focus:border-gold"
-                        />
-                        <span className="absolute left-3 top-2.5 text-white/40 font-bold text-[11px]">
-                          {resForm.discountType === 'percent' ? '%' : 'ر.ع'}
-                        </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1 border-t border-white/5">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-white/80 font-bold text-[11px]">تخفیف اجاره:</label>
+                      <div className="flex bg-black/40 p-0.5 rounded border border-white/10">
+                        <button
+                          type="button"
+                          onClick={() => updateResFormPricing({ discountType: 'amount' })}
+                          className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold ${resForm.discountType === 'amount' ? 'bg-gold text-black' : 'text-white/50'}`}
+                        >
+                          مبلغی
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateResFormPricing({ discountType: 'percent' })}
+                          className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold ${resForm.discountType === 'percent' ? 'bg-gold text-black' : 'text-white/50'}`}
+                        >
+                          درصدی
+                        </button>
                       </div>
                     </div>
+                    <input
+                      type="number"
+                      min="0"
+                      value={resForm.discountValue}
+                      onChange={e => updateResFormPricing({ discountValue: Number(e.target.value) })}
+                      placeholder="0"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                    />
+                  </div>
 
-                    {/* Deposit Box (Default 0) */}
-                    <div className="space-y-2 bg-[#07111f] p-3 rounded-xl border border-white/10">
-                      <label className="block text-white/80 font-bold text-[11px]">
-                        مبلغ ودیعه دریافتی (پیش‌فرض: ۰ OMR):
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="number"
-                          min="0"
-                          value={resForm.depositPaid}
-                          onChange={e => updateResFormPricing({ depositPaid: Number(e.target.value) })}
-                          placeholder="0"
-                          className="w-full rounded-xl border border-white/15 bg-[#0a1220] p-2.5 text-emerald-400 font-black outline-none focus:border-emerald-400"
-                        />
-                        <span className="absolute left-3 top-2.5 text-white/40 font-bold text-[11px]">ر.ع</span>
-                      </div>
-                    </div>
+                  <div>
+                    <label className="block text-white/80 font-bold text-[11px] mb-1">مبلغ ودیعه (پیش‌فرض: ۰ OMR)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={resForm.depositPaid}
+                      onChange={e => updateResFormPricing({ depositPaid: Number(e.target.value) })}
+                      placeholder="0"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
+                    />
                   </div>
                 </div>
 
-                {/* 5. FINANCIAL BREAKDOWN SUMMARY */}
+                {/* 5. SUMMARY ROW */}
                 {(() => {
                   const pricing = calculatePricing(
                     resForm.carId,
@@ -1940,45 +1838,34 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   );
 
                   return (
-                    <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-[#08182b] to-[#0d2238] p-4 space-y-2.5 shadow-xl">
-                      <div className="flex justify-between items-center text-white/70 text-xs">
-                        <span>جمع اجاره پایه ({pricing.days} روز × {pricing.rate} OMR):</span>
-                        <span className="font-bold text-white">{pricing.grossTotal.toLocaleString()} <OMRIcon size="sm" /></span>
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 flex items-center justify-between">
+                      <div className="text-white/80 text-[11px]">
+                        <span>مدت اجاره: <strong className="text-white">{pricing.days} روز</strong></span>
+                        {pricing.discountAmount > 0 && <span className="mr-3 text-amber-400">(تخفیف: {pricing.discountAmount} OMR)</span>}
                       </div>
-
-                      {pricing.discountAmount > 0 && (
-                        <div className="flex justify-between items-center text-amber-400 text-xs font-bold">
-                          <span>میزان تخفیف کسر شده ({resForm.discountType === 'percent' ? `${resForm.discountValue}%` : 'مبلغی'}):</span>
-                          <span>- {pricing.discountAmount.toLocaleString()} <OMRIcon size="sm" /></span>
-                        </div>
-                      )}
-
-                      <div className="border-t border-white/10 pt-2 flex justify-between items-center text-sm font-black">
-                        <span className="text-white flex items-center gap-1.5">
-                          <span>مبلغ نهایی اجاره:</span>
-                        </span>
-                        <span className="text-xl font-black text-emerald-400 flex items-center gap-1.5">
-                          {pricing.finalTotal.toLocaleString()} <OMRIcon size="sm" />
-                        </span>
+                      <div className="flex items-center gap-1 text-sm font-black text-emerald-400">
+                        <span>مبلغ کل:</span>
+                        <span className="text-base">{pricing.finalTotal.toLocaleString()}</span>
+                        <OMRIcon size="sm" />
                       </div>
                     </div>
                   );
                 })()}
 
                 {/* Actions */}
-                <div className="pt-2 border-t border-white/10 flex justify-end gap-3">
+                <div className="pt-2 border-t border-white/10 flex justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsReservationModalOpen(false)}
-                    className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all cursor-pointer"
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer"
                   >
                     انصراف
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:brightness-110 text-white font-black shadow-lg shadow-emerald-500/25 transition-all cursor-pointer active:scale-95"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer"
                   >
-                    تایید و ثبت نهایی رزرو
+                    ثبت رزرو
                   </button>
                 </div>
               </form>
