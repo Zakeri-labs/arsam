@@ -7,7 +7,7 @@ import {
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
   Trash2, Edit3, Globe, Save, LogOut, Check, X, FileText, 
   Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink, Menu,
-  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare, ChevronDown
+  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare, ChevronDown, Car
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
@@ -864,7 +864,7 @@ export default function AdminPage() {
             }`}
           >
             <span className="flex items-center gap-3">
-              <Briefcase className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
+              <Car className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
               <span>مدیریت خودروها</span>
             </span>
             <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isCarMenuOpen ? 'rotate-180' : ''}`} />
@@ -892,7 +892,7 @@ export default function AdminPage() {
                   }`}
                 >
                   <Calendar size={13} className="text-gold shrink-0" />
-                  <span>📅 تقویم و رزروها</span>
+                  <span>تقویم و رزروها</span>
                 </button>
 
                 <button
@@ -907,8 +907,8 @@ export default function AdminPage() {
                       : 'text-white/60 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  <Briefcase size={13} className="text-emerald-400 shrink-0" />
-                  <span>🚗 ناوگان خودروها</span>
+                  <Car size={13} className="text-emerald-400 shrink-0" />
+                  <span>ناوگان خودروها</span>
                 </button>
 
                 <button
@@ -924,7 +924,7 @@ export default function AdminPage() {
                   }`}
                 >
                   <FileText size={13} className="text-blue-400 shrink-0" />
-                  <span>📋 قراردادها و تحویل</span>
+                  <span>قراردادها و تحویل</span>
                 </button>
 
                 <button
@@ -940,7 +940,7 @@ export default function AdminPage() {
                   }`}
                 >
                   <DollarSign size={13} className="text-emerald-400 shrink-0" />
-                  <span>💰 حسابداری اجاره</span>
+                  <span>حسابداری اجاره</span>
                 </button>
               </motion.div>
             )}

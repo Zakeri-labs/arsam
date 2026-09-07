@@ -530,13 +530,13 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   const getCarStatusBadge = (status: Car['status']) => {
     switch (status) {
       case 'available':
-        return { label: '🟢 آماده رزرو', bg: 'rgba(52,211,153,0.15)', text: '#34d399', border: 'rgba(52,211,153,0.3)' };
+        return { label: 'آماده رزرو', bg: 'rgba(52,211,153,0.15)', text: '#34d399', border: 'rgba(52,211,153,0.3)' };
       case 'rented':
-        return { label: '🔴 در حال اجاره', bg: 'rgba(248,113,113,0.15)', text: '#f87171', border: 'rgba(248,113,113,0.3)' };
+        return { label: 'در حال اجاره', bg: 'rgba(248,113,113,0.15)', text: '#f87171', border: 'rgba(248,113,113,0.3)' };
       case 'maintenance':
-        return { label: '🟡 سرویس/تعمیر', bg: 'rgba(251,191,36,0.15)', text: '#fbbf24', border: 'rgba(251,191,36,0.3)' };
+        return { label: 'سرویس و تعمیر', bg: 'rgba(251,191,36,0.15)', text: '#fbbf24', border: 'rgba(251,191,36,0.3)' };
       case 'disabled':
-        return { label: '⚪ غیرفعال', bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', border: 'rgba(156,163,175,0.3)' };
+        return { label: 'غیرفعال', bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', border: 'rgba(156,163,175,0.3)' };
     }
   };
 
@@ -792,7 +792,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           {/* RESERVATION LIST CARDS SUMMARY */}
           <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg space-y-3">
             <h3 className="text-sm font-black text-white flex items-center gap-2">
-              <span>📋 آخرین رزروهای فعال سیستم</span>
+              <span>آخرین رزروهای فعال سیستم</span>
               <span className="text-xs font-normal text-white/40">({reservations.length} رزرو ثبت شده)</span>
             </h3>
 
@@ -1031,7 +1031,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                          ⛽ فول (Full)
+                          فول (Full)
                         </span>
                       </td>
                       <td className="py-3.5 px-4 font-bold text-emerald-400">
@@ -1039,7 +1039,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                          🟢 تحویل داده شده
+                          تحویل داده شده
                         </span>
                       </td>
                     </tr>
@@ -1335,10 +1335,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       onChange={e => setCarForm({ ...carForm, status: e.target.value as any })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
                     >
-                      <option value="available">🟢 آماده رزرو</option>
-                      <option value="rented">🔴 در حال اجاره</option>
-                      <option value="maintenance">🟡 در حال سرویس</option>
-                      <option value="disabled">⚪ غیرفعال</option>
+                      <option value="available">آماده رزرو</option>
+                      <option value="rented">در حال اجاره</option>
+                      <option value="maintenance">در حال سرویس</option>
+                      <option value="disabled">غیرفعال</option>
                     </select>
                   </div>
                 </div>
