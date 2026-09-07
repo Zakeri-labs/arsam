@@ -7,24 +7,18 @@ interface OMRIconProps {
 }
 
 export default function OMRIcon({ size = 'md', className = '', showText = false }: OMRIconProps) {
-  const sizeMap = {
-    sm: 'h-4 min-w-[20px] px-1 text-[9px]',
-    md: 'h-5 min-w-[26px] px-1.5 text-[10px]',
-    lg: 'h-6 min-w-[32px] px-2 text-xs',
-  };
-
   const svgSizeMap = {
-    sm: 'w-3.5 h-2',
-    md: 'w-4.5 h-2.5',
-    lg: 'w-5.5 h-3',
+    sm: 'w-4 h-2.5',
+    md: 'w-5 h-3',
+    lg: 'w-6 h-3.5',
   };
 
   return (
     <span
-      className={`inline-flex items-center justify-center gap-1 rounded-md bg-gradient-to-r from-amber-500/20 via-gold/30 to-amber-500/20 text-gold border border-gold/40 font-black tracking-wide select-none shadow-xs shrink-0 ${sizeMap[size]} ${className}`}
+      className={`inline-flex items-center select-none shrink-0 ${className}`}
       title="ریال عمان (OMR)"
     >
-      {/* Official Omani Rial Symbol (Central Bank of Oman) */}
+      {/* Official Omani Rial Symbol (Clean Minimal SVG, No Border/Box) */}
       <svg
         className={`${svgSizeMap[size]} fill-current shrink-0 text-gold`}
         viewBox="0 0 741.36 415.06"
@@ -35,7 +29,7 @@ export default function OMRIcon({ size = 'md', className = '', showText = false 
         </g>
       </svg>
 
-      {showText && <span className="font-extrabold dir-rtl">ر.ع.</span>}
+      {showText && <span className="font-extrabold dir-rtl mr-1 text-gold text-[10px]">ر.ع.</span>}
     </span>
   );
 }

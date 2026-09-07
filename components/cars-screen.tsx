@@ -550,8 +550,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             <CarIcon size={24} />
           </div>
           <div className="min-w-0">
-            <h1 className="text-base sm:text-xl font-black text-white tracking-wide truncate">مدیریت و رزرو خودروها (Car Rental System)</h1>
-            <p className="text-[11px] sm:text-xs text-white/50 truncate">سیستم جامع ناوگان رنتال، کلندر اشغال گانت، تحویل قراردادها و حسابداری اجاره</p>
+            <h1 className="text-base sm:text-lg font-black text-white tracking-wide truncate">مدیریت خودروها</h1>
+            <p className="text-[11px] text-white/50 truncate">مدیریت ناوگان و جدول رزروها</p>
           </div>
         </div>
 
