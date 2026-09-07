@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import { Car, CarReservation, CarTransaction, cleanCarTitle, cleanCarPlate } from '@/lib/db-cars';
 import OMRIcon from '@/components/omr-icon';
+import CarContractModal, { ContractData } from './car-contract-modal';
 
 interface CRMClient {
   name: string;
@@ -102,6 +103,41 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [selectedContractForPdf, setSelectedContractForPdf] = useState<ContractData | null>(null);
+
+  const handleOpenContractPdf = (cnt: CarContract) => {
+    const matchingRes = reservations.find(r => r.id === cnt.reservationId);
+    const matchingCar = cars.find(c => c.id === matchingRes?.carId || c.title === cnt.carTitle);
+
+    const sDate = matchingRes?.startDate || new Date().toISOString().split('T')[0];
+    const eDate = matchingRes?.endDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+    const diffTime = Math.abs(new Date(eDate).getTime() - new Date(sDate).getTime());
+    const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+
+    const contractData: ContractData = {
+      id: cnt.id,
+      contractNo: cnt.id.toUpperCase(),
+      date: cnt.createdAt ? new Date(cnt.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      carTitle: cnt.carTitle,
+      brand: matchingCar?.brand,
+      modelYear: matchingCar?.modelYear,
+      plateNumber: cnt.plateNumber,
+      color: matchingCar?.color,
+      customerName: cnt.customerName,
+      customerPhone: cnt.customerPhone,
+      customerNationalId: matchingRes?.customerNationalId || '۹۸۷۶۵۴۳۲۱',
+      startDate: sDate,
+      endDate: eDate,
+      rentalDays: calculatedDays,
+      totalPrice: matchingRes?.totalPrice || 90,
+      depositPaid: cnt.depositAmount || 50,
+      initialOdometer: cnt.initialOdometer,
+      fuelLevel: cnt.fuelLevel === 'full' ? 'فول (Full)' : '۳/۴',
+      notes: cnt.notes
+    };
+
+    setSelectedContractForPdf(contractData);
+  };
 
   // Form States - Car
   const [carForm, setCarForm] = useState<Partial<Car>>({
@@ -1166,6 +1202,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <th className="py-3.5 px-4">بنزین</th>
                     <th className="py-3.5 px-4">وضعیت ودیعه</th>
                     <th className="py-3.5 px-4">وضعیت تحویل</th>
+                    <th className="py-3.5 px-4 text-center">قرارداد رسمی PDF</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -1196,6 +1233,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                           تحویل داده شده
                         </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-center">
+                        <button
+                          onClick={() => handleOpenContractPdf(cnt)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-extrabold text-[11px] shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                        >
+                          <FileText size={14} />
+                          <span>چاپ / PDF دو زبانه</span>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -2064,6 +2110,16 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
               </form>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* BILINGUAL CONTRACT PDF MODAL */}
+      <AnimatePresence>
+        {selectedContractForPdf && (
+          <CarContractModal
+            contract={selectedContractForPdf}
+            onClose={() => setSelectedContractForPdf(null)}
+          />
         )}
       </AnimatePresence>
 
