@@ -53,15 +53,28 @@ export interface CarTransaction {
   createdAt?: string;
 }
 
+export function cleanCarTitle(title: string): string {
+  if (!title) return '';
+  return title
+    .replace(/\s*\((سفید صدفی|سفید|نقره‌ای|قرمز|نوک مدادی|مشکی)\s*(#\d+)?\)/gi, (match, color, num) => num ? ` (${num})` : '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function cleanCarPlate(plate: string): string {
+  if (!plate) return '';
+  return plate.replace(/^.*?\s*-\s*/, '').trim();
+}
+
 // In-Memory Fallback Stores
 let memoryCars: Car[] = [
   // 1. MG GT (3 units - All Model Year 2026, All White)
   {
     id: 'car-mg-gt-1',
-    title: 'ام‌جی GT 2026 (سفید صدفی #1)',
+    title: 'ام‌جی GT 2026 (#1)',
     brand: 'MG',
     modelYear: '2026',
-    plateNumber: 'مسقط - 48123',
+    plateNumber: '48123',
     color: 'سفید صدفی',
     dailyRate: 15,
     depositAmount: 50,
@@ -76,10 +89,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-mg-gt-2',
-    title: 'ام‌جی GT 2026 (سفید صدفی #2)',
+    title: 'ام‌جی GT 2026 (#2)',
     brand: 'MG',
     modelYear: '2026',
-    plateNumber: 'مسقط - 48124',
+    plateNumber: '48124',
     color: 'سفید صدفی',
     dailyRate: 15,
     depositAmount: 50,
@@ -94,10 +107,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-mg-gt-3',
-    title: 'ام‌جی GT 2026 (سفید صدفی #3)',
+    title: 'ام‌جی GT 2026 (#3)',
     brand: 'MG',
     modelYear: '2026',
-    plateNumber: 'مسقط - 48125',
+    plateNumber: '48125',
     color: 'سفید صدفی',
     dailyRate: 15,
     depositAmount: 50,
@@ -114,10 +127,10 @@ let memoryCars: Car[] = [
   // 2. MG 5 (1 unit)
   {
     id: 'car-mg-5-1',
-    title: 'ام‌جی 5 2023 (قرمز)',
+    title: 'ام‌جی 5 2023',
     brand: 'MG',
     modelYear: '2023',
-    plateNumber: 'مسقط - 59201',
+    plateNumber: '59201',
     color: 'قرمز',
     dailyRate: 12,
     depositAmount: 40,
@@ -134,10 +147,10 @@ let memoryCars: Car[] = [
   // 3. Nissan Sunny (6 units)
   {
     id: 'car-nissan-sunny-1',
-    title: 'نیسان سانی 2023 (نقره‌ای #1)',
+    title: 'نیسان سانی 2023 (#1)',
     brand: 'Nissan',
     modelYear: '2023',
-    plateNumber: 'مسقط - 12301',
+    plateNumber: '12301',
     color: 'نقره‌ای',
     dailyRate: 10,
     depositAmount: 40,
@@ -152,10 +165,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-nissan-sunny-2',
-    title: 'نیسان سانی 2023 (نقره‌ای #2)',
+    title: 'نیسان سانی 2023 (#2)',
     brand: 'Nissan',
     modelYear: '2023',
-    plateNumber: 'مسقط - 12302',
+    plateNumber: '12302',
     color: 'نقره‌ای',
     dailyRate: 10,
     depositAmount: 40,
@@ -170,10 +183,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-nissan-sunny-3',
-    title: 'نیسان سانی 2023 (سفید #3)',
+    title: 'نیسان سانی 2023 (#3)',
     brand: 'Nissan',
     modelYear: '2023',
-    plateNumber: 'مسقط - 12303',
+    plateNumber: '12303',
     color: 'سفید',
     dailyRate: 10,
     depositAmount: 40,
@@ -188,10 +201,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-nissan-sunny-4',
-    title: 'نیسان سانی 2024 (سفید #4)',
+    title: 'نیسان سانی 2024 (#4)',
     brand: 'Nissan',
     modelYear: '2024',
-    plateNumber: 'مسقط - 12304',
+    plateNumber: '12304',
     color: 'سفید',
     dailyRate: 11,
     depositAmount: 40,
@@ -206,10 +219,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-nissan-sunny-5',
-    title: 'نیسان سانی 2024 (نوک مدادی #5)',
+    title: 'نیسان سانی 2024 (#5)',
     brand: 'Nissan',
     modelYear: '2024',
-    plateNumber: 'مسقط - 12305',
+    plateNumber: '12305',
     color: 'نوک مدادی',
     dailyRate: 11,
     depositAmount: 40,
@@ -224,10 +237,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-nissan-sunny-6',
-    title: 'نیسان سانی 2024 (مشکی #6)',
+    title: 'نیسان سانی 2024 (#6)',
     brand: 'Nissan',
     modelYear: '2024',
-    plateNumber: 'مسقط - 12306',
+    plateNumber: '12306',
     color: 'مشکی',
     dailyRate: 11,
     depositAmount: 40,
@@ -244,10 +257,10 @@ let memoryCars: Car[] = [
   // 4. Nissan Micra (1 unit - Model 2019, White)
   {
     id: 'car-nissan-micra-1',
-    title: 'نیسان میکرا 2019 (سفید)',
+    title: 'نیسان میکرا 2019',
     brand: 'Nissan',
     modelYear: '2019',
-    plateNumber: 'مسقط - 31920',
+    plateNumber: '31920',
     color: 'سفید',
     dailyRate: 9,
     depositAmount: 35,
@@ -264,10 +277,10 @@ let memoryCars: Car[] = [
   // 5. Renault Duster (2 units - 2016 Silver & 2019 White)
   {
     id: 'car-renault-duster-1',
-    title: 'رنو داستر 2016 (نقره‌ای)',
+    title: 'رنو داستر 2016',
     brand: 'Renault',
     modelYear: '2016',
-    plateNumber: 'مسقط - 88401',
+    plateNumber: '88401',
     color: 'نقره‌ای',
     dailyRate: 14,
     depositAmount: 50,
@@ -282,10 +295,10 @@ let memoryCars: Car[] = [
   },
   {
     id: 'car-renault-duster-2',
-    title: 'رنو داستر 2019 (سفید)',
+    title: 'رنو داستر 2019',
     brand: 'Renault',
     modelYear: '2019',
-    plateNumber: 'مسقط - 88402',
+    plateNumber: '88402',
     color: 'سفید',
     dailyRate: 15,
     depositAmount: 50,
@@ -379,6 +392,8 @@ function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transac
       if (parsed && Array.isArray(parsed.cars) && parsed.cars.length > 0) {
         const resolvedCars = parsed.cars.map((c: Car) => ({
           ...c,
+          title: cleanCarTitle(c.title),
+          plateNumber: cleanCarPlate(c.plateNumber),
           imageUrl: resolveCarImageUrl(c.title, c.brand, c.imageUrl)
         }));
         return {
