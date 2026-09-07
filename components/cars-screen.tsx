@@ -112,14 +112,41 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   const [uploadingCarImg, setUploadingCarImg] = useState(false);
 
   // Form States - Reservation
-  const [resForm, setResForm] = useState<Partial<CarReservation>>({
-    carId: '', customerName: '', customerPhone: '', customerNationalId: '',
+  const [resForm, setResForm] = useState<{
+    carId: string;
+    carTitle?: string;
+    customerName: string;
+    customerPhone: string;
+    customerNationalId?: string;
+    startDate: string;
+    endDate: string;
+    customDailyRate: number;
+    discountType: 'amount' | 'percent';
+    discountValue: number;
+    totalPrice: number;
+    depositPaid: number;
+    status: 'confirmed' | 'active' | 'completed' | 'cancelled';
+    notes?: string;
+  }>({
+    carId: '',
+    carTitle: '',
+    customerName: '',
+    customerPhone: '',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
-    totalPrice: 0, depositPaid: 0, status: 'confirmed', notes: ''
+    customDailyRate: 10,
+    discountType: 'amount',
+    discountValue: 0,
+    totalPrice: 0,
+    depositPaid: 0, // Default 0
+    status: 'confirmed',
+    notes: ''
   });
-  const [showCrmSuggestions, setShowCrmSuggestions] = useState(false);
-  const [isNewCustomerMode, setIsNewCustomerMode] = useState(false);
+
+  const [customerSelectMode, setCustomerSelectMode] = useState<'existing' | 'new'>('existing');
+  const [selectedClient, setSelectedClient] = useState<CRMClient | null>(null);
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
+  const [showClientDropdown, setShowClientDropdown] = useState(false);
 
   // Form States - Transaction
   const [txForm, setTxForm] = useState<{
@@ -305,11 +332,113 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     }
   };
 
-  // --- RESERVATION HANDLERS ---
+  // --- CRM & RESERVATION CLIENTS POOL ---
+  const allClients = useMemo(() => {
+    const clientMap = new Map<string, CRMClient>();
+
+    for (const c of crmClients) {
+      if (c.phone && c.name) {
+        const clean = c.phone.replace(/[^0-9+]/g, '');
+        if (clean) clientMap.set(clean, { name: c.name.trim(), phone: c.phone.trim() });
+      }
+    }
+
+    for (const r of reservations) {
+      if (r.customerPhone && r.customerName) {
+        const clean = r.customerPhone.replace(/[^0-9+]/g, '');
+        if (clean && !clientMap.has(clean)) {
+          clientMap.set(clean, { name: r.customerName.trim(), phone: r.customerPhone.trim() });
+        }
+      }
+    }
+
+    return Array.from(clientMap.values());
+  }, [crmClients, reservations]);
+
+  // Live Phone Match Check
+  const matchedExistingClient = useMemo(() => {
+    if (customerSelectMode !== 'new' || !resForm.customerPhone) return null;
+    const clean = resForm.customerPhone.replace(/[^0-9+]/g, '');
+    if (!clean || clean.length < 4) return null;
+    return allClients.find(c => c.phone.replace(/[^0-9+]/g, '') === clean) || null;
+  }, [customerSelectMode, resForm.customerPhone, allClients]);
+
+  // --- RESERVATION HANDLERS & PRICING CALCULATOR ---
+  const calculatePricing = (
+    carId: string,
+    sDate: string,
+    eDate: string,
+    customDailyRateInput?: number,
+    discType: 'amount' | 'percent' = 'amount',
+    discVal: number = 0
+  ) => {
+    const car = cars.find(c => c.id === carId);
+    const rate = (customDailyRateInput !== undefined && customDailyRateInput >= 0)
+      ? customDailyRateInput
+      : (car ? car.dailyRate : 10);
+
+    let days = 1;
+    if (sDate && eDate) {
+      try {
+        const start = new Date(sDate);
+        const end = new Date(eDate);
+        days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
+      } catch (err) {}
+    }
+
+    const grossTotal = rate * days;
+    const discountAmount = discType === 'percent'
+      ? Math.round(grossTotal * (Math.min(100, Math.max(0, discVal)) / 100))
+      : Math.min(grossTotal, Math.max(0, discVal));
+
+    const finalTotal = Math.max(0, grossTotal - discountAmount);
+
+    return {
+      rate,
+      days,
+      grossTotal,
+      discountAmount,
+      finalTotal
+    };
+  };
+
+  const updateResFormPricing = (updates: Partial<typeof resForm>) => {
+    setResForm(prev => {
+      const next = { ...prev, ...updates };
+
+      if (updates.carId && updates.carId !== prev.carId) {
+        const car = cars.find(c => c.id === updates.carId);
+        if (car) {
+          next.customDailyRate = car.dailyRate;
+          next.carTitle = car.title;
+        }
+      }
+
+      const calc = calculatePricing(
+        next.carId,
+        next.startDate,
+        next.endDate,
+        next.customDailyRate,
+        next.discountType,
+        next.discountValue
+      );
+
+      return {
+        ...next,
+        customDailyRate: calc.rate,
+        totalPrice: calc.finalTotal
+      };
+    });
+  };
+
   const handleOpenAddReservation = (preselectedCarId?: string) => {
     const selectedCar = cars.find(c => c.id === (preselectedCarId || cars[0]?.id));
-    const dailyRate = selectedCar ? selectedCar.dailyRate : 350;
+    const rate = selectedCar ? selectedCar.dailyRate : 10;
     const defaultDays = 3;
+    const sDate = new Date().toISOString().split('T')[0];
+    const eDate = new Date(Date.now() + defaultDays * 86400000).toISOString().split('T')[0];
+
+    const calc = calculatePricing(selectedCar?.id || '', sDate, eDate, rate, 'amount', 0);
 
     setResForm({
       carId: selectedCar?.id || '',
@@ -317,38 +446,49 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       customerName: '',
       customerPhone: '',
       customerNationalId: '',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date(Date.now() + defaultDays * 86400000).toISOString().split('T')[0],
-      totalPrice: dailyRate * defaultDays,
-      depositPaid: selectedCar ? selectedCar.depositAmount : 1000,
+      startDate: sDate,
+      endDate: eDate,
+      customDailyRate: rate,
+      discountType: 'amount',
+      discountValue: 0,
+      totalPrice: calc.finalTotal,
+      depositPaid: 0, // USER RULE: Default deposit is 0
       status: 'confirmed',
       notes: ''
     });
-    setIsNewCustomerMode(false);
-    setIsReservationModalOpen(true);
-  };
 
-  const updateResPrice = (carId: string, sDate: string, eDate: string) => {
-    const car = cars.find(c => c.id === carId);
-    if (!car) return;
-    try {
-      const start = new Date(sDate);
-      const end = new Date(eDate);
-      const diffDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
-      setResForm(prev => ({
-        ...prev,
-        carId,
-        carTitle: car.title,
-        totalPrice: car.dailyRate * diffDays
-      }));
-    } catch (err) {}
+    setCustomerSelectMode('existing');
+    setSelectedClient(null);
+    setClientSearchQuery('');
+    setShowClientDropdown(false);
+    setIsReservationModalOpen(true);
   };
 
   const handleSaveReservation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resForm.carId || !resForm.customerName || !resForm.customerPhone || !resForm.startDate || !resForm.endDate) {
+
+    if (!resForm.carId || !resForm.customerName || !resForm.startDate || !resForm.endDate) {
       toast.error('لطفا تمامی فیلدهای الزامی رزرو را تکمیل نمایید');
       return;
+    }
+
+    if (customerSelectMode === 'new') {
+      if (!resForm.customerPhone || resForm.customerPhone.trim() === '') {
+        toast.error('وارد کردن شماره تلفن تماس برای مشتری جدید الزامی است');
+        return;
+      }
+
+      const cleanPhone = resForm.customerPhone.replace(/[^0-9+]/g, '');
+      const existing = allClients.find(c => c.phone.replace(/[^0-9+]/g, '') === cleanPhone);
+      if (existing && existing.name !== resForm.customerName.trim()) {
+        toast.error(`خطا: شماره تماس ${resForm.customerPhone} متعلق به «${existing.name}» است. لطفاً از پرونده مشتری استفاده نمایید.`);
+        return;
+      }
+    } else {
+      if (!resForm.customerPhone || resForm.customerPhone.trim() === '') {
+        toast.error('لطفاً یک مشتری از لیست انتخاب کنید');
+        return;
+      }
     }
 
     try {
@@ -487,12 +627,12 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
   // --- CRM AUTOSUGGEST FILTER ---
   const filteredCrmSuggestions = useMemo(() => {
-    if (!resForm.customerName || isNewCustomerMode) return [];
+    if (!resForm.customerName || customerSelectMode === 'new') return [];
     const query = resForm.customerName.toLowerCase().trim();
     return crmClients.filter(
       c => c.name.toLowerCase().includes(query) || c.phone.includes(query)
     ).slice(0, 6);
-  }, [crmClients, resForm.customerName, isNewCustomerMode]);
+  }, [crmClients, resForm.customerName, customerSelectMode]);
 
   // --- ACCOUNTING STATS CALCULATION ---
   const accountingStats = useMemo(() => {
@@ -1402,168 +1542,441 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
 
       {/* ==================================================================== */}
-      {/* MODAL 2: NEW RESERVATION WITH CRM AUTOSUGGESTION                      */}
+      {/* MODAL 2: NEW RESERVATION WITH ENHANCED PRICING & UNIQUE CRM CLIENTS  */}
       {/* ==================================================================== */}
       <AnimatePresence>
         {isReservationModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl" dir="rtl">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xl rounded-3xl border border-white/15 bg-[#0b172a] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-2xl rounded-3xl border border-white/15 bg-[#0a1220] p-6 sm:p-7 shadow-2xl space-y-5 max-h-[92vh] overflow-y-auto text-xs"
             >
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <h3 className="text-base font-black text-white flex items-center gap-2">
-                  <CalendarIcon className="text-emerald-400" size={18} />
-                  <span>ثبت رزرو جدید خودرو</span>
-                </h3>
-                <button onClick={() => setIsReservationModalOpen(false)} className="text-white/40 hover:text-white"><X size={18} /></button>
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-lg shadow-emerald-500/10">
+                    <CalendarIcon size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-white">ثبت رزرو جدید خودرو</h3>
+                    <p className="text-[11px] text-white/50 font-bold mt-0.5">تعیین مشخصات اجاره، مشتری و محاسبات مالی</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsReservationModalOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
               </div>
 
-              <form onSubmit={handleSaveReservation} className="space-y-4 text-xs">
-                {/* Select Car */}
-                <div>
-                  <label className="block text-white/80 font-bold mb-1">انتخاب خودرو *</label>
+              <form onSubmit={handleSaveReservation} className="space-y-5">
+                {/* 1. SELECT CAR */}
+                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3">
+                  <label className="block text-white/90 font-black text-xs flex items-center gap-1.5">
+                    <CarIcon size={15} className="text-gold" />
+                    <span>انتخاب خودرو از ناوگان *</span>
+                  </label>
+                  
                   <select
                     required
                     value={resForm.carId || ''}
-                    onChange={e => updateResPrice(e.target.value, resForm.startDate!, resForm.endDate!)}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                    onChange={e => updateResFormPricing({ carId: e.target.value })}
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] px-3 py-2.5 text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
                   >
                     {cars.map(c => (
                       <option key={c.id} value={c.id}>
-                        {c.title} ({c.plateNumber}) - {c.dailyRate.toLocaleString()} ر.ع/روز
+                        {c.title} ({c.plateNumber}) - نرخ پایه: {c.dailyRate.toLocaleString()} ر.ع/روز
                       </option>
                     ))}
                   </select>
+
+                  {/* Selected Car Details Pill */}
+                  {(() => {
+                    const selCar = cars.find(c => c.id === resForm.carId);
+                    if (!selCar) return null;
+                    return (
+                      <div className="flex items-center justify-between bg-black/40 px-3.5 py-2 rounded-xl border border-white/8 text-[11px]">
+                        <span className="text-white/70 font-semibold">{selCar.title} | پلاک: {selCar.plateNumber}</span>
+                        <span className="font-extrabold text-gold flex items-center gap-1">
+                          نرخ پایه پیش‌فرض: {selCar.dailyRate} <OMRIcon size="sm" /> / روز
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
 
-                {/* CRM CUSTOMER AUTOSUGGESTION FIELD */}
-                <div className="relative">
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="block text-white/80 font-bold">نام مشتری *</label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsNewCustomerMode(!isNewCustomerMode);
-                        setShowCrmSuggestions(false);
-                      }}
-                      className="text-[10px] text-gold hover:underline font-bold flex items-center gap-1"
-                    >
-                      <UserPlus size={12} />
-                      <span>{isNewCustomerMode ? 'جستجو در لیست CRM' : 'ثبت مشتری جدید'}</span>
-                    </button>
+                {/* 2. CUSTOMER SELECTION & VERIFICATION */}
+                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3.5">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                    <label className="block text-white/90 font-black text-xs flex items-center gap-1.5">
+                      <UserCheck size={15} className="text-emerald-400" />
+                      <span>مشخصات مشتری *</span>
+                    </label>
+
+                    {/* Mode Selector Tabs */}
+                    <div className="flex bg-[#07111f] p-1 rounded-xl border border-white/10 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerSelectMode('existing');
+                          if (selectedClient) {
+                            setResForm(prev => ({ ...prev, customerName: selectedClient.name, customerPhone: selectedClient.phone }));
+                          }
+                        }}
+                        className={`px-3 py-1 rounded-lg font-extrabold text-[10.5px] transition-all cursor-pointer ${
+                          customerSelectMode === 'existing' ? 'bg-gold text-black shadow-md' : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        انتخاب از مشتریان (CRM)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerSelectMode('new');
+                          setSelectedClient(null);
+                          setResForm(prev => ({ ...prev, customerName: '', customerPhone: '' }));
+                        }}
+                        className={`px-3 py-1 rounded-lg font-extrabold text-[10.5px] transition-all cursor-pointer ${
+                          customerSelectMode === 'new' ? 'bg-emerald-500 text-white shadow-md' : 'text-white/60 hover:text-white'
+                        }`}
+                      >
+                        + مشتری جدید
+                      </button>
+                    </div>
                   </div>
 
-                  <input
-                    type="text"
-                    required
-                    value={resForm.customerName || ''}
-                    onChange={e => {
-                      setResForm({ ...resForm, customerName: e.target.value });
-                      setShowCrmSuggestions(true);
-                    }}
-                    onFocus={() => setShowCrmSuggestions(true)}
-                    placeholder={isNewCustomerMode ? 'نام کامل مشتری جدید را وارد کنید...' : 'شروع به تایپ کنید (جستجو از CRM)...'}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                  />
-
-                  {/* CRM Suggestion Dropdown */}
-                  {!isNewCustomerMode && showCrmSuggestions && filteredCrmSuggestions.length > 0 && (
-                    <div className="absolute right-0 left-0 top-full mt-1 bg-[#0f1e37] border border-gold/40 rounded-xl shadow-2xl z-30 overflow-hidden divide-y divide-white/5">
-                      <p className="text-[10px] text-gold font-bold px-3 py-1.5 bg-black/40">پیشنهادات مشتریان CRM:</p>
-                      {filteredCrmSuggestions.map((crm, i) => (
-                        <div
-                          key={i}
-                          onClick={() => {
-                            setResForm({
-                              ...resForm,
-                              customerName: crm.name,
-                              customerPhone: crm.phone
-                            });
-                            setShowCrmSuggestions(false);
-                          }}
-                          className="p-2.5 hover:bg-gold/15 cursor-pointer flex justify-between items-center transition-colors"
-                        >
-                          <span className="font-extrabold text-white">{crm.name}</span>
-                          <span className="font-mono text-gold text-[11px]">{crm.phone}</span>
+                  {/* Mode A: Select Existing Customer */}
+                  {customerSelectMode === 'existing' && (
+                    <div className="space-y-2">
+                      {selectedClient ? (
+                        <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-xl animate-fadeIn">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-black text-sm border border-emerald-500/30">
+                              {selectedClient.name.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="font-extrabold text-white text-xs flex items-center gap-2">
+                                <span>{selectedClient.name}</span>
+                                <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30">
+                                  ✓ مشتری عضو سیستم
+                                </span>
+                              </div>
+                              <div className="text-white/60 font-mono text-[11px] dir-ltr text-right mt-0.5">
+                                {selectedClient.phone}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedClient(null);
+                              setResForm(prev => ({ ...prev, customerName: '', customerPhone: '' }));
+                            }}
+                            className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-[10.5px] font-bold transition-all cursor-pointer"
+                          >
+                            تغییر مشتری
+                          </button>
                         </div>
-                      ))}
+                      ) : (
+                        <div className="relative">
+                          <div className="relative">
+                            <Search size={14} className="absolute right-3 top-3 text-white/40 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={clientSearchQuery}
+                              onChange={e => {
+                                setClientSearchQuery(e.target.value);
+                                setShowClientDropdown(true);
+                              }}
+                              onFocus={() => setShowClientDropdown(true)}
+                              placeholder="جستجو نام یا شماره تلفن مشتری در CRM..."
+                              className="w-full rounded-xl border border-white/15 bg-[#07111f] pr-9 pl-4 py-2.5 text-xs text-white placeholder-white/40 outline-none focus:border-gold"
+                            />
+                          </div>
+
+                          {showClientDropdown && (
+                            <div className="absolute right-0 left-0 top-full mt-1.5 bg-[#0f1e37] border border-gold/40 rounded-2xl shadow-2xl z-30 max-h-56 overflow-y-auto divide-y divide-white/5">
+                              <div className="px-3 py-2 bg-black/40 text-[10px] text-gold font-bold flex justify-between items-center">
+                                <span>مشتریان یافت شده ({allClients.length} مخاطب):</span>
+                                <button type="button" onClick={() => setShowClientDropdown(false)} className="text-white/40 hover:text-white"><X size={12} /></button>
+                              </div>
+                              {allClients
+                                .filter(c => 
+                                  !clientSearchQuery || 
+                                  c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) || 
+                                  c.phone.includes(clientSearchQuery)
+                                )
+                                .map((client, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={() => {
+                                      setSelectedClient(client);
+                                      setResForm(prev => ({ ...prev, customerName: client.name, customerPhone: client.phone }));
+                                      setShowClientDropdown(false);
+                                    }}
+                                    className="p-3 hover:bg-gold/15 cursor-pointer flex justify-between items-center transition-colors"
+                                  >
+                                    <span className="font-extrabold text-white text-xs">{client.name}</span>
+                                    <span className="font-mono text-gold text-[11px] dir-ltr">{client.phone}</span>
+                                  </div>
+                                ))}
+                              {allClients.filter(c => 
+                                !clientSearchQuery || 
+                                c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) || 
+                                c.phone.includes(clientSearchQuery)
+                              ).length === 0 && (
+                                <div className="p-4 text-center text-white/50 text-xs">
+                                  مشتری با این مشخصات یافت نشد.{' '}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCustomerSelectMode('new');
+                                      setShowClientDropdown(false);
+                                    }}
+                                    className="text-gold font-bold underline cursor-pointer"
+                                  >
+                                    تعریف مشتری جدید
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Mode B: Define New Customer */}
+                  {customerSelectMode === 'new' && (
+                    <div className="space-y-3 animate-fadeIn">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-white/80 font-bold mb-1">نام و نام خانوادگی مشتری *</label>
+                          <input
+                            type="text"
+                            required
+                            value={resForm.customerName || ''}
+                            onChange={e => setResForm(prev => ({ ...prev, customerName: e.target.value }))}
+                            placeholder="مثلا: علی رضایی"
+                            className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-white/80 font-bold mb-1">شماره تلفن همراه (یونیک) *</label>
+                          <input
+                            type="text"
+                            required
+                            value={resForm.customerPhone || ''}
+                            onChange={e => setResForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                            placeholder="+968 9123 4567"
+                            className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold dir-ltr"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Unique Phone Check Warning */}
+                      {matchedExistingClient && (
+                        <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-2 animate-fadeIn">
+                          <div className="flex items-center gap-2 text-amber-300 font-bold text-[11px]">
+                            <AlertTriangle size={15} className="shrink-0 text-amber-400" />
+                            <span>این شماره تماس متعلق به «{matchedExistingClient.name}» است.</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedClient(matchedExistingClient);
+                              setCustomerSelectMode('existing');
+                              setResForm(prev => ({
+                                ...prev,
+                                customerName: matchedExistingClient.name,
+                                customerPhone: matchedExistingClient.phone
+                              }));
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-amber-400 text-black font-black text-[10.5px] hover:brightness-110 transition-all shrink-0 cursor-pointer shadow-md"
+                          >
+                            استفاده از پرونده {matchedExistingClient.name}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Customer Phone */}
-                <div>
-                  <label className="block text-white/80 font-bold mb-1">شماره تلفن تماس *</label>
-                  <input
-                    type="text"
-                    required
-                    value={resForm.customerPhone || ''}
-                    onChange={e => setResForm({ ...resForm, customerPhone: e.target.value })}
-                    placeholder="+971 50 123 4567"
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold dir-ltr"
-                  />
-                </div>
-
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">تاریخ تحویل (شروع) *</label>
-                    <input
-                      type="date"
-                      required
-                      value={resForm.startDate || ''}
-                      onChange={e => updateResPrice(resForm.carId!, e.target.value, resForm.endDate!)}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                    />
+                {/* 3. DATES & CUSTOM DAILY RATE */}
+                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3.5">
+                  <div className="flex justify-between items-center border-b border-white/10 pb-2.5">
+                    <label className="block text-white/90 font-black text-xs flex items-center gap-1.5">
+                      <Clock size={15} className="text-gold" />
+                      <span>تاریخ تحویل و نرخ روزانه اجاره</span>
+                    </label>
+                    
+                    {/* Days Count Badge */}
+                    <span className="rounded-full bg-gold/15 px-3 py-1 text-[11px] font-black text-gold border border-gold/30">
+                      مدت زمان: {calculatePricing(resForm.carId, resForm.startDate, resForm.endDate, resForm.customDailyRate, resForm.discountType, resForm.discountValue).days} روز
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">تاریخ عودت (پایان) *</label>
-                    <input
-                      type="date"
-                      required
-                      value={resForm.endDate || ''}
-                      onChange={e => updateResPrice(resForm.carId!, resForm.startDate!, e.target.value)}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                    />
-                  </div>
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-white/80 font-bold mb-1">تاریخ تحویل (شروع) *</label>
+                      <input
+                        type="date"
+                        required
+                        value={resForm.startDate || ''}
+                        onChange={e => updateResFormPricing({ startDate: e.target.value })}
+                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      />
+                    </div>
 
-                {/* Price & Deposit */}
-                <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-black/40 border border-white/10">
-                  <div>
-                    <label className="block text-white/60 text-[11px]">مبلغ کل اجاره (محاسبه خودکار):</label>
-                    <div className="flex items-center gap-1.5 text-lg font-black text-emerald-400 mt-1">
-                      {resForm.totalPrice?.toLocaleString()} <OMRIcon size="sm" />
+                    <div>
+                      <label className="block text-white/80 font-bold mb-1">تاریخ عودت (پایان) *</label>
+                      <input
+                        type="date"
+                        required
+                        value={resForm.endDate || ''}
+                        onChange={e => updateResFormPricing({ endDate: e.target.value })}
+                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white/80 font-bold mb-1">نرخ اجاره روزانه (OMR) *</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        required
+                        value={resForm.customDailyRate}
+                        onChange={e => updateResFormPricing({ customDailyRate: Number(e.target.value) })}
+                        className="w-full rounded-xl border border-gold/30 bg-[#07111f] p-2.5 text-gold font-black outline-none focus:border-gold"
+                      />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-white/60 text-[11px] flex items-center gap-1">
-                      مبلغ ودیعه دریافتی <OMRIcon size="sm" />:
-                    </label>
-                    <input
-                      type="number"
-                      value={resForm.depositPaid || 0}
-                      onChange={e => setResForm({ ...resForm, depositPaid: Number(e.target.value) })}
-                      className="mt-1 w-full rounded-lg border border-white/15 bg-[#07111f] p-1.5 text-white outline-none focus:border-gold"
-                    />
+                </div>
+
+                {/* 4. DISCOUNT & DEPOSIT */}
+                <div className="rounded-2xl border border-white/10 bg-[#0f1e37]/70 p-4 space-y-3.5">
+                  <label className="block text-white/90 font-black text-xs flex items-center gap-1.5 border-b border-white/10 pb-2.5">
+                    <ShieldCheck size={15} className="text-emerald-400" />
+                    <span>تخفیف و ودیعه دریافتی</span>
+                  </label>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Discount Box */}
+                    <div className="space-y-2 bg-[#07111f] p-3 rounded-xl border border-white/10">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/80 font-bold text-[11px]">تخفیف اجاره:</span>
+                        {/* Discount Type Toggle */}
+                        <div className="flex bg-black/40 p-0.5 rounded-lg border border-white/10">
+                          <button
+                            type="button"
+                            onClick={() => updateResFormPricing({ discountType: 'amount' })}
+                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                              resForm.discountType === 'amount' ? 'bg-gold text-black' : 'text-white/50 hover:text-white'
+                            }`}
+                          >
+                            مبلغی (OMR)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateResFormPricing({ discountType: 'percent' })}
+                            className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                              resForm.discountType === 'percent' ? 'bg-gold text-black' : 'text-white/50 hover:text-white'
+                            }`}
+                          >
+                            درصدی (%)
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          value={resForm.discountValue}
+                          onChange={e => updateResFormPricing({ discountValue: Number(e.target.value) })}
+                          placeholder="0"
+                          className="w-full rounded-xl border border-white/15 bg-[#0a1220] p-2.5 text-white font-black outline-none focus:border-gold"
+                        />
+                        <span className="absolute left-3 top-2.5 text-white/40 font-bold text-[11px]">
+                          {resForm.discountType === 'percent' ? '%' : 'ر.ع'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Deposit Box (Default 0) */}
+                    <div className="space-y-2 bg-[#07111f] p-3 rounded-xl border border-white/10">
+                      <label className="block text-white/80 font-bold text-[11px]">
+                        مبلغ ودیعه دریافتی (پیش‌فرض: ۰ OMR):
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="0"
+                          value={resForm.depositPaid}
+                          onChange={e => updateResFormPricing({ depositPaid: Number(e.target.value) })}
+                          placeholder="0"
+                          className="w-full rounded-xl border border-white/15 bg-[#0a1220] p-2.5 text-emerald-400 font-black outline-none focus:border-emerald-400"
+                        />
+                        <span className="absolute left-3 top-2.5 text-white/40 font-bold text-[11px]">ر.ع</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/10 flex justify-end gap-2">
+                {/* 5. FINANCIAL BREAKDOWN SUMMARY */}
+                {(() => {
+                  const pricing = calculatePricing(
+                    resForm.carId,
+                    resForm.startDate,
+                    resForm.endDate,
+                    resForm.customDailyRate,
+                    resForm.discountType,
+                    resForm.discountValue
+                  );
+
+                  return (
+                    <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-[#08182b] to-[#0d2238] p-4 space-y-2.5 shadow-xl">
+                      <div className="flex justify-between items-center text-white/70 text-xs">
+                        <span>جمع اجاره پایه ({pricing.days} روز × {pricing.rate} OMR):</span>
+                        <span className="font-bold text-white">{pricing.grossTotal.toLocaleString()} <OMRIcon size="sm" /></span>
+                      </div>
+
+                      {pricing.discountAmount > 0 && (
+                        <div className="flex justify-between items-center text-amber-400 text-xs font-bold">
+                          <span>میزان تخفیف کسر شده ({resForm.discountType === 'percent' ? `${resForm.discountValue}%` : 'مبلغی'}):</span>
+                          <span>- {pricing.discountAmount.toLocaleString()} <OMRIcon size="sm" /></span>
+                        </div>
+                      )}
+
+                      <div className="border-t border-white/10 pt-2 flex justify-between items-center text-sm font-black">
+                        <span className="text-white flex items-center gap-1.5">
+                          <span>مبلغ نهایی اجاره:</span>
+                        </span>
+                        <span className="text-xl font-black text-emerald-400 flex items-center gap-1.5">
+                          {pricing.finalTotal.toLocaleString()} <OMRIcon size="sm" />
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Actions */}
+                <div className="pt-2 border-t border-white/10 flex justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setIsReservationModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold"
+                    className="px-5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold transition-all cursor-pointer"
                   >
                     انصراف
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black shadow-lg shadow-emerald-500/20"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:brightness-110 text-white font-black shadow-lg shadow-emerald-500/25 transition-all cursor-pointer active:scale-95"
                   >
                     تایید و ثبت نهایی رزرو
                   </button>
