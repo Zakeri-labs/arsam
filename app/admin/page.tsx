@@ -1282,7 +1282,7 @@ export default function AdminPage() {
                           {categoryTranslations[service.category || ''] || service.category}
                         </td>
 
-                        <td className="py-4 px-4 font-mono font-bold text-gold">
+                        <td className="py-4 px-4 font-extrabold text-gold tracking-wide">
                           {service.serviceFee || 'ثبت نشده'}
                         </td>
 
