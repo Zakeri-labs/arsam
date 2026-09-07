@@ -15,13 +15,13 @@ export async function GET() {
   }
 }
 
+import { verifyAdminAuth } from '@/lib/auth-check';
+
 export async function POST(request: Request) {
   try {
     // Security check
-    const cookieStore = await cookies();
-    const session = cookieStore.get('ofogh_session');
-
-    if (!session || session.value !== 'authenticated') {
+    const auth = await verifyAdminAuth();
+    if (!auth.authenticated) {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
         { status: 401 }

@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getTransactions, saveTransaction, deleteTransaction } from '@/lib/db-cars';
 import { supabase } from '@/lib/supabase';
 import path from 'path';
+import { verifyAdminAuth } from '@/lib/auth-check';
 
 async function checkAuth() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('ofogh_session');
-  return session && session.value === 'authenticated';
+  const auth = await verifyAdminAuth();
+  return auth.authenticated;
 }
 
 export async function GET() {

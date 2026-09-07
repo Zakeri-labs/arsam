@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getRequests, addRequest, deleteRequest } from '@/lib/db-requests';
 import { supabase } from '@/lib/supabase';
 import path from 'path';
+import { verifyAdminAuth } from '@/lib/auth-check';
 
 // POST (Public) - Submit a new request from landing page form with physical file uploads
 export async function POST(request: Request) {
@@ -81,10 +81,8 @@ export async function POST(request: Request) {
 // GET (Secure, Admin Only) - Get all requests
 export async function GET() {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get('ofogh_session');
-
-    if (!session || session.value !== 'authenticated') {
+    const auth = await verifyAdminAuth();
+    if (!auth.authenticated) {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
         { status: 401 }
@@ -105,10 +103,8 @@ export async function GET() {
 // DELETE (Secure, Admin Only) - Delete a request
 export async function DELETE(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get('ofogh_session');
-
-    if (!session || session.value !== 'authenticated') {
+    const auth = await verifyAdminAuth();
+    if (!auth.authenticated) {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
         { status: 401 }
@@ -146,10 +142,8 @@ export async function DELETE(request: Request) {
 // PATCH (Secure, Admin Only) - Update request workflow, status, source, notes, or files
 export async function PATCH(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get('ofogh_session');
-
-    if (!session || session.value !== 'authenticated') {
+    const auth = await verifyAdminAuth();
+    if (!auth.authenticated) {
       return NextResponse.json(
         { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
         { status: 401 }

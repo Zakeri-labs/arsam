@@ -1,8 +1,9 @@
 {
   "name": "ابوآرسام - Abu Arsam",
-  "short_name": "ابوآرسام",
-  "description": "Premium Business Services in Oman (Muscat)",
-  "start_url": "/",
+  "short_name": "پنل مدیریت",
+  "description": "پنل مدیریت خدمات و ناوگان خودروهای ابوآرسام",
+  "start_url": "/admin",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f1e37",

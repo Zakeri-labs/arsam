@@ -92,6 +92,32 @@ export default function AdminPage() {
     allowedScreens: ('services' | 'requests' | 'qms' | 'customers' | 'cars')[];
   } | null>(null);
 
+  // PWA Install Prompt State
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallPWA = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult: any) => {
+        if (choiceResult.outcome === 'accepted') {
+          toast.success('اپلیکیشن آرسام با موفقیت اضافه شد');
+        }
+        setDeferredPrompt(null);
+      });
+    } else {
+      toast.info('جهت نصب روی موبایل: در منوی مرورگر یا دکمه Share در آیفون، گزینه «Add to Home Screen» / «افزودن به صفحه اصلی» را انتخاب کنید.', { duration: 6000 });
+    }
+  };
+
   // Layout & Navigation State
   const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars'>('services');
   const [carSubTab, setCarSubTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>('calendar');
@@ -1022,10 +1048,20 @@ export default function AdminPage() {
 
         {/* Sidebar Footer / Action buttons */}
         <div className="p-4 border-t border-white/10 space-y-2 select-none">
+          <button
+            onClick={() => {
+              handleInstallPWA();
+              setIsMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-black text-gold bg-gold/10 hover:bg-gold/20 border border-gold/30 transition-all cursor-pointer"
+          >
+            <Plus className="h-4.5 w-4.5 shrink-0" />
+            نصب و افزودن به صفحه اصلی
+          </button>
           <a
             href="/"
             target="_blank"
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
           >
             <ExternalLink className="h-4.5 w-4.5 shrink-0" />
             مشاهده لندینگ پیج

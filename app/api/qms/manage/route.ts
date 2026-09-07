@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getRequests, updateRequestQueue, getRequestsByPhone } from '@/lib/db-requests';
+import { verifyAdminAuth } from '@/lib/auth-check';
 
 async function isAuthenticated(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const session = cookieStore.get('ofogh_session');
-  return !!(session && session.value === 'authenticated');
+  const auth = await verifyAdminAuth();
+  return auth.authenticated;
 }
 
 // GET (Secure, Admin Only) - Get QMS queue items, or files by phone
