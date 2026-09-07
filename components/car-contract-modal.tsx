@@ -11,6 +11,7 @@ export interface ContractData {
   date?: string;
   // Car Info
   carTitle: string;
+  carTitleEn?: string;
   brand?: string;
   modelYear?: string;
   plateNumber: string;
@@ -126,13 +127,13 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
             ref={printRef}
             className="w-full bg-white text-gray-900 rounded-2xl p-6 sm:p-8 shadow-2xl text-xs space-y-5 font-sans leading-relaxed border border-gray-200"
           >
-            {/* Header / Branding */}
+            {/* Header / Branding (Right: Persian | Center: Badge | Left: English) */}
             <div className="flex items-start justify-between border-b-2 border-gray-900 pb-4">
-              {/* English Header */}
-              <div className="text-left font-sans dir-ltr">
-                <h1 className="text-lg font-black tracking-tight text-gray-900">ABU ARSAM SERVICES</h1>
-                <p className="text-[10px] font-bold text-gray-600">Car Rental & Luxury Fleet Operations - Muscat, Oman</p>
-                <p className="text-[9.5px] text-gray-500 mt-0.5">CR No: 1489201 | Tel: +968 91234567</p>
+              {/* Persian Header (Right Side in RTL) */}
+              <div className="text-right">
+                <h1 className="text-lg font-black text-gray-900">خدمات بازرگانی و رنتال ابوآرسام</h1>
+                <p className="text-[10px] font-bold text-gray-600">اجاره انواع خودروهای سدان و SUV در مسقط، سلطنت عُمان</p>
+                <p className="text-[9.5px] text-gray-500 mt-0.5">تاریخ تنظیم: {contractDate}</p>
               </div>
 
               {/* Center Seal Badge */}
@@ -144,17 +145,17 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
                 <div className="text-[10px] font-mono font-bold text-amber-600 mt-1">No: {contractNumber}</div>
               </div>
 
-              {/* Persian Header */}
-              <div className="text-right">
-                <h1 className="text-lg font-black text-gray-900">خدمات بازرگانی و رنتال ابوآرسام</h1>
-                <p className="text-[10px] font-bold text-gray-600">اجاره انواع خودروهای سدان و SUV در مسقط، سلطنت عُمان</p>
-                <p className="text-[9.5px] text-gray-500 mt-0.5">تاریخ تنظیم: {contractDate}</p>
+              {/* English Header (Left Side in LTR) */}
+              <div className="text-left font-sans dir-ltr">
+                <h1 className="text-lg font-black tracking-tight text-gray-900">ABU ARSAM SERVICES</h1>
+                <p className="text-[10px] font-bold text-gray-600">Car Rental & Luxury Fleet Operations - Muscat, Oman</p>
+                <p className="text-[9.5px] text-gray-500 mt-0.5">CR No: 1489201 | Tel: +968 91234567</p>
               </div>
             </div>
 
             {/* PARTIES INFORMATION (2 COLUMNS) */}
             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-300">
-              {/* Persian Side */}
+              {/* Persian Side (Right) */}
               <div className="space-y-1.5 text-right">
                 <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center gap-1">
                   <User size={13} className="text-amber-600" />
@@ -166,9 +167,9 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
                 {contract.customerNationalId && <p><strong className="text-gray-700">کد ملی / گذرنامه:</strong> {contract.customerNationalId}</p>}
               </div>
 
-              {/* English Side */}
+              {/* English Side (Left) */}
               <div className="space-y-1.5 text-left font-sans dir-ltr border-l border-gray-300 pl-3">
-                <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center gap-1">
+                <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center justify-start gap-1 dir-ltr text-left">
                   <User size={13} className="text-amber-600" />
                   <span>Contract Parties Info:</span>
                 </h3>
@@ -181,7 +182,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
 
             {/* VEHICLE & RENTAL DETAILS (2 COLUMNS) */}
             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-300">
-              {/* Persian Vehicle & Financials */}
+              {/* Persian Vehicle & Financials (Right) */}
               <div className="space-y-1.5 text-right">
                 <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center gap-1">
                   <Car size={13} className="text-amber-600" />
@@ -194,13 +195,13 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
                 <p><strong className="text-gray-700">ودیعه ضمانت (Deposit):</strong> <span className="font-bold text-amber-700">{contract.depositPaid.toLocaleString()} OMR</span></p>
               </div>
 
-              {/* English Vehicle & Financials */}
+              {/* English Vehicle & Financials (Left) */}
               <div className="space-y-1.5 text-left font-sans dir-ltr border-l border-gray-300 pl-3">
-                <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center gap-1">
+                <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center justify-start gap-1 dir-ltr text-left">
                   <Car size={13} className="text-amber-600" />
                   <span>Vehicle & Financial Specs:</span>
                 </h3>
-                <p><strong className="text-gray-700">Vehicle Model:</strong> {contract.carTitle}</p>
+                <p><strong className="text-gray-700">Vehicle Model:</strong> {contract.carTitleEn || contract.carTitle}</p>
                 <p><strong className="text-gray-700">Plate No:</strong> <span className="font-mono font-bold bg-gray-200 px-1.5 py-0.5 rounded text-[11px]">{contract.plateNumber}</span></p>
                 <p><strong className="text-gray-700">Period:</strong> {contract.startDate} to {contract.endDate} ({days} Days)</p>
                 <p><strong className="text-gray-700">Total Price:</strong> <span className="font-extrabold text-emerald-700">{contract.totalPrice.toLocaleString()} OMR</span></p>

@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 export interface Car {
   id: string;
   title: string;
+  titleEn?: string;
   brand: string;
   modelYear: string;
   plateNumber: string;
@@ -70,6 +71,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-mg-gt-1',
     title: 'ام‌جی GT 2026 (#1)',
+    titleEn: 'MG GT 2026 (#1)',
     brand: 'MG',
     modelYear: '2026',
     plateNumber: '48123',
@@ -80,7 +82,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/mg-gt-v2.png',
+    imageUrl: '/cars/mg-gt-v2.webp',
     features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'دنده اتوماتیک 7 سرعته', 'سقف پانوراما', 'دوربین 360'],
     notes: 'خودرو نو، صفر کیلومتر 2026 جهت اجاره در مسقط',
     createdAt: new Date().toISOString()
@@ -88,6 +90,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-mg-gt-2',
     title: 'ام‌جی GT 2026 (#2)',
+    titleEn: 'MG GT 2026 (#2)',
     brand: 'MG',
     modelYear: '2026',
     plateNumber: '48124',
@@ -98,7 +101,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'rented',
-    imageUrl: '/cars/mg-gt-v2.png',
+    imageUrl: '/cars/mg-gt-v2.webp',
     features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'صندلی چرم', 'GPS'],
     notes: 'در حال اجاره فعلی',
     createdAt: new Date().toISOString()
@@ -106,6 +109,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-mg-gt-3',
     title: 'ام‌جی GT 2026 (#3)',
+    titleEn: 'MG GT 2026 (#3)',
     brand: 'MG',
     modelYear: '2026',
     plateNumber: '48125',
@@ -116,7 +120,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/mg-gt-v2.png',
+    imageUrl: '/cars/mg-gt-v2.webp',
     features: ['مدل 2026 جدید', 'کروز کنترل هوشمند', 'ترمز پارک برقی'],
     notes: 'آماده رزرو تحویل فوری',
     createdAt: new Date().toISOString()
@@ -126,6 +130,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-mg-5-1',
     title: 'ام‌جی 5 2023',
+    titleEn: 'MG 5 2023',
     brand: 'MG',
     modelYear: '2023',
     plateNumber: '59201',
@@ -136,7 +141,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/mg-5-v2.png',
+    imageUrl: '/cars/mg-5-v2.webp',
     features: ['کم‌مصرف', 'سیستم مولتی‌مدیا', 'بلوتوث', 'دوربین دنده عقب'],
     notes: 'بسیار کم‌مصرف و اقتصادی برای تردد شهری',
     createdAt: new Date().toISOString()
@@ -146,6 +151,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-nissan-sunny-1',
     title: 'نیسان سانی 2023 (#1)',
+    titleEn: 'Nissan Sunny 2023 (#1)',
     brand: 'Nissan',
     modelYear: '2023',
     plateNumber: '12301',
@@ -156,7 +162,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny-v2.png',
+    imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['موتور 1.6L', 'کولر قوی عُمانی', 'سنسور پارک', 'بلوتوث'],
     notes: 'خودرو بسیار تمیز، سرویس شده در نمایندگی nissan',
     createdAt: new Date().toISOString()
@@ -164,6 +170,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-nissan-sunny-2',
     title: 'نیسان سانی 2023 (#2)',
+    titleEn: 'Nissan Sunny 2023 (#2)',
     brand: 'Nissan',
     modelYear: '2023',
     plateNumber: '12302',
@@ -174,7 +181,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny-v2.png',
+    imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['موتور 1.6L', 'کولر قوی عُمانی', 'بسیار کم‌مصرف'],
     notes: 'آماده تحویل در فرودگاه مسقط',
     createdAt: new Date().toISOString()
@@ -182,6 +189,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-nissan-sunny-3',
     title: 'نیسان سانی 2023 (#3)',
+    titleEn: 'Nissan Sunny 2023 (#3)',
     brand: 'Nissan',
     modelYear: '2023',
     plateNumber: '12303',
@@ -192,7 +200,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'rented',
-    imageUrl: '/cars/nissan-sunny-v2.png',
+    imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['ایربگ دوتایی', 'ترمز ABS', 'ورودی AUX/USB'],
     notes: 'در حال اجاره',
     createdAt: new Date().toISOString()
@@ -200,6 +208,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-nissan-sunny-4',
     title: 'نیسان سانی 2024 (#4)',
+    titleEn: 'Nissan Sunny 2024 (#4)',
     brand: 'Nissan',
     modelYear: '2024',
     plateNumber: '12304',
@@ -210,7 +219,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny-v2.png',
+    imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['مدل 2024 صفر', 'کولر دیجیتال', 'کروز کنترل'],
     notes: 'مدل جدید 2024',
     createdAt: new Date().toISOString()
@@ -218,6 +227,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-nissan-sunny-5',
     title: 'نیسان سانی 2024 (#5)',
+    titleEn: 'Nissan Sunny 2024 (#5)',
     brand: 'Nissan',
     modelYear: '2024',
     plateNumber: '12305',
@@ -228,7 +238,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny-v2.png',
+    imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['فرمان هیدرولیک', 'آینه‌های برقی'],
     notes: 'آماده رزرو',
     createdAt: new Date().toISOString()
@@ -236,6 +246,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-nissan-sunny-6',
     title: 'نیسان سانی 2024 (#6)',
+    titleEn: 'Nissan Sunny 2024 (#6)',
     brand: 'Nissan',
     modelYear: '2024',
     plateNumber: '12306',
@@ -246,7 +257,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny-v2.png',
+    imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['شیشه‌ها برقی', 'قفل مرکزی'],
     notes: 'آماده رزرو',
     createdAt: new Date().toISOString()
@@ -256,6 +267,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-nissan-micra-1',
     title: 'نیسان میکرا 2019',
+    titleEn: 'Nissan Micra 2019',
     brand: 'Nissan',
     modelYear: '2019',
     plateNumber: '31920',
@@ -266,7 +278,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 4,
     status: 'available',
-    imageUrl: '/cars/nissan-micra-v2.png',
+    imageUrl: '/cars/nissan-micra-v2.webp',
     features: ['مدل 2019 سفید', 'هاچ‌بک جمع‌وجور', 'پارک بسیار آسان', 'مصرف سوخت فوق‌العاده پایین'],
     notes: 'مناسب‌ترین گزینه اقتصادی برای سفر و تردد شهری',
     createdAt: new Date().toISOString()
@@ -276,6 +288,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-renault-duster-1',
     title: 'رنو داستر 2016',
+    titleEn: 'Renault Duster 2016',
     brand: 'Renault',
     modelYear: '2016',
     plateNumber: '88401',
@@ -286,7 +299,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/renault-duster-2016-v2.png',
+    imageUrl: '/cars/renault-duster-2016-v2.webp',
     features: ['مدل 2016', 'شاسی‌بلند SUV', 'دیفرانسیل قوی', 'صندوق عقب جادار'],
     notes: 'شاسی‌بلند اقتصادی برای سفرهای عُمانی',
     createdAt: new Date().toISOString()
@@ -294,6 +307,7 @@ let memoryCars: Car[] = [
   {
     id: 'car-renault-duster-2',
     title: 'رنو داستر 2019',
+    titleEn: 'Renault Duster 2019',
     brand: 'Renault',
     modelYear: '2019',
     plateNumber: '88402',
@@ -304,7 +318,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/renault-duster-2019-v2.png',
+    imageUrl: '/cars/renault-duster-2019-v2.webp',
     features: ['مدل 2019 سفید', 'شاسی‌بلند SUV', 'رینگ اسپرت', 'سیستم کنترل پایداری ESC'],
     notes: 'شاسی‌بلند سفید مدل 2019',
     createdAt: new Date().toISOString()

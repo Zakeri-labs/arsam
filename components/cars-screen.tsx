@@ -119,6 +119,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       contractNo: cnt.id.toUpperCase(),
       date: cnt.createdAt ? new Date(cnt.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       carTitle: cnt.carTitle,
+      carTitleEn: matchingCar?.titleEn || cnt.carTitle,
       brand: matchingCar?.brand,
       modelYear: matchingCar?.modelYear,
       plateNumber: cnt.plateNumber,
@@ -1070,36 +1071,37 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             </button>
           </div>
 
-          {/* CARS GRID CARDS */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* CARS GRID CARDS (COMPACT & FAST VIEW) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {cars
-              .filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.plateNumber.includes(searchQuery))
+              .filter(c => c.title.toLowerCase().includes(searchQuery.toLowerCase()) || c.plateNumber.includes(searchQuery) || (c.titleEn && c.titleEn.toLowerCase().includes(searchQuery.toLowerCase())))
               .map(car => {
                 const badge = getCarStatusBadge(car.status);
                 return (
                   <div
                     key={car.id}
-                    className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden flex flex-col hover:border-gold/40 transition-all group"
+                    className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-lg overflow-hidden flex flex-col hover:border-gold/40 transition-all group"
                   >
-                    {/* Car Image Header */}
-                    <div className="h-44 bg-black/60 relative overflow-hidden">
+                    {/* Car Image Header (Compact height h-28 sm:h-32) */}
+                    <div className="h-28 sm:h-32 bg-black/60 relative overflow-hidden">
                       {car.imageUrl ? (
                         <img
                           src={car.imageUrl}
                           alt={car.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-white/30 gap-2">
-                          <CarIcon size={40} />
-                          <span className="text-xs">بدون تصویر</span>
+                        <div className="flex flex-col items-center justify-center h-full text-white/30 gap-1">
+                          <CarIcon size={28} />
+                          <span className="text-[10px]">بدون تصویر</span>
                         </div>
                       )}
 
                       {/* Status Badge Tag */}
-                      <div className="absolute top-3 right-3">
+                      <div className="absolute top-2 right-2">
                         <span
-                          className="px-3 py-1 rounded-full text-[10px] font-black border backdrop-blur-md shadow-md"
+                          className="px-2 py-0.5 rounded-full text-[9px] font-black border backdrop-blur-md shadow-sm"
                           style={{ background: badge.bg, color: badge.text, borderColor: badge.border }}
                         >
                           {badge.label}
@@ -1107,53 +1109,53 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       </div>
 
                       {/* Plate Badge */}
-                      <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-gold/40 font-mono text-gold text-xs font-black">
+                      <div className="absolute bottom-2 left-2 bg-black/85 backdrop-blur-md px-1.5 py-0.5 rounded-md border border-gold/40 font-mono text-gold text-[10px] font-bold">
                         {cleanCarPlate(car.plateNumber)}
                       </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                    {/* Content (Compact Padding) */}
+                    <div className="p-2.5 space-y-2 flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="text-base font-black text-white">{cleanCarTitle(car.title)}</h3>
-                          <span className="text-xs text-white/50">{car.brand} {car.modelYear}</span>
+                        <div className="mb-1">
+                          <h3 className="text-xs font-black text-white truncate" title={car.title}>
+                            {cleanCarTitle(car.title)}
+                          </h3>
+                          {car.titleEn && (
+                            <p className="text-[9.5px] text-white/40 font-sans truncate dir-ltr text-right">{car.titleEn}</p>
+                          )}
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 text-[11px] text-white/70 py-2 border-y border-white/5 my-2">
-                          <div>گیربکس: <span className="text-white font-bold">{car.transmission === 'automatic' ? 'اتوماتیک' : 'دستی'}</span></div>
-                          <div>سوخت: <span className="text-white font-bold">{car.fuelType || 'بنزین'}</span></div>
-                          <div>ظرفیت: <span className="text-white font-bold">{car.capacity} نفر</span></div>
+                        <div className="flex items-center justify-between text-[10px] text-white/60 py-1 border-y border-white/5">
+                          <span>{car.transmission === 'automatic' ? 'اتومات' : 'دستی'}</span>
+                          <span>{car.fuelType || 'بنزین'}</span>
+                          <span>{car.modelYear}</span>
                         </div>
-
-                        {car.notes && (
-                          <p className="text-[11px] text-white/50 bg-black/20 p-2 rounded-lg line-clamp-2">
-                            {car.notes}
-                          </p>
-                        )}
                       </div>
 
                       {/* Footer Prices & Actions */}
-                      <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                      <div className="pt-1 border-t border-white/10 flex items-center justify-between">
                         <div>
-                          <p className="text-[10px] text-white/50">اجاره روزانه:</p>
-                          <div className="flex items-center gap-1.5 text-base font-extrabold text-gold">{car.dailyRate.toLocaleString()} <OMRIcon size="sm" /></div>
+                          <p className="text-[9px] text-white/40">روزانه:</p>
+                          <div className="flex items-center gap-1 text-xs sm:text-sm font-extrabold text-gold">
+                            {car.dailyRate.toLocaleString()} <OMRIcon size="sm" />
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleOpenEditCar(car)}
-                            className="p-2 rounded-xl bg-white/5 hover:bg-gold/20 text-white/80 hover:text-gold border border-white/10 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg bg-white/5 hover:bg-gold/20 text-white/80 hover:text-gold border border-white/10 transition-all cursor-pointer"
                             title="ویرایش"
                           >
-                            <Edit3 size={15} />
+                            <Edit3 size={13} />
                           </button>
                           <button
                             onClick={() => handleDeleteCar(car.id)}
-                            className="p-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all cursor-pointer"
+                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all cursor-pointer"
                             title="حذف"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </div>
@@ -1441,16 +1443,27 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
               </div>
 
               <form onSubmit={handleSaveCar} className="space-y-3.5 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-white/80 font-bold mb-1">نام و مدل خودرو *</label>
+                    <label className="block text-white/80 font-bold mb-1">نام خودرو (فارسی) *</label>
                     <input
                       type="text"
                       required
                       value={carForm.title || ''}
                       onChange={e => setCarForm({ ...carForm, title: e.target.value })}
-                      placeholder="مثال: نیسان پاترول 2023"
+                      placeholder="مثال: نیسان سانی 2024"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">نام خودرو (انگلیسی)</label>
+                    <input
+                      type="text"
+                      value={carForm.titleEn || ''}
+                      onChange={e => setCarForm({ ...carForm, titleEn: e.target.value })}
+                      placeholder="مثال: Nissan Sunny 2024"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-sans dir-ltr text-left"
                     />
                   </div>
 
@@ -1869,6 +1882,18 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
                     />
                   </div>
+                </div>
+
+                {/* 4.5 OPTIONAL NOTES */}
+                <div>
+                  <label className="block text-white/80 font-bold text-[11px] mb-1">یادداشت / توضیحات رزرو (اختیاری)</label>
+                  <textarea
+                    rows={2}
+                    value={resForm.notes || ''}
+                    onChange={e => setResForm({ ...resForm, notes: e.target.value })}
+                    placeholder="توضیحات تکمیلی، مکان تحویل یا نکات ویژه مشتری..."
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-xs text-white outline-none focus:border-gold resize-none"
+                  />
                 </div>
 
                 {/* 5. SUMMARY ROW */}
