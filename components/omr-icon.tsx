@@ -13,25 +13,29 @@ export default function OMRIcon({ size = 'md', className = '', showText = false 
     lg: 'h-6 min-w-[32px] px-2 text-xs',
   };
 
+  const svgSizeMap = {
+    sm: 'w-3.5 h-2',
+    md: 'w-4.5 h-2.5',
+    lg: 'w-5.5 h-3',
+  };
+
   return (
     <span
-      className={`inline-flex items-center justify-center gap-1 rounded-md bg-gradient-to-r from-amber-500/20 via-gold/30 to-amber-500/20 text-gold border border-gold/40 font-black tracking-wide select-none shadow-xs ${sizeMap[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-1 rounded-md bg-gradient-to-r from-amber-500/20 via-gold/30 to-amber-500/20 text-gold border border-gold/40 font-black tracking-wide select-none shadow-xs shrink-0 ${sizeMap[size]} ${className}`}
       title="ریال عمان (OMR)"
     >
-      {/* Omani Khanjar / Currency Symbol SVG */}
+      {/* Official Omani Rial Symbol (Central Bank of Oman) */}
       <svg
-        className="w-3.5 h-3.5 fill-current shrink-0 text-gold"
-        viewBox="0 0 24 24"
+        className={`${svgSizeMap[size]} fill-current shrink-0 text-gold`}
+        viewBox="0 0 741.36 415.06"
         fill="currentColor"
       >
-        <path d="M12 2L15 8H9L12 2Z" />
-        <path d="M12 22L9 16H15L12 22Z" />
-        <path d="M2 12L8 9V15L2 12Z" />
-        <path d="M22 12L16 15V9L22 12Z" />
-        <circle cx="12" cy="12" r="3" />
+        <g id="RHhDp6">
+          <path d="M259.9,219.89c-.63-49.2,11.44-95.41,35.76-137.75C331.7,19.4,371.24-.36,439.78,34.99c10.67,5.5,53.6,35.43,57.81,44.54,5.03,10.87-27.48,103.87-29.11,122.3-34.69-37.51-99.37-98.66-154.85-69.62-45.05,23.58-12.02,62.54,11.46,87.68h406.25l-39.14,70.23-289.2-2c-1.11,4.66.87,3.3,2.53,4.6,12.44,9.72,80.97,31.54,94.75,31.54l172.05,1.99-39.49,71.25H10.03l39.24-71.24h272.14l-37.11-36.13H69.33l39.23-70.23h151.33Z"/>
+        </g>
       </svg>
 
-      <span className="font-extrabold dir-rtl">ر.ع.</span>
+      {showText && <span className="font-extrabold dir-rtl">ر.ع.</span>}
     </span>
   );
 }
