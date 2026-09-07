@@ -185,7 +185,7 @@ export default function CarsScreen() {
       const dayName = d.toLocaleDateString('fa-IR', { weekday: 'short' });
       const dayNum = d.getDate();
       const isToday = dateStr === todayStr;
-      const isWeekend = d.getDay() === 5; // Friday
+      const isWeekend = d.getDay() === 5 || d.getDay() === 6; // Friday & Saturday (Oman Weekend)
 
       days.push({ date: d, dateStr, dayName, dayNum, isToday, isWeekend });
     }
@@ -726,7 +726,7 @@ export default function CarsScreen() {
                             <td
                               key={day.dateStr}
                               className={`p-0 text-center border-l border-white/5 relative h-14 ${
-                                day.isToday ? 'bg-gold/[0.04]' : ''
+                                day.isToday ? 'bg-gold/[0.06]' : day.isWeekend ? 'bg-rose-500/[0.04]' : ''
                               }`}
                             >
                               {activeRes ? (
