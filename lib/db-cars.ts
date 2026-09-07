@@ -80,7 +80,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/mg-gt.png',
+    imageUrl: '/cars/mg-gt-v2.png',
     features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'دنده اتوماتیک 7 سرعته', 'سقف پانوراما', 'دوربین 360'],
     notes: 'خودرو نو، صفر کیلومتر 2026 جهت اجاره در مسقط',
     createdAt: new Date().toISOString()
@@ -98,7 +98,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'rented',
-    imageUrl: '/cars/mg-gt.png',
+    imageUrl: '/cars/mg-gt-v2.png',
     features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'صندلی چرم', 'GPS'],
     notes: 'در حال اجاره فعلی',
     createdAt: new Date().toISOString()
@@ -116,7 +116,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/mg-gt.png',
+    imageUrl: '/cars/mg-gt-v2.png',
     features: ['مدل 2026 جدید', 'کروز کنترل هوشمند', 'ترمز پارک برقی'],
     notes: 'آماده رزرو تحویل فوری',
     createdAt: new Date().toISOString()
@@ -136,7 +136,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/mg-5.png',
+    imageUrl: '/cars/mg-5-v2.png',
     features: ['کم‌مصرف', 'سیستم مولتی‌مدیا', 'بلوتوث', 'دوربین دنده عقب'],
     notes: 'بسیار کم‌مصرف و اقتصادی برای تردد شهری',
     createdAt: new Date().toISOString()
@@ -149,14 +149,14 @@ let memoryCars: Car[] = [
     brand: 'Nissan',
     modelYear: '2023',
     plateNumber: '12301',
-    color: 'نقره‌ای',
+    color: 'سفید',
     dailyRate: 10,
     depositAmount: 40,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny.png',
+    imageUrl: '/cars/nissan-sunny-v2.png',
     features: ['موتور 1.6L', 'کولر قوی عُمانی', 'سنسور پارک', 'بلوتوث'],
     notes: 'خودرو بسیار تمیز، سرویس شده در نمایندگی nissan',
     createdAt: new Date().toISOString()
@@ -167,14 +167,14 @@ let memoryCars: Car[] = [
     brand: 'Nissan',
     modelYear: '2023',
     plateNumber: '12302',
-    color: 'نقره‌ای',
+    color: 'سفید',
     dailyRate: 10,
     depositAmount: 40,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny.png',
+    imageUrl: '/cars/nissan-sunny-v2.png',
     features: ['موتور 1.6L', 'کولر قوی عُمانی', 'بسیار کم‌مصرف'],
     notes: 'آماده تحویل در فرودگاه مسقط',
     createdAt: new Date().toISOString()
@@ -192,7 +192,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'rented',
-    imageUrl: '/cars/nissan-sunny.png',
+    imageUrl: '/cars/nissan-sunny-v2.png',
     features: ['ایربگ دوتایی', 'ترمز ABS', 'ورودی AUX/USB'],
     notes: 'در حال اجاره',
     createdAt: new Date().toISOString()
@@ -210,7 +210,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny.png',
+    imageUrl: '/cars/nissan-sunny-v2.png',
     features: ['مدل 2024 صفر', 'کولر دیجیتال', 'کروز کنترل'],
     notes: 'مدل جدید 2024',
     createdAt: new Date().toISOString()
@@ -221,15 +221,15 @@ let memoryCars: Car[] = [
     brand: 'Nissan',
     modelYear: '2024',
     plateNumber: '12305',
-    color: 'نوک مدادی',
+    color: 'سفید',
     dailyRate: 11,
     depositAmount: 40,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny.png',
-    features: ['رنگ نوک مدادی خاص', 'فرمان هیدرولیک', 'آینه‌های برقی'],
+    imageUrl: '/cars/nissan-sunny-v2.png',
+    features: ['فرمان هیدرولیک', 'آینه‌های برقی'],
     notes: 'آماده رزرو',
     createdAt: new Date().toISOString()
   },
@@ -239,15 +239,15 @@ let memoryCars: Car[] = [
     brand: 'Nissan',
     modelYear: '2024',
     plateNumber: '12306',
-    color: 'مشکی',
+    color: 'سفید',
     dailyRate: 11,
     depositAmount: 40,
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/nissan-sunny.png',
-    features: ['مدل 2024 مشکی', 'شیشه‌ها برقی', 'قفل مرکزی'],
+    imageUrl: '/cars/nissan-sunny-v2.png',
+    features: ['شیشه‌ها برقی', 'قفل مرکزی'],
     notes: 'آماده رزرو',
     createdAt: new Date().toISOString()
   },
@@ -266,7 +266,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 4,
     status: 'available',
-    imageUrl: '/cars/nissan-micra.png',
+    imageUrl: '/cars/nissan-micra-v2.png',
     features: ['مدل 2019 سفید', 'هاچ‌بک جمع‌وجور', 'پارک بسیار آسان', 'مصرف سوخت فوق‌العاده پایین'],
     notes: 'مناسب‌ترین گزینه اقتصادی برای سفر و تردد شهری',
     createdAt: new Date().toISOString()
@@ -286,7 +286,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/renault-duster-2016.png',
+    imageUrl: '/cars/renault-duster-2016-v2.png',
     features: ['مدل 2016', 'شاسی‌بلند SUV', 'دیفرانسیل قوی', 'صندوق عقب جادار'],
     notes: 'شاسی‌بلند اقتصادی برای سفرهای عُمانی',
     createdAt: new Date().toISOString()
@@ -304,7 +304,7 @@ let memoryCars: Car[] = [
     fuelType: 'بنزین',
     capacity: 5,
     status: 'available',
-    imageUrl: '/cars/renault-duster-2019.png',
+    imageUrl: '/cars/renault-duster-2019-v2.png',
     features: ['مدل 2019 سفید', 'شاسی‌بلند SUV', 'رینگ اسپرت', 'سیستم کنترل پایداری ESC'],
     notes: 'شاسی‌بلند سفید مدل 2019',
     createdAt: new Date().toISOString()
@@ -360,13 +360,13 @@ export function resolveCarImageUrl(title: string, brand: string, imageUrl?: stri
     return imageUrl;
   }
   const t = (title + ' ' + brand).toLowerCase();
-  if (t.includes('gt') || t.includes('ام‌جی gt') || t.includes('mg gt')) return '/cars/mg-gt.png';
-  if (t.includes('mg 5') || t.includes('ام‌جی 5') || (t.includes('5') && t.includes('mg'))) return '/cars/mg-5.png';
-  if (t.includes('micra') || t.includes('میکرا') || t.includes('bicra')) return '/cars/nissan-micra.png';
-  if ((t.includes('duster') || t.includes('داستر')) && (t.includes('2016') || t.includes('نقره') || t.includes('silver'))) return '/cars/renault-duster-2016.png';
-  if (t.includes('duster') || t.includes('داستر')) return '/cars/renault-duster-2019.png';
-  if (t.includes('sunny') || t.includes('سانی')) return '/cars/nissan-sunny.png';
-  return imageUrl || '/cars/nissan-sunny.png';
+  if (t.includes('gt') || t.includes('ام‌جی gt') || t.includes('mg gt')) return '/cars/mg-gt-v2.png';
+  if (t.includes('mg 5') || t.includes('ام‌جی 5') || (t.includes('5') && t.includes('mg'))) return '/cars/mg-5-v2.png';
+  if (t.includes('micra') || t.includes('میکرا') || t.includes('bicra')) return '/cars/nissan-micra-v2.png';
+  if ((t.includes('duster') || t.includes('داستر')) && (t.includes('2016') || t.includes('نقره') || t.includes('silver'))) return '/cars/renault-duster-2016-v2.png';
+  if (t.includes('duster') || t.includes('داستر')) return '/cars/renault-duster-2019-v2.png';
+  if (t.includes('sunny') || t.includes('سانی')) return '/cars/nissan-sunny-v2.png';
+  return imageUrl || '/cars/nissan-sunny-v2.png';
 }
 
 // --- DISK PERSISTENCE HELPERS ---
