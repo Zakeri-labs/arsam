@@ -129,7 +129,7 @@ let memoryCars: Car[] = [
     brand: 'MG',
     modelYear: '2023',
     plateNumber: '59201',
-    color: 'قرمز',
+    color: 'سفید',
     dailyRate: 12,
     depositAmount: 40,
     transmission: 'automatic',
