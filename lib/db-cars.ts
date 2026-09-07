@@ -377,8 +377,12 @@ function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transac
       const raw = fs.readFileSync(DATA_FILE, 'utf8');
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.cars) && parsed.cars.length > 0) {
+        const resolvedCars = parsed.cars.map((c: Car) => ({
+          ...c,
+          imageUrl: resolveCarImageUrl(c.title, c.brand, c.imageUrl)
+        }));
         return {
-          cars: parsed.cars,
+          cars: resolvedCars,
           reservations: Array.isArray(parsed.reservations) ? parsed.reservations : memoryReservations,
           transactions: Array.isArray(parsed.transactions) ? parsed.transactions : memoryTransactions,
         };
