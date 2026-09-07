@@ -12,6 +12,7 @@ import {
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
 import CustomersScreen from '@/components/customers-screen';
+import CarsScreen from '@/components/cars-screen';
 import CaseModal from '@/components/case-modal';
 import NewRequestModal from '@/components/new-request-modal';
 
@@ -86,7 +87,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
 
   // Layout & Navigation State
-  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers'>('services');
+  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars'>('services');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Dashboard state
@@ -908,6 +909,23 @@ export default function AdminPage() {
           <span className="flex items-center gap-3">
             <Users className="h-4.5 w-4.5 shrink-0 text-amber-400" />
             مدیریت مشتریان (CRM)
+          </span>
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveScreen('cars');
+            setIsMobileMenuOpen(false);
+          }}
+          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+            activeScreen === 'cars'
+              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+              : 'text-white/70 hover:bg-white/5 hover:text-white'
+          }`}
+        >
+          <span className="flex items-center gap-3">
+            <Briefcase className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
+            مدیریت خودروها
           </span>
         </button>
       </nav>
@@ -1874,10 +1892,10 @@ export default function AdminPage() {
             <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
               <div>
                 <h1 className="text-base font-extrabold text-white leading-none">
-                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : 'مدیریت مشتریان (CRM)'}
+                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : activeScreen === 'customers' ? 'مدیریت مشتریان (CRM)' : 'مدیریت و رزرو خودروها'}
                 </h1>
                 <p className="text-[10px] text-white/50 mt-1.5 font-bold">
-                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : 'لیست پرونده‌ها، سوابق و مدارک مشتریان'}
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : activeScreen === 'customers' ? 'لیست پرونده‌ها، سوابق و مدارک مشتریان' : 'تعریف ناوگان، تقویم اشغال خودروها، سیستم رزرو CRM و حسابداری مالی اجاره'}
                 </p>
               </div>
               
@@ -1898,8 +1916,10 @@ export default function AdminPage() {
                 renderRequestsScreen()
               ) : activeScreen === 'qms' ? (
                 <QMSScreen />
-              ) : (
+              ) : activeScreen === 'customers' ? (
                 <CustomersScreen />
+              ) : (
+                <CarsScreen />
               )}
             </div>
           </main>
