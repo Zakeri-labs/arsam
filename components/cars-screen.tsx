@@ -702,25 +702,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
                     return (
                       <tr key={car.id} className="hover:bg-white/[0.02] transition-colors">
-                        {/* Car Name & Plate Column */}
-                        <td className="py-3 px-4 sticky right-0 bg-[#0b172a] z-10 border-l border-white/10 shadow-md">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-14 rounded-lg bg-black/40 border border-white/10 overflow-hidden relative shrink-0">
-                              {car.imageUrl ? (
-                                <img src={car.imageUrl} alt={car.title} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="flex items-center justify-center h-full text-gold"><CarIcon size={20} /></div>
-                              )}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="font-extrabold text-white text-xs truncate">{car.title}</p>
-                              <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className="text-[10px] font-mono text-gold bg-gold/10 px-1.5 py-0.2 rounded border border-gold/20">
-                                  {car.plateNumber}
-                                </span>
-                                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">{car.dailyRate.toLocaleString()} <OMRIcon size="sm" /></span>
-                              </div>
+                        {/* Car Name & Plate Column (Minimal Compact Layout) */}
+                        <td className="py-2.5 px-3 sticky right-0 bg-[#0b172a] z-10 border-l border-white/10 shadow-md">
+                          <div className="min-w-0 flex-1">
+                            <p className="font-extrabold text-white text-xs truncate">{car.title}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[10px] font-mono text-gold bg-gold/10 px-1.5 py-0.2 rounded border border-gold/20">
+                                {car.plateNumber}
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">{car.dailyRate.toLocaleString()} <OMRIcon size="sm" /></span>
                             </div>
                           </div>
                         </td>
