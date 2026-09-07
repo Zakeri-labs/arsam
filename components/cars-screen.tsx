@@ -1379,19 +1379,19 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       {/* ==================================================================== */}
       <AnimatePresence>
         {isCarModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-xl rounded-3xl border border-white/15 bg-[#0b172a] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.98 }}
+              className="w-full max-w-xl rounded-t-3xl sm:rounded-3xl border border-white/15 bg-[#0b172a] p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <h3 className="text-base font-black text-white flex items-center gap-2">
+                <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
                   <CarIcon className="text-gold" size={18} />
                   <span>{editingCar ? 'ویرایش اطلاعات خودرو' : 'تعریف خودرو جدید'}</span>
                 </h3>
-                <button onClick={() => setIsCarModalOpen(false)} className="text-white/40 hover:text-white"><X size={18} /></button>
+                <button onClick={() => setIsCarModalOpen(false)} className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"><X size={18} /></button>
               </div>
 
               <form onSubmit={handleSaveCar} className="space-y-3.5 text-xs">
@@ -1404,7 +1404,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       value={carForm.title || ''}
                       onChange={e => setCarForm({ ...carForm, title: e.target.value })}
                       placeholder="مثال: نیسان پاترول 2023"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1415,13 +1415,13 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       required
                       value={carForm.plateNumber || ''}
                       onChange={e => setCarForm({ ...carForm, plateNumber: e.target.value })}
-                      placeholder="مثال: Dubai - A 84920"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-mono"
+                      placeholder="مثال: 12301"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-mono"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
                       نرخ روزانه <OMRIcon size="sm" /> *
@@ -1431,7 +1431,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       required
                       value={carForm.dailyRate || 0}
                       onChange={e => setCarForm({ ...carForm, dailyRate: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-bold"
                     />
                   </div>
 
@@ -1443,7 +1443,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       type="number"
                       value={carForm.depositAmount || 0}
                       onChange={e => setCarForm({ ...carForm, depositAmount: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1452,7 +1452,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <select
                       value={carForm.transmission || 'automatic'}
                       onChange={e => setCarForm({ ...carForm, transmission: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
                     >
                       <option value="automatic">اتوماتیک</option>
                       <option value="manual">دستی</option>
@@ -1460,7 +1460,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-white/80 font-bold mb-1">برند سازنده</label>
                     <input
@@ -1468,7 +1468,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       value={carForm.brand || ''}
                       onChange={e => setCarForm({ ...carForm, brand: e.target.value })}
                       placeholder="Nissan / Dodge"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1479,7 +1479,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       value={carForm.modelYear || ''}
                       onChange={e => setCarForm({ ...carForm, modelYear: e.target.value })}
                       placeholder="2023"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1488,7 +1488,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <select
                       value={carForm.status || 'available'}
                       onChange={e => setCarForm({ ...carForm, status: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
                     >
                       <option value="available">آماده رزرو</option>
                       <option value="rented">در حال اجاره</option>
@@ -1501,15 +1501,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 {/* Car Photo Upload */}
                 <div>
                   <label className="block text-white/80 font-bold mb-1">عکس خودرو</label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <input
                       type="text"
                       value={carForm.imageUrl || ''}
                       onChange={e => setCarForm({ ...carForm, imageUrl: e.target.value })}
                       placeholder="آدرس URL یا انتخاب تصویر..."
-                      className="flex-1 rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                      className="flex-1 rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
-                    <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white px-3 py-2.5 rounded-xl border border-white/15 flex items-center gap-1.5 font-bold shrink-0">
+                    <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white px-4 py-3 sm:py-2.5 rounded-xl border border-white/15 flex items-center justify-center gap-1.5 font-bold shrink-0">
                       <Upload size={14} />
                       <span>{uploadingCarImg ? 'در حال آپلود...' : 'انتخاب عکس'}</span>
                       <input type="file" accept="image/*" onChange={handleUploadCarImg} className="hidden" />
@@ -1523,21 +1523,21 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     rows={2}
                     value={carForm.notes || ''}
                     onChange={e => setCarForm({ ...carForm, notes: e.target.value })}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                   />
                 </div>
 
-                <div className="pt-3 border-t border-white/10 flex justify-end gap-2">
+                <div className="pt-3 border-t border-white/10 flex flex-col-reverse sm:flex-row justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsCarModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold"
+                    className="w-full sm:w-auto px-4 py-3 sm:py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer"
                   >
                     انصراف
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black shadow-lg shadow-gold/20"
+                    className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black shadow-lg shadow-gold/20 cursor-pointer"
                   >
                     ذخیره اطلاعات خودرو
                   </button>
@@ -1554,12 +1554,12 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       {/* ==================================================================== */}
       <AnimatePresence>
         {isReservationModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
             <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 8 }}
-              className="w-full max-w-xl rounded-2xl border border-white/15 bg-[#0b172a] p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto text-xs"
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.98 }}
+              className="w-full max-w-xl rounded-t-3xl sm:rounded-2xl border border-white/15 bg-[#0b172a] p-4 sm:p-5 shadow-2xl space-y-4 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto text-xs"
             >
               {/* Header */}
               <div className="flex justify-between items-center pb-1">
@@ -1592,7 +1592,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     required
                     value={resForm.carId || ''}
                     onChange={e => updateResFormPricing({ carId: e.target.value })}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] px-3 py-2 text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
                   >
                     {cars.map(c => (
                       <option key={c.id} value={c.id}>
@@ -1619,7 +1619,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                             setResForm(prev => ({ ...prev, customerName: selectedClient.name, customerPhone: selectedClient.phone }));
                           }
                         }}
-                        className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        className={`px-2.5 py-1 sm:py-0.5 rounded text-[10.5px] sm:text-[10px] font-bold transition-all cursor-pointer ${
                           customerSelectMode === 'existing' ? 'bg-gold text-black' : 'text-white/50 hover:text-white'
                         }`}
                       >
@@ -1632,7 +1632,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                           setSelectedClient(null);
                           setResForm(prev => ({ ...prev, customerName: '', customerPhone: '' }));
                         }}
-                        className={`px-2.5 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
+                        className={`px-2.5 py-1 sm:py-0.5 rounded text-[10.5px] sm:text-[10px] font-bold transition-all cursor-pointer ${
                           customerSelectMode === 'new' ? 'bg-emerald-500 text-white' : 'text-white/50 hover:text-white'
                         }`}
                       >
@@ -1646,7 +1646,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       {selectedClient ? (
                         <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl">
                           <div className="flex items-center gap-2">
-                            <span className="font-bold text-white">{selectedClient.name}</span>
+                            <span className="font-bold text-white text-xs">{selectedClient.name}</span>
                             <span className="text-gold font-mono text-[11px] dir-ltr">({selectedClient.phone})</span>
                           </div>
                           <button
@@ -1671,7 +1671,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                             }}
                             onFocus={() => setShowClientDropdown(true)}
                             placeholder="جستجوی نام یا شماره تلفن مشتری..."
-                            className="w-full rounded-xl border border-white/15 bg-[#07111f] px-3 py-2 text-xs text-white placeholder-white/30 outline-none focus:border-gold"
+                            className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white placeholder-white/30 outline-none focus:border-gold"
                           />
 
                           {showClientDropdown && (
@@ -1728,7 +1728,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         value={resForm.customerName || ''}
                         onChange={e => setResForm(prev => ({ ...prev, customerName: e.target.value }))}
                         placeholder="نام و نام خانوادگی *"
-                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                       />
                       <input
                         type="text"
@@ -1736,7 +1736,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         value={resForm.customerPhone || ''}
                         onChange={e => setResForm(prev => ({ ...prev, customerPhone: e.target.value }))}
                         placeholder="شماره تماس (+968 91234567) *"
-                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold dir-ltr"
+                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold dir-ltr"
                       />
                     </div>
                   )}
@@ -1751,7 +1751,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       required
                       value={resForm.startDate || ''}
                       onChange={e => updateResFormPricing({ startDate: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1762,7 +1762,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       required
                       value={resForm.endDate || ''}
                       onChange={e => updateResFormPricing({ endDate: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1775,7 +1775,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       required
                       value={resForm.customDailyRate}
                       onChange={e => updateResFormPricing({ customDailyRate: Number(e.target.value) })}
-                      className="w-full rounded-xl border border-gold/40 bg-[#07111f] p-2 text-xs text-gold font-bold outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-gold/40 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-gold font-bold outline-none focus:border-gold"
                     />
                   </div>
                 </div>
@@ -1789,14 +1789,14 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         <button
                           type="button"
                           onClick={() => updateResFormPricing({ discountType: 'amount' })}
-                          className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold ${resForm.discountType === 'amount' ? 'bg-gold text-black' : 'text-white/50'}`}
+                          className={`px-2 py-0.5 rounded text-[10px] sm:text-[9.5px] font-bold ${resForm.discountType === 'amount' ? 'bg-gold text-black' : 'text-white/50'}`}
                         >
                           مبلغی
                         </button>
                         <button
                           type="button"
                           onClick={() => updateResFormPricing({ discountType: 'percent' })}
-                          className={`px-1.5 py-0.2 rounded text-[9.5px] font-bold ${resForm.discountType === 'percent' ? 'bg-gold text-black' : 'text-white/50'}`}
+                          className={`px-2 py-0.5 rounded text-[10px] sm:text-[9.5px] font-bold ${resForm.discountType === 'percent' ? 'bg-gold text-black' : 'text-white/50'}`}
                         >
                           درصدی
                         </button>
@@ -1808,7 +1808,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       value={resForm.discountValue}
                       onChange={e => updateResFormPricing({ discountValue: Number(e.target.value) })}
                       placeholder="0"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-white outline-none focus:border-gold"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
 
@@ -1820,7 +1820,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       value={resForm.depositPaid}
                       onChange={e => updateResFormPricing({ depositPaid: Number(e.target.value) })}
                       placeholder="0"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2 text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
                     />
                   </div>
                 </div>
@@ -1837,7 +1837,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   );
 
                   return (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 flex items-center justify-between">
+                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
                       <div className="text-white/80 text-[11px]">
                         <span>مدت اجاره: <strong className="text-white">{pricing.days} روز</strong></span>
                         {pricing.discountAmount > 0 && <span className="mr-3 text-amber-400">(تخفیف: {pricing.discountAmount} OMR)</span>}
@@ -1852,17 +1852,17 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 })()}
 
                 {/* Actions */}
-                <div className="pt-2 flex justify-end gap-2">
+                <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-2">
                   <button
                     type="button"
                     onClick={() => setIsReservationModalOpen(false)}
-                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer"
                   >
                     انصراف
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer"
                   >
                     ثبت رزرو
                   </button>
