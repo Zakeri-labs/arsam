@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Car, CarReservation, CarTransaction } from '@/lib/db-cars';
+import OMRIcon from '@/components/omr-icon';
 
 interface CRMClient {
   name: string;
@@ -708,7 +709,7 @@ export default function CarsScreen() {
                                 <span className="text-[10px] font-mono text-gold bg-gold/10 px-1.5 py-0.2 rounded border border-gold/20">
                                   {car.plateNumber}
                                 </span>
-                                <span className="text-[10px] text-emerald-400 font-bold">{car.dailyRate.toLocaleString()} درهم</span>
+                                <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">{car.dailyRate.toLocaleString()} <OMRIcon size="sm" /></span>
                               </div>
                             </div>
                           </div>
@@ -782,8 +783,8 @@ export default function CarsScreen() {
                 <span className="text-gold font-bold">{hoveredRes.car.title}</span>
               </div>
               <p className="text-white/60 text-[11px]">{hoveredRes.res.customerPhone}</p>
-              <div className="text-[10px] text-emerald-400 font-bold pt-1 border-t border-white/10">
-                {hoveredRes.res.startDate} الی {hoveredRes.res.endDate} ({hoveredRes.res.totalPrice.toLocaleString()} درهم)
+              <div className="text-[10px] text-emerald-400 font-bold pt-1 border-t border-white/10 flex items-center gap-1">
+                {hoveredRes.res.startDate} الی {hoveredRes.res.endDate} ({hoveredRes.res.totalPrice.toLocaleString()} <OMRIcon size="sm" />)
               </div>
             </div>
           )}
@@ -827,7 +828,7 @@ export default function CarsScreen() {
                       </div>
                       <div className="flex justify-between font-bold pt-1 border-t border-white/5 text-white">
                         <span>مبلغ کل اجاره:</span>
-                        <span className="text-emerald-400">{res.totalPrice.toLocaleString()} درهم</span>
+                        <span className="inline-flex items-center gap-1 text-emerald-400">{res.totalPrice.toLocaleString()} <OMRIcon size="sm" /></span>
                       </div>
                     </div>
 
@@ -945,7 +946,7 @@ export default function CarsScreen() {
                       <div className="pt-2 border-t border-white/10 flex items-center justify-between">
                         <div>
                           <p className="text-[10px] text-white/50">اجاره روزانه:</p>
-                          <p className="text-base font-extrabold text-gold">{car.dailyRate.toLocaleString()} <span className="text-xs font-normal text-white/60">درهم</span></p>
+                          <div className="flex items-center gap-1.5 text-base font-extrabold text-gold">{car.dailyRate.toLocaleString()} <OMRIcon size="sm" /></div>
                         </div>
 
                         <div className="flex items-center gap-1.5">
@@ -1034,7 +1035,7 @@ export default function CarsScreen() {
                         </span>
                       </td>
                       <td className="py-3.5 px-4 font-bold text-emerald-400">
-                        {cnt.depositAmount.toLocaleString()} درهم (دریافت شده)
+                        <span className="inline-flex items-center gap-1">{cnt.depositAmount.toLocaleString()} <OMRIcon size="sm" /> (دریافت شده)</span>
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
@@ -1063,7 +1064,7 @@ export default function CarsScreen() {
             <div className="bg-[#0b172a] p-4 rounded-2xl border border-gold/30 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-full blur-xl"></div>
               <p className="text-[11px] font-bold text-gold mb-1">مجموع خالص کل درآمد اجاره</p>
-              <p className="text-2xl font-black text-white">{accountingStats.totalIncome.toLocaleString()} <span className="text-xs font-normal text-white/50">درهم</span></p>
+              <div className="flex items-center gap-2 text-2xl font-black text-white">{accountingStats.totalIncome.toLocaleString()} <OMRIcon size="md" /></div>
             </div>
 
             {/* Bank Reza Amare */}
@@ -1072,7 +1073,7 @@ export default function CarsScreen() {
                 <Landmark size={14} />
                 <span>حساب رضا اماره (واریزی)</span>
               </div>
-              <p className="text-xl font-black text-white">{accountingStats.bankReza.toLocaleString()} <span className="text-xs text-white/50">درهم</span></p>
+              <div className="flex items-center gap-1.5 text-xl font-black text-white">{accountingStats.bankReza.toLocaleString()} <OMRIcon size="sm" /></div>
             </div>
 
             {/* Bank Mohammadi */}
@@ -1081,7 +1082,7 @@ export default function CarsScreen() {
                 <Landmark size={14} />
                 <span>حساب محمدی (واریزی)</span>
               </div>
-              <p className="text-xl font-black text-white">{accountingStats.bankMohammadi.toLocaleString()} <span className="text-xs text-white/50">درهم</span></p>
+              <div className="flex items-center gap-1.5 text-xl font-black text-white">{accountingStats.bankMohammadi.toLocaleString()} <OMRIcon size="sm" /></div>
             </div>
 
             {/* Cash Reza Amare */}
@@ -1090,7 +1091,7 @@ export default function CarsScreen() {
                 <Wallet size={14} />
                 <span>نقد به رضا اماره</span>
               </div>
-              <p className="text-xl font-black text-white">{accountingStats.cashReza.toLocaleString()} <span className="text-xs text-white/50">درهم</span></p>
+              <div className="flex items-center gap-1.5 text-xl font-black text-white">{accountingStats.cashReza.toLocaleString()} <OMRIcon size="sm" /></div>
             </div>
 
             {/* Cash Mohammadi */}
@@ -1099,7 +1100,7 @@ export default function CarsScreen() {
                 <Wallet size={14} />
                 <span>نقد به محمدی</span>
               </div>
-              <p className="text-xl font-black text-white">{accountingStats.cashMohammadi.toLocaleString()} <span className="text-xs text-white/50">درهم</span></p>
+              <div className="flex items-center gap-1.5 text-xl font-black text-white">{accountingStats.cashMohammadi.toLocaleString()} <OMRIcon size="sm" /></div>
             </div>
           </div>
 
@@ -1138,7 +1139,9 @@ export default function CarsScreen() {
                     <th className="py-3 px-4">شرح تراکنش</th>
                     <th className="py-3 px-4">مشتری مربوطه</th>
                     <th className="py-3 px-4">نوع تراکنش</th>
-                    <th className="py-3 px-4">مبلغ (درهم)</th>
+                    <th className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1">مبلغ <OMRIcon size="sm" /></span>
+                    </th>
                     <th className="py-3 px-4">حساب / روش پرداخت</th>
                     <th className="py-3 px-4 text-center">رسید / پیوست</th>
                     <th className="py-3 px-4 text-center">عملیات</th>
@@ -1169,7 +1172,9 @@ export default function CarsScreen() {
                             </span>
                           </td>
                           <td className={`py-3 px-4 font-extrabold text-sm ${isNegative ? 'text-rose-400' : 'text-emerald-400'}`}>
-                            {isNegative ? '-' : '+'}{tx.amount.toLocaleString()} درهم
+                            <span className="inline-flex items-center gap-1">
+                              {isNegative ? '-' : '+'}{tx.amount.toLocaleString()} <OMRIcon size="sm" />
+                            </span>
                           </td>
                           <td className="py-3 px-4">
                             <span
@@ -1263,7 +1268,9 @@ export default function CarsScreen() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-white/80 font-bold mb-1">نرخ روزانه (درهم) *</label>
+                    <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
+                      نرخ روزانه <OMRIcon size="sm" /> *
+                    </label>
                     <input
                       type="number"
                       required
@@ -1274,7 +1281,9 @@ export default function CarsScreen() {
                   </div>
 
                   <div>
-                    <label className="block text-white/80 font-bold mb-1">مبلغ ودیعه (درهم)</label>
+                    <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
+                      مبلغ ودیعه <OMRIcon size="sm" />
+                    </label>
                     <input
                       type="number"
                       value={carForm.depositAmount || 0}
@@ -1417,7 +1426,7 @@ export default function CarsScreen() {
                   >
                     {cars.map(c => (
                       <option key={c.id} value={c.id}>
-                        {c.title} ({c.plateNumber}) - {c.dailyRate.toLocaleString()} درهم/روز
+                        {c.title} ({c.plateNumber}) - {c.dailyRate.toLocaleString()} ر.ع/روز
                       </option>
                     ))}
                   </select>
@@ -1520,10 +1529,14 @@ export default function CarsScreen() {
                 <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-black/40 border border-white/10">
                   <div>
                     <label className="block text-white/60 text-[11px]">مبلغ کل اجاره (محاسبه خودکار):</label>
-                    <p className="text-lg font-black text-emerald-400 mt-1">{resForm.totalPrice?.toLocaleString()} درهم</p>
+                    <div className="flex items-center gap-1.5 text-lg font-black text-emerald-400 mt-1">
+                      {resForm.totalPrice?.toLocaleString()} <OMRIcon size="sm" />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-white/60 text-[11px]">مبلغ ودیعه دریافتی (درهم):</label>
+                    <label className="block text-white/60 text-[11px] flex items-center gap-1">
+                      مبلغ ودیعه دریافتی <OMRIcon size="sm" />:
+                    </label>
                     <input
                       type="number"
                       value={resForm.depositPaid || 0}
@@ -1591,7 +1604,9 @@ export default function CarsScreen() {
                 </div>
                 <div className="flex justify-between font-bold text-sm text-emerald-400 pt-2 border-t border-white/10">
                   <span>مبلغ کل:</span>
-                  <span>{selectedResDetails.totalPrice.toLocaleString()} درهم</span>
+                  <span className="inline-flex items-center gap-1">
+                    {selectedResDetails.totalPrice.toLocaleString()} <OMRIcon size="sm" />
+                  </span>
                 </div>
               </div>
 
@@ -1637,7 +1652,9 @@ export default function CarsScreen() {
 
               <form onSubmit={handleSaveTransaction} className="space-y-3.5 text-xs">
                 <div>
-                  <label className="block text-white/80 font-bold mb-1">مبلغ (درهم) *</label>
+                  <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
+                    مبلغ <OMRIcon size="sm" /> *
+                  </label>
                   <input
                     type="number"
                     required
