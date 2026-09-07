@@ -342,11 +342,25 @@ let memoryTransactions: CarTransaction[] = [
   }
 ];
 
+export function resolveCarImageUrl(title: string, brand: string, imageUrl?: string): string {
+  if (imageUrl && imageUrl.startsWith('/cars/')) {
+    return imageUrl;
+  }
+  const t = (title + ' ' + brand).toLowerCase();
+  if (t.includes('gt') || t.includes('ام‌جی gt') || t.includes('mg gt')) return '/cars/mg-gt.png';
+  if (t.includes('mg 5') || t.includes('ام‌جی 5') || (t.includes('5') && t.includes('mg'))) return '/cars/mg-5.png';
+  if (t.includes('sunny') || t.includes('سانی')) return '/cars/nissan-sunny.png';
+  if (t.includes('micra') || t.includes('میکرا') || t.includes('bicra')) return '/cars/nissan-micra.png';
+  if (t.includes('2016') && (t.includes('duster') || t.includes('داستر'))) return '/cars/renault-duster-2016.png';
+  if (t.includes('duster') || t.includes('داستر')) return '/cars/renault-duster-2019.png';
+  return imageUrl || '/cars/nissan-sunny.png';
+}
+
 // --- CARS CRUD ---
 export async function getCars(): Promise<Car[]> {
   try {
     const { data, error } = await supabase.from('cars').select('*').order('created_at', { ascending: false });
-    if (!error && data) {
+    if (!error && data && data.length >= 10) {
       return data.map((item: any) => ({
         id: item.id,
         title: item.title,
@@ -360,7 +374,7 @@ export async function getCars(): Promise<Car[]> {
         fuelType: item.fuel_type,
         capacity: item.capacity,
         status: item.status,
-        imageUrl: item.image_url,
+        imageUrl: resolveCarImageUrl(item.title, item.brand, item.image_url),
         features: item.features || [],
         notes: item.notes,
         createdAt: item.created_at,

@@ -42,9 +42,16 @@ interface CarsScreenProps {
 export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   const [activeTab, setActiveTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>(initialTab || 'calendar');
 
+  const handleTabChange = (tab: 'calendar' | 'fleet' | 'contracts' | 'accounting') => {
+    setActiveTab(tab);
+    try {
+      localStorage.setItem('admin_car_sub_tab', tab);
+    } catch (e) {}
+  };
+
   useEffect(() => {
     if (initialTab) {
-      setActiveTab(initialTab);
+      handleTabChange(initialTab);
     }
   }, [initialTab]);
 
@@ -558,7 +565,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         {/* 4 SUB-PAGES TABS (Responsive Scrollable Pills) */}
         <div className="flex items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1.5 overflow-x-auto w-full md:w-auto max-w-full shrink-0 no-scrollbar">
           <button
-            onClick={() => setActiveTab('calendar')}
+            onClick={() => handleTabChange('calendar')}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'calendar'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
@@ -570,7 +577,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           </button>
 
           <button
-            onClick={() => setActiveTab('fleet')}
+            onClick={() => handleTabChange('fleet')}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'fleet'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
@@ -583,7 +590,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           </button>
 
           <button
-            onClick={() => setActiveTab('contracts')}
+            onClick={() => handleTabChange('contracts')}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'contracts'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
@@ -596,7 +603,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           </button>
 
           <button
-            onClick={() => setActiveTab('accounting')}
+            onClick={() => handleTabChange('accounting')}
             className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'accounting'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'

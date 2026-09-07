@@ -92,6 +92,34 @@ export default function AdminPage() {
   const [isCarMenuOpen, setIsCarMenuOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  // Restore screen & car subtab state from localStorage on page load (F5 refresh resilience)
+  useEffect(() => {
+    try {
+      const savedScreen = localStorage.getItem('admin_active_screen');
+      const savedCarSubTab = localStorage.getItem('admin_car_sub_tab');
+      if (savedScreen && ['services', 'requests', 'qms', 'customers', 'cars'].includes(savedScreen)) {
+        setActiveScreen(savedScreen as any);
+      }
+      if (savedCarSubTab && ['calendar', 'fleet', 'contracts', 'accounting'].includes(savedCarSubTab)) {
+        setCarSubTab(savedCarSubTab as any);
+      }
+    } catch (e) {}
+  }, []);
+
+  const changeActiveScreen = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars') => {
+    setActiveScreen(screen);
+    try {
+      localStorage.setItem('admin_active_screen', screen);
+    } catch (e) {}
+  };
+
+  const changeCarSubTab = (tab: 'calendar' | 'fleet' | 'contracts' | 'accounting') => {
+    setCarSubTab(tab);
+    try {
+      localStorage.setItem('admin_car_sub_tab', tab);
+    } catch (e) {}
+  };
+
   // Dashboard state
   const [db, setDb] = useState<ServicesDB | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -779,7 +807,7 @@ export default function AdminPage() {
       <nav className="flex-1 px-4 py-6 space-y-2">
         <button
           onClick={() => {
-            setActiveScreen('services');
+            changeActiveScreen('services');
             setIsMobileMenuOpen(false);
           }}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -794,7 +822,7 @@ export default function AdminPage() {
 
         <button
           onClick={() => {
-            setActiveScreen('requests');
+            changeActiveScreen('requests');
             setIsMobileMenuOpen(false);
           }}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -818,7 +846,7 @@ export default function AdminPage() {
 
         <button
           onClick={() => {
-            setActiveScreen('qms');
+            changeActiveScreen('qms');
             setIsMobileMenuOpen(false);
           }}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -835,7 +863,7 @@ export default function AdminPage() {
 
         <button
           onClick={() => {
-            setActiveScreen('customers');
+            changeActiveScreen('customers');
             setIsMobileMenuOpen(false);
           }}
           className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -854,7 +882,7 @@ export default function AdminPage() {
         <div className="space-y-1">
           <button
             onClick={() => {
-              setActiveScreen('cars');
+              changeActiveScreen('cars');
               setIsCarMenuOpen(!isCarMenuOpen);
             }}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
@@ -881,8 +909,8 @@ export default function AdminPage() {
               >
                 <button
                   onClick={() => {
-                    setActiveScreen('cars');
-                    setCarSubTab('calendar');
+                    changeActiveScreen('cars');
+                    changeCarSubTab('calendar');
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
@@ -897,8 +925,8 @@ export default function AdminPage() {
 
                 <button
                   onClick={() => {
-                    setActiveScreen('cars');
-                    setCarSubTab('fleet');
+                    changeActiveScreen('cars');
+                    changeCarSubTab('fleet');
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
@@ -913,8 +941,8 @@ export default function AdminPage() {
 
                 <button
                   onClick={() => {
-                    setActiveScreen('cars');
-                    setCarSubTab('contracts');
+                    changeActiveScreen('cars');
+                    changeCarSubTab('contracts');
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
@@ -929,8 +957,8 @@ export default function AdminPage() {
 
                 <button
                   onClick={() => {
-                    setActiveScreen('cars');
-                    setCarSubTab('accounting');
+                    changeActiveScreen('cars');
+                    changeCarSubTab('accounting');
                     setIsMobileMenuOpen(false);
                   }}
                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
