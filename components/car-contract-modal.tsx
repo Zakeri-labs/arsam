@@ -130,7 +130,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
             {/* Header / Branding (Right: Persian | Center: Badge | Left: English) */}
             <div className="flex items-start justify-between border-b-2 border-gray-900 pb-4">
               {/* Persian Header (Right Side in RTL) */}
-              <div className="text-right">
+              <div dir="rtl" className="text-right">
                 <h1 className="text-lg font-black text-gray-900">خدمات بازرگانی و رنتال ابوآرسام</h1>
                 <p className="text-[10px] font-bold text-gray-600">اجاره انواع خودروهای سدان و SUV در مسقط، سلطنت عُمان</p>
                 <p className="text-[9.5px] text-gray-500 mt-0.5">تاریخ تنظیم: {contractDate}</p>
@@ -146,7 +146,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
               </div>
 
               {/* English Header (Left Side in LTR) */}
-              <div className="text-left font-sans dir-ltr">
+              <div dir="ltr" className="text-left font-sans">
                 <h1 className="text-lg font-black tracking-tight text-gray-900">ABU ARSAM SERVICES</h1>
                 <p className="text-[10px] font-bold text-gray-600">Car Rental & Luxury Fleet Operations - Muscat, Oman</p>
                 <p className="text-[9.5px] text-gray-500 mt-0.5">CR No: 1489201 | Tel: +968 91234567</p>
@@ -156,34 +156,34 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
             {/* PARTIES INFORMATION (2 COLUMNS) */}
             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-300">
               {/* Persian Side (Right) */}
-              <div className="space-y-1.5 text-right">
+              <div dir="rtl" className="space-y-1.5 text-right">
                 <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center gap-1">
                   <User size={13} className="text-amber-600" />
                   <span>مشخصات طرفین قرارداد:</span>
                 </h3>
                 <p><strong className="text-gray-700">موجر (شرکت):</strong> خدمات ابوآرسام (مسقط، عمان)</p>
                 <p><strong className="text-gray-700">مستأجر (مشتری):</strong> {contract.customerName}</p>
-                <p><strong className="text-gray-700">شماره تماس:</strong> <span className="font-mono dir-ltr inline-block">{contract.customerPhone}</span></p>
+                <p><strong className="text-gray-700">شماره تماس:</strong> <span dir="ltr" className="font-mono inline-block">{contract.customerPhone}</span></p>
                 {contract.customerNationalId && <p><strong className="text-gray-700">کد ملی / گذرنامه:</strong> {contract.customerNationalId}</p>}
               </div>
 
               {/* English Side (Left) */}
-              <div className="space-y-1.5 text-left font-sans dir-ltr border-l border-gray-300 pl-3">
-                <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center justify-start gap-1 dir-ltr text-left">
-                  <User size={13} className="text-amber-600" />
-                  <span>Contract Parties Info:</span>
+              <div dir="ltr" className="space-y-1.5 text-left font-sans border-l border-gray-300 pl-3">
+                <h3 dir="ltr" className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex flex-row items-center justify-start gap-1 text-left">
+                  <User size={13} className="text-amber-600 shrink-0" />
+                  <span className="font-sans text-left dir-ltr">Contract Parties Info:</span>
                 </h3>
-                <p><strong className="text-gray-700">Lessor:</strong> Abu Arsam Services (Muscat, Oman)</p>
-                <p><strong className="text-gray-700">Lessee (Hirer):</strong> {contract.customerName}</p>
-                <p><strong className="text-gray-700">Mobile Phone:</strong> <span className="font-mono">{contract.customerPhone}</span></p>
-                {contract.customerNationalId && <p><strong className="text-gray-700">Passport / ID:</strong> {contract.customerNationalId}</p>}
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Lessor:</strong> Abu Arsam Services (Muscat, Oman)</p>
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Lessee (Hirer):</strong> <span className="font-bold">{contract.customerName}</span></p>
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Mobile Phone:</strong> <span className="font-mono">{contract.customerPhone}</span></p>
+                {contract.customerNationalId && <p dir="ltr" className="text-left"><strong className="text-gray-700">Passport / ID:</strong> {contract.customerNationalId}</p>}
               </div>
             </div>
 
             {/* VEHICLE & RENTAL DETAILS (2 COLUMNS) */}
             <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3.5 rounded-xl border border-gray-300">
               {/* Persian Vehicle & Financials (Right) */}
-              <div className="space-y-1.5 text-right">
+              <div dir="rtl" className="space-y-1.5 text-right">
                 <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center gap-1">
                   <Car size={13} className="text-amber-600" />
                   <span>مشخصات خودرو و جزئیات اجاره:</span>
@@ -196,16 +196,16 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
               </div>
 
               {/* English Vehicle & Financials (Left) */}
-              <div className="space-y-1.5 text-left font-sans dir-ltr border-l border-gray-300 pl-3">
-                <h3 className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex items-center justify-start gap-1 dir-ltr text-left">
-                  <Car size={13} className="text-amber-600" />
-                  <span>Vehicle & Financial Specs:</span>
+              <div dir="ltr" className="space-y-1.5 text-left font-sans border-l border-gray-300 pl-3">
+                <h3 dir="ltr" className="font-extrabold text-gray-900 text-[11px] border-b border-gray-300 pb-1 mb-1.5 flex flex-row items-center justify-start gap-1 text-left">
+                  <Car size={13} className="text-amber-600 shrink-0" />
+                  <span className="font-sans text-left dir-ltr">Vehicle & Financial Specs:</span>
                 </h3>
-                <p><strong className="text-gray-700">Vehicle Model:</strong> {contract.carTitleEn || contract.carTitle}</p>
-                <p><strong className="text-gray-700">Plate No:</strong> <span className="font-mono font-bold bg-gray-200 px-1.5 py-0.5 rounded text-[11px]">{contract.plateNumber}</span></p>
-                <p><strong className="text-gray-700">Period:</strong> {contract.startDate} to {contract.endDate} ({days} Days)</p>
-                <p><strong className="text-gray-700">Total Price:</strong> <span className="font-extrabold text-emerald-700">{contract.totalPrice.toLocaleString()} OMR</span></p>
-                <p><strong className="text-gray-700">Security Deposit:</strong> <span className="font-bold text-amber-700">{contract.depositPaid.toLocaleString()} OMR</span></p>
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Vehicle Model:</strong> <span className="font-bold">{contract.carTitleEn || contract.carTitle}</span></p>
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Plate No:</strong> <span className="font-mono font-bold bg-gray-200 px-1.5 py-0.5 rounded text-[11px]">{contract.plateNumber}</span></p>
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Period:</strong> {contract.startDate} to {contract.endDate} ({days} Days)</p>
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Total Price:</strong> <span className="font-extrabold text-emerald-700">{contract.totalPrice.toLocaleString()} OMR</span></p>
+                <p dir="ltr" className="text-left"><strong className="text-gray-700">Security Deposit:</strong> <span className="font-bold text-amber-700">{contract.depositPaid.toLocaleString()} OMR</span></p>
               </div>
             </div>
 
@@ -217,7 +217,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
 
               <div className="grid grid-cols-2 gap-4 text-[10.5px] leading-relaxed">
                 {/* PERSIAN TERMS (RIGHT COLUMN) */}
-                <div className="space-y-2.5 text-right">
+                <div dir="rtl" className="space-y-2.5 text-right">
                   <div>
                     <h4 className="font-extrabold text-gray-900">ماده ۱: سقف کیلومتر و سوخت</h4>
                     <p className="text-gray-700">سقف مجاز پیمایش روزانه ۲۰۰ کیلومتر می‌باشد. مازاد بر آن به ازای هر کیلومتر مبلغ ۰.۰۵۰ ریال عمان محاسبه خواهد شد. خودرو با همان میزان سوخت اولیه عودت داده می‌شود.</p>
@@ -245,30 +245,30 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
                 </div>
 
                 {/* ENGLISH TERMS (LEFT COLUMN) */}
-                <div className="space-y-2.5 text-left font-sans dir-ltr border-l border-gray-300 pl-3">
+                <div dir="ltr" className="space-y-2.5 text-left font-sans border-l border-gray-300 pl-3">
                   <div>
-                    <h4 className="font-extrabold text-gray-900">Article 1: Mileage & Fuel Policy</h4>
-                    <p className="text-gray-700">Daily mileage limit is 200 km. Excess mileage will be charged at 0.050 OMR per km. The vehicle must be returned with the same fuel level as delivered.</p>
+                    <h4 dir="ltr" className="font-extrabold text-gray-900 text-left">Article 1: Mileage & Fuel Policy</h4>
+                    <p dir="ltr" className="text-gray-700 text-left">Daily mileage limit is 200 km. Excess mileage will be charged at 0.050 OMR per km. The vehicle must be returned with the same fuel level as delivered.</p>
                   </div>
 
                   <div>
-                    <h4 className="font-extrabold text-gray-900">Article 2: Insurance & Accident Policy</h4>
-                    <p className="text-gray-700">The vehicle is covered under comprehensive insurance. Official Royal Oman Police (ROP) report is mandatory for any claim. Deductible fee applies to hirer.</p>
+                    <h4 dir="ltr" className="font-extrabold text-gray-900 text-left">Article 2: Insurance & Accident Policy</h4>
+                    <p dir="ltr" className="text-gray-700 text-left">The vehicle is covered under comprehensive insurance. Official Royal Oman Police (ROP) report is mandatory for any claim. Deductible fee applies to hirer.</p>
                   </div>
 
                   <div>
-                    <h4 className="font-extrabold text-gray-900">Article 3: Fines & Toll Charges</h4>
-                    <p className="text-gray-700">The hirer is fully liable for all traffic violations, speeding camera tickets, and tolls incurred during the rental period, deducted from the deposit.</p>
+                    <h4 dir="ltr" className="font-extrabold text-gray-900 text-left">Article 3: Fines & Toll Charges</h4>
+                    <p dir="ltr" className="text-gray-700 text-left">The hirer is fully liable for all traffic violations, speeding camera tickets, and tolls incurred during the rental period, deducted from the deposit.</p>
                   </div>
 
                   <div>
-                    <h4 className="font-extrabold text-gray-900">Article 4: Delayed Return</h4>
-                    <p className="text-gray-700">Unapproved delay in returning the vehicle incurs a penalty fee equivalent to a full day rental rate for every 3 hours of delay.</p>
+                    <h4 dir="ltr" className="font-extrabold text-gray-900 text-left">Article 4: Delayed Return</h4>
+                    <p dir="ltr" className="text-gray-700 text-left">Unapproved delay in returning the vehicle incurs a penalty fee equivalent to a full day rental rate for every 3 hours of delay.</p>
                   </div>
 
                   <div>
-                    <h4 className="font-extrabold text-gray-900">Article 5: Jurisdiction</h4>
-                    <p className="text-gray-700">This agreement is governed by the laws of the Sultanate of Oman. The hirer's signature constitutes unconditional acceptance of all terms.</p>
+                    <h4 dir="ltr" className="font-extrabold text-gray-900 text-left">Article 5: Jurisdiction</h4>
+                    <p dir="ltr" className="text-gray-700 text-left">This agreement is governed by the laws of the Sultanate of Oman. The hirer's signature constitutes unconditional acceptance of all terms.</p>
                   </div>
                 </div>
               </div>
