@@ -1,22 +1,52 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'R.amareh@yahoo.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Ofogh@2026';
+export interface AdminUserSession {
+  email: string;
+  name: string;
+  role: 'superadmin' | 'cars_only';
+  allowedScreens: ('services' | 'requests' | 'qms' | 'customers' | 'cars')[];
+}
 
-// check-auth or login post
+const ADMIN_USERS: (AdminUserSession & { password: string })[] = [
+  {
+    email: 'r.amareh@yahoo.com',
+    password: process.env.ADMIN_PASSWORD || 'Ofogh@2026',
+    name: 'رضا اماره (مدیر کل)',
+    role: 'superadmin',
+    allowedScreens: ['services', 'requests', 'qms', 'customers', 'cars'],
+  },
+  {
+    email: 'b.mohammadi.d@gmail.com',
+    password: process.env.CAR_ADMIN_PASSWORD || 'Mohammadi@2026',
+    name: 'محمدی (مدیر ناوگان خودروها)',
+    role: 'cars_only',
+    allowedScreens: ['cars'],
+  },
+];
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { email, password } = body;
 
     const cleanEmail = (email || '').trim().toLowerCase();
-    const cleanAdminEmail = ADMIN_EMAIL.trim().toLowerCase();
     const cleanPassword = (password || '').trim();
 
-    if (cleanEmail === cleanAdminEmail && cleanPassword === ADMIN_PASSWORD.trim()) {
+    const matchedUser = ADMIN_USERS.find(
+      u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword
+    );
+
+    if (matchedUser) {
+      const sessionData: AdminUserSession = {
+        email: matchedUser.email,
+        name: matchedUser.name,
+        role: matchedUser.role,
+        allowedScreens: matchedUser.allowedScreens,
+      };
+
       const cookieStore = await cookies();
-      cookieStore.set('ofogh_session', 'authenticated', {
+      cookieStore.set('ofogh_session', JSON.stringify(sessionData), {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -24,7 +54,7 @@ export async function POST(request: Request) {
         maxAge: 60 * 60 * 24 * 30, // 30 days
       });
 
-      return NextResponse.json({ success: true });
+      return NextResponse.json({ success: true, user: sessionData });
     }
 
     return NextResponse.json({ success: false, error: 'ایمیل یا رمز عبور اشتباه است' });
@@ -41,8 +71,26 @@ export async function GET() {
     const cookieStore = await cookies();
     const session = cookieStore.get('ofogh_session');
 
-    if (session && session.value === 'authenticated') {
-      return NextResponse.json({ authenticated: true });
+    if (session && session.value) {
+      if (session.value === 'authenticated') {
+        // Fallback for legacy session cookies
+        const defaultUser: AdminUserSession = {
+          email: 'r.amareh@yahoo.com',
+          name: 'رضا اماره (مدیر کل)',
+          role: 'superadmin',
+          allowedScreens: ['services', 'requests', 'qms', 'customers', 'cars'],
+        };
+        return NextResponse.json({ authenticated: true, user: defaultUser });
+      }
+
+      try {
+        const parsed = JSON.parse(session.value) as AdminUserSession;
+        if (parsed && parsed.email && Array.isArray(parsed.allowedScreens)) {
+          return NextResponse.json({ authenticated: true, user: parsed });
+        }
+      } catch (e) {
+        return NextResponse.json({ authenticated: true });
+      }
     }
   } catch (e) {
     console.error('Auth GET check error:', e);

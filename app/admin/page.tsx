@@ -85,6 +85,12 @@ export default function AdminPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState<{
+    email: string;
+    name: string;
+    role: 'superadmin' | 'cars_only';
+    allowedScreens: ('services' | 'requests' | 'qms' | 'customers' | 'cars')[];
+  } | null>(null);
 
   // Layout & Navigation State
   const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars'>('services');
@@ -225,6 +231,15 @@ export default function AdminPage() {
       .then(res => res.json())
       .then(data => {
         setIsAuthenticated(!!data.authenticated);
+        if (data.user) {
+          setCurrentUser(data.user);
+          if (Array.isArray(data.user.allowedScreens) && data.user.allowedScreens.length > 0) {
+            const savedScreen = localStorage.getItem('admin_active_screen');
+            if (!savedScreen || !data.user.allowedScreens.includes(savedScreen)) {
+              setActiveScreen(data.user.allowedScreens[0]);
+            }
+          }
+        }
       })
       .catch(() => {
         setIsAuthenticated(false);
@@ -286,7 +301,13 @@ export default function AdminPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setIsAuthenticated(true);
-        toast.success('خوش آمدید! ورود موفقیت‌آمیز بود');
+        if (data.user) {
+          setCurrentUser(data.user);
+          if (Array.isArray(data.user.allowedScreens) && data.user.allowedScreens.length > 0) {
+            setActiveScreen(data.user.allowedScreens[0]);
+          }
+        }
+        toast.success(`خوش آمدید ${data.user?.name || ''}! ورود موفقیت‌آمیز بود`);
       } else {
         toast.error(data.error || 'اطلاعات ورود اشتباه است');
       }
@@ -301,6 +322,7 @@ export default function AdminPage() {
     try {
       await fetch('/api/auth', { method: 'DELETE' });
       setIsAuthenticated(false);
+      setCurrentUser(null);
       setDb(null);
       setRequests(null);
       toast.success('با موفقیت خارج شدید');
@@ -795,210 +817,233 @@ export default function AdminPage() {
   }
 
   // --- 2. ADMIN SIDEBAR NAVIGATION ---
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-navy text-white text-right" dir="rtl">
-      {/* Brand Header */}
-      <div className="p-6 border-b border-white/10 flex flex-col items-center select-none">
-        <h2 className="text-base font-extrabold text-gold leading-none">ابوآرسام</h2>
-        <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest mt-1.5">پنل مدیریت ادمین</span>
-      </div>
+  const SidebarContent = () => {
+    const isAllowed = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars') => {
+      if (!currentUser || !currentUser.allowedScreens) return true;
+      return currentUser.allowedScreens.includes(screen);
+    };
 
-      {/* Navigation Items */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        <button
-          onClick={() => {
-            changeActiveScreen('services');
-            setIsMobileMenuOpen(false);
-          }}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-            activeScreen === 'services'
-              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
-              : 'text-white/70 hover:bg-white/5 hover:text-white'
-          }`}
-        >
-          <Briefcase className="h-4.5 w-4.5 shrink-0" />
-          مدیریت خدمات
-        </button>
-
-        <button
-          onClick={() => {
-            changeActiveScreen('requests');
-            setIsMobileMenuOpen(false);
-          }}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-            activeScreen === 'requests'
-              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
-              : 'text-white/70 hover:bg-white/5 hover:text-white'
-          }`}
-        >
-          <span className="flex items-center gap-3">
-            <Mail className="h-4.5 w-4.5 shrink-0" />
-            درخواست‌های ارسالی
-          </span>
-          {requests && requests.length > 0 && (
-            <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black shrink-0 ${
-              activeScreen === 'requests' ? 'bg-[#0f1e37] text-gold' : 'bg-gold text-[#0f1e37]'
-            }`}>
-              {requests.length}
-            </span>
+    return (
+      <div className="flex flex-col h-full bg-navy text-white text-right" dir="rtl">
+        {/* Brand Header & User Badge */}
+        <div className="p-5 border-b border-white/10 flex flex-col items-center select-none space-y-1 text-center">
+          <h2 className="text-base font-extrabold text-gold leading-none">ابوآرسام</h2>
+          <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">پنل مدیریت ادمین</span>
+          {currentUser && (
+            <div className="mt-2 pt-2 border-t border-white/10 w-full flex flex-col items-center">
+              <span className="text-[11px] font-extrabold text-white">{currentUser.name}</span>
+              <span className="text-[9px] text-emerald-400 font-mono mt-0.5 dir-ltr">{currentUser.email}</span>
+            </div>
           )}
-        </button>
+        </div>
 
-        <button
-          onClick={() => {
-            changeActiveScreen('qms');
-            setIsMobileMenuOpen(false);
-          }}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-            activeScreen === 'qms'
-              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
-              : 'text-white/70 hover:bg-white/5 hover:text-white'
-          }`}
-        >
-          <span className="flex items-center gap-3">
-            <Users className="h-4.5 w-4.5 shrink-0" />
-            مدیریت صف QMS
-          </span>
-        </button>
+        {/* Navigation Items */}
+        <nav className="flex-1 px-4 py-6 space-y-2">
+          {isAllowed('services') && (
+            <button
+              onClick={() => {
+                changeActiveScreen('services');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeScreen === 'services'
+                  ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Briefcase className="h-4.5 w-4.5 shrink-0" />
+              مدیریت خدمات
+            </button>
+          )}
 
-        <button
-          onClick={() => {
-            changeActiveScreen('customers');
-            setIsMobileMenuOpen(false);
-          }}
-          className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-            activeScreen === 'customers'
-              ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
-              : 'text-white/70 hover:bg-white/5 hover:text-white'
-          }`}
-        >
-          <span className="flex items-center gap-3">
-            <Users className="h-4.5 w-4.5 shrink-0 text-amber-400" />
-            مدیریت مشتریان (CRM)
-          </span>
-        </button>
+          {isAllowed('requests') && (
+            <button
+              onClick={() => {
+                changeActiveScreen('requests');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeScreen === 'requests'
+                  ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <Mail className="h-4.5 w-4.5 shrink-0" />
+                درخواست‌های ارسالی
+              </span>
+              {requests && requests.length > 0 && (
+                <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black shrink-0 ${
+                  activeScreen === 'requests' ? 'bg-[#0f1e37] text-gold' : 'bg-gold text-[#0f1e37]'
+                }`}>
+                  {requests.length}
+                </span>
+              )}
+            </button>
+          )}
 
-        {/* CAR MANAGEMENT WITH SUBCATEGORIES */}
-        <div className="space-y-1">
+          {isAllowed('qms') && (
+            <button
+              onClick={() => {
+                changeActiveScreen('qms');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeScreen === 'qms'
+                  ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <Users className="h-4.5 w-4.5 shrink-0" />
+                مدیریت صف QMS
+              </span>
+            </button>
+          )}
+
+          {isAllowed('customers') && (
+            <button
+              onClick={() => {
+                changeActiveScreen('customers');
+                setIsMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeScreen === 'customers'
+                  ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <Users className="h-4.5 w-4.5 shrink-0 text-amber-400" />
+                مدیریت مشتریان (CRM)
+              </span>
+            </button>
+          )}
+
+          {/* CAR MANAGEMENT WITH SUBCATEGORIES */}
+          {isAllowed('cars') && (
+            <div className="space-y-1">
+              <button
+                onClick={() => {
+                  changeActiveScreen('cars');
+                  setIsCarMenuOpen(!isCarMenuOpen);
+                }}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                  activeScreen === 'cars'
+                    ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                    : 'text-white/70 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <span className="flex items-center gap-3">
+                  <Car className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
+                  <span>مدیریت خودروها</span>
+                </span>
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isCarMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Subcategories */}
+              <AnimatePresence>
+                {(isCarMenuOpen || activeScreen === 'cars') && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="pr-3 pl-1 space-y-1 py-1 border-r-2 border-gold/30 mr-3 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => {
+                        changeActiveScreen('cars');
+                        changeCarSubTab('calendar');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                        activeScreen === 'cars' && carSubTab === 'calendar'
+                          ? 'bg-gold/25 text-gold border border-gold/40'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <Calendar size={13} className="text-gold shrink-0" />
+                      <span>تقویم و رزروها</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        changeActiveScreen('cars');
+                        changeCarSubTab('contracts');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                        activeScreen === 'cars' && carSubTab === 'contracts'
+                          ? 'bg-gold/25 text-gold border border-gold/40'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <FileText size={13} className="text-blue-400 shrink-0" />
+                      <span>قراردادها و تحویل</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        changeActiveScreen('cars');
+                        changeCarSubTab('accounting');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                        activeScreen === 'cars' && carSubTab === 'accounting'
+                          ? 'bg-gold/25 text-gold border border-gold/40'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <DollarSign size={13} className="text-emerald-400 shrink-0" />
+                      <span>حسابداری اجاره</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        changeActiveScreen('cars');
+                        changeCarSubTab('fleet');
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
+                        activeScreen === 'cars' && carSubTab === 'fleet'
+                          ? 'bg-gold/25 text-gold border border-gold/40'
+                          : 'text-white/60 hover:bg-white/5 hover:text-white'
+                      }`}
+                    >
+                      <Car size={13} className="text-emerald-400 shrink-0" />
+                      <span>ناوگان خودروها</span>
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </nav>
+
+        {/* Sidebar Footer / Action buttons */}
+        <div className="p-4 border-t border-white/10 space-y-2 select-none">
+          <a
+            href="/"
+            target="_blank"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
+          >
+            <ExternalLink className="h-4.5 w-4.5 shrink-0" />
+            مشاهده لندینگ پیج
+          </a>
           <button
             onClick={() => {
-              changeActiveScreen('cars');
-              setIsCarMenuOpen(!isCarMenuOpen);
+              handleLogout();
+              setIsMobileMenuOpen(false);
             }}
-            className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
-              activeScreen === 'cars'
-                ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
-                : 'text-white/70 hover:bg-white/5 hover:text-white'
-            }`}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer"
           >
-            <span className="flex items-center gap-3">
-              <Car className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
-              <span>مدیریت خودروها</span>
-            </span>
-            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isCarMenuOpen ? 'rotate-180' : ''}`} />
+            <LogOut className="h-4.5 w-4.5 shrink-0" />
+            خروج از حساب
           </button>
-
-          {/* Subcategories */}
-          <AnimatePresence>
-            {(isCarMenuOpen || activeScreen === 'cars') && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="pr-3 pl-1 space-y-1 py-1 border-r-2 border-gold/30 mr-3 overflow-hidden"
-              >
-                <button
-                  onClick={() => {
-                    changeActiveScreen('cars');
-                    changeCarSubTab('calendar');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                    activeScreen === 'cars' && carSubTab === 'calendar'
-                      ? 'bg-gold/25 text-gold border border-gold/40'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <Calendar size={13} className="text-gold shrink-0" />
-                  <span>تقویم و رزروها</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    changeActiveScreen('cars');
-                    changeCarSubTab('contracts');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                    activeScreen === 'cars' && carSubTab === 'contracts'
-                      ? 'bg-gold/25 text-gold border border-gold/40'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <FileText size={13} className="text-blue-400 shrink-0" />
-                  <span>قراردادها و تحویل</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    changeActiveScreen('cars');
-                    changeCarSubTab('accounting');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                    activeScreen === 'cars' && carSubTab === 'accounting'
-                      ? 'bg-gold/25 text-gold border border-gold/40'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <DollarSign size={13} className="text-emerald-400 shrink-0" />
-                  <span>حسابداری اجاره</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    changeActiveScreen('cars');
-                    changeCarSubTab('fleet');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
-                    activeScreen === 'cars' && carSubTab === 'fleet'
-                      ? 'bg-gold/25 text-gold border border-gold/40'
-                      : 'text-white/60 hover:bg-white/5 hover:text-white'
-                  }`}
-                >
-                  <Car size={13} className="text-emerald-400 shrink-0" />
-                  <span>ناوگان خودروها</span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
-      </nav>
-
-      {/* Sidebar Footer / Action buttons */}
-      <div className="p-4 border-t border-white/10 space-y-2 select-none">
-        <a
-          href="/"
-          target="_blank"
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-white/60 hover:bg-white/5 hover:text-white transition-all"
-        >
-          <ExternalLink className="h-4.5 w-4.5 shrink-0" />
-          مشاهده لندینگ پیج
-        </a>
-        <button
-          onClick={() => {
-            handleLogout();
-            setIsMobileMenuOpen(false);
-          }}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all cursor-pointer"
-        >
-          <LogOut className="h-4.5 w-4.5 shrink-0" />
-          خروج از حساب
-        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   // --- 3. REQUESTS SCREEN RENDER (Rich Dark Navy Cards + Workflow Modal) ---
   const renderRequestsScreen = () => {
