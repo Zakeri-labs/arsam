@@ -1,5 +1,3 @@
-import fs from 'fs';
-import path from 'path';
 import { supabase } from './supabase';
 
 export interface Car {
@@ -372,10 +370,28 @@ export function resolveCarImageUrl(title: string, brand: string, imageUrl?: stri
 }
 
 // --- DISK PERSISTENCE HELPERS ---
-const DATA_FILE = path.join(process.cwd(), 'data', 'cars-db.json');
+function getFsAndPath() {
+  if (typeof window !== 'undefined') return { fs: null, path: null };
+  try {
+    const _req = eval('require');
+    const fs = _req('fs');
+    const path = _req('path');
+    return { fs, path };
+  } catch (e) {
+    return { fs: null, path: null };
+  }
+}
+
+function getDataFilePath() {
+  const { path } = getFsAndPath();
+  if (!path) return '';
+  return path.join(process.cwd(), 'data', 'cars-db.json');
+}
 
 function ensureDataDirExists() {
   try {
+    const { fs, path } = getFsAndPath();
+    if (!fs || !path) return;
     const dir = path.join(process.cwd(), 'data');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -385,9 +401,11 @@ function ensureDataDirExists() {
 
 function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[] } {
   try {
+    const { fs } = getFsAndPath();
+    const dataFile = getDataFilePath();
     ensureDataDirExists();
-    if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    if (fs && dataFile && fs.existsSync(dataFile)) {
+      const raw = fs.readFileSync(dataFile, 'utf8');
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.cars) && parsed.cars.length > 0) {
         const resolvedCars = parsed.cars.map((c: Car) => ({
@@ -418,8 +436,11 @@ function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transac
 
 function saveDiskStore(store: { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[] }) {
   try {
+    const { fs } = getFsAndPath();
+    const dataFile = getDataFilePath();
+    if (!fs || !dataFile) return;
     ensureDataDirExists();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
+    fs.writeFileSync(dataFile, JSON.stringify(store, null, 2), 'utf8');
   } catch (err) {
     console.warn('Error writing cars-db.json:', err);
   }
