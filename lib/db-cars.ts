@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { supabase } from './supabase';
 
 export interface Car {
@@ -356,12 +358,61 @@ export function resolveCarImageUrl(title: string, brand: string, imageUrl?: stri
   return imageUrl || '/cars/nissan-sunny.png';
 }
 
+// --- DISK PERSISTENCE HELPERS ---
+const DATA_FILE = path.join(process.cwd(), 'data', 'cars-db.json');
+
+function ensureDataDirExists() {
+  try {
+    const dir = path.join(process.cwd(), 'data');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (err) {}
+}
+
+function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[] } {
+  try {
+    ensureDataDirExists();
+    if (fs.existsSync(DATA_FILE)) {
+      const raw = fs.readFileSync(DATA_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.cars) && parsed.cars.length > 0) {
+        return {
+          cars: parsed.cars,
+          reservations: Array.isArray(parsed.reservations) ? parsed.reservations : memoryReservations,
+          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : memoryTransactions,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('Error reading cars-db.json:', err);
+  }
+
+  const initial = {
+    cars: memoryCars,
+    reservations: memoryReservations,
+    transactions: memoryTransactions,
+  };
+  saveDiskStore(initial);
+  return initial;
+}
+
+function saveDiskStore(store: { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[] }) {
+  try {
+    ensureDataDirExists();
+    fs.writeFileSync(DATA_FILE, JSON.stringify(store, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('Error writing cars-db.json:', err);
+  }
+}
+
 // --- CARS CRUD ---
 export async function getCars(): Promise<Car[]> {
+  const store = loadDiskStore();
   try {
     const { data, error } = await supabase.from('cars').select('*').order('created_at', { ascending: false });
-    if (!error && data && data.length >= 10) {
-      return data.map((item: any) => ({
+    if (!error && data && data.length > 0) {
+      const dbCars = data.map((item: any) => ({
         id: item.id,
         title: item.title,
         brand: item.brand,
@@ -380,37 +431,48 @@ export async function getCars(): Promise<Car[]> {
         createdAt: item.created_at,
         updatedAt: item.updated_at,
       }));
+      store.cars = dbCars;
+      saveDiskStore(store);
+      return dbCars;
     }
-  } catch (err) {
-    console.warn('Supabase cars table fetch failed, using memory fallback:', err);
-  }
-  return memoryCars;
+  } catch (err) {}
+  return store.cars;
 }
 
 export async function saveCar(carData: Partial<Car>): Promise<Car> {
+  const store = loadDiskStore();
   const isEdit = Boolean(carData.id);
   const id = carData.id || 'car-' + Math.random().toString(36).substring(2, 9);
-  
   const now = new Date().toISOString();
+
+  const existing = store.cars.find(c => c.id === id);
+
   const car: Car = {
     id,
-    title: carData.title || 'خودرو بدون نام',
-    brand: carData.brand || '',
-    modelYear: carData.modelYear || '',
-    plateNumber: carData.plateNumber || '',
-    color: carData.color || '',
-    dailyRate: Number(carData.dailyRate) || 0,
-    depositAmount: Number(carData.depositAmount) || 0,
-    transmission: carData.transmission || 'automatic',
-    fuelType: carData.fuelType || 'بنزین',
-    capacity: carData.capacity || 5,
-    status: carData.status || 'available',
-    imageUrl: carData.imageUrl || '',
-    features: carData.features || [],
-    notes: carData.notes || '',
-    createdAt: carData.createdAt || now,
+    title: carData.title ?? existing?.title ?? 'خودرو بدون نام',
+    brand: carData.brand ?? existing?.brand ?? '',
+    modelYear: carData.modelYear ?? existing?.modelYear ?? '',
+    plateNumber: carData.plateNumber ?? existing?.plateNumber ?? '',
+    color: carData.color ?? existing?.color ?? '',
+    dailyRate: carData.dailyRate !== undefined ? Number(carData.dailyRate) : (existing?.dailyRate || 0),
+    depositAmount: carData.depositAmount !== undefined ? Number(carData.depositAmount) : (existing?.depositAmount || 0),
+    transmission: carData.transmission ?? existing?.transmission ?? 'automatic',
+    fuelType: carData.fuelType ?? existing?.fuelType ?? 'بنزین',
+    capacity: carData.capacity !== undefined ? Number(carData.capacity) : (existing?.capacity || 5),
+    status: carData.status ?? existing?.status ?? 'available',
+    imageUrl: carData.imageUrl ?? existing?.imageUrl ?? '',
+    features: carData.features ?? existing?.features ?? [],
+    notes: carData.notes ?? existing?.notes ?? '',
+    createdAt: existing?.createdAt || carData.createdAt || now,
     updatedAt: now
   };
+
+  if (isEdit && store.cars.some(c => c.id === id)) {
+    store.cars = store.cars.map(c => c.id === id ? car : c);
+  } else {
+    store.cars.unshift(car);
+  }
+  saveDiskStore(store);
 
   try {
     const dbRow = {
@@ -431,35 +493,29 @@ export async function saveCar(carData: Partial<Car>): Promise<Car> {
       notes: car.notes,
       updated_at: now
     };
+    await supabase.from('cars').upsert(dbRow, { onConflict: 'id' });
+  } catch (err) {}
 
-    const { error } = await supabase.from('cars').upsert(dbRow, { onConflict: 'id' });
-    if (error) console.warn('Supabase car save error, saving to memory fallback:', error);
-  } catch (err) {
-    console.warn('Supabase car save exception:', err);
-  }
-
-  if (isEdit) {
-    memoryCars = memoryCars.map(c => c.id === id ? car : c);
-  } else {
-    memoryCars.unshift(car);
-  }
   return car;
 }
 
 export async function deleteCar(id: string): Promise<boolean> {
+  const store = loadDiskStore();
+  store.cars = store.cars.filter(c => c.id !== id);
+  saveDiskStore(store);
   try {
     await supabase.from('cars').delete().eq('id', id);
   } catch (err) {}
-  memoryCars = memoryCars.filter(c => c.id !== id);
   return true;
 }
 
 // --- RESERVATIONS CRUD ---
 export async function getReservations(): Promise<CarReservation[]> {
+  const store = loadDiskStore();
   try {
     const { data, error } = await supabase.from('car_reservations').select('*').order('created_at', { ascending: false });
-    if (!error && data) {
-      return data.map((item: any) => ({
+    if (!error && data && data.length > 0) {
+      const dbRes = data.map((item: any) => ({
         id: item.id,
         carId: item.car_id,
         carTitle: item.car_title,
@@ -474,33 +530,44 @@ export async function getReservations(): Promise<CarReservation[]> {
         notes: item.notes,
         createdAt: item.created_at,
       }));
+      store.reservations = dbRes;
+      saveDiskStore(store);
+      return dbRes;
     }
-  } catch (err) {
-    console.warn('Supabase reservations fetch error:', err);
-  }
-  return memoryReservations;
+  } catch (err) {}
+  return store.reservations;
 }
 
 export async function saveReservation(resData: Partial<CarReservation>): Promise<CarReservation> {
+  const store = loadDiskStore();
   const isEdit = Boolean(resData.id);
   const id = resData.id || 'res-' + Math.random().toString(36).substring(2, 9);
   const now = new Date().toISOString();
 
+  const existing = store.reservations.find(r => r.id === id);
+
   const reservation: CarReservation = {
     id,
-    carId: resData.carId || '',
-    carTitle: resData.carTitle || '',
-    customerName: resData.customerName || '',
-    customerPhone: resData.customerPhone || '',
-    customerNationalId: resData.customerNationalId || '',
-    startDate: resData.startDate || new Date().toISOString().split('T')[0],
-    endDate: resData.endDate || new Date().toISOString().split('T')[0],
-    totalPrice: Number(resData.totalPrice) || 0,
-    depositPaid: Number(resData.depositPaid) || 0,
-    status: resData.status || 'confirmed',
-    notes: resData.notes || '',
-    createdAt: resData.createdAt || now,
+    carId: resData.carId ?? existing?.carId ?? '',
+    carTitle: resData.carTitle ?? existing?.carTitle ?? '',
+    customerName: resData.customerName ?? existing?.customerName ?? '',
+    customerPhone: resData.customerPhone ?? existing?.customerPhone ?? '',
+    customerNationalId: resData.customerNationalId ?? existing?.customerNationalId ?? '',
+    startDate: resData.startDate ?? existing?.startDate ?? new Date().toISOString().split('T')[0],
+    endDate: resData.endDate ?? existing?.endDate ?? new Date().toISOString().split('T')[0],
+    totalPrice: resData.totalPrice !== undefined ? Number(resData.totalPrice) : (existing?.totalPrice || 0),
+    depositPaid: resData.depositPaid !== undefined ? Number(resData.depositPaid) : (existing?.depositPaid || 0),
+    status: resData.status ?? existing?.status ?? 'confirmed',
+    notes: resData.notes ?? existing?.notes ?? '',
+    createdAt: existing?.createdAt || resData.createdAt || now,
   };
+
+  if (isEdit && store.reservations.some(r => r.id === id)) {
+    store.reservations = store.reservations.map(r => r.id === id ? reservation : r);
+  } else {
+    store.reservations.unshift(reservation);
+  }
+  saveDiskStore(store);
 
   try {
     const dbRow = {
@@ -517,33 +584,29 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
       status: reservation.status,
       notes: reservation.notes,
     };
-
-    const { error } = await supabase.from('car_reservations').upsert(dbRow, { onConflict: 'id' });
-    if (error) console.warn('Supabase reservation save error:', error);
+    await supabase.from('car_reservations').upsert(dbRow, { onConflict: 'id' });
   } catch (err) {}
 
-  if (isEdit) {
-    memoryReservations = memoryReservations.map(r => r.id === id ? reservation : r);
-  } else {
-    memoryReservations.unshift(reservation);
-  }
   return reservation;
 }
 
 export async function deleteReservation(id: string): Promise<boolean> {
+  const store = loadDiskStore();
+  store.reservations = store.reservations.filter(r => r.id !== id);
+  saveDiskStore(store);
   try {
     await supabase.from('car_reservations').delete().eq('id', id);
   } catch (err) {}
-  memoryReservations = memoryReservations.filter(r => r.id !== id);
   return true;
 }
 
 // --- TRANSACTIONS CRUD ---
 export async function getTransactions(): Promise<CarTransaction[]> {
+  const store = loadDiskStore();
   try {
     const { data, error } = await supabase.from('car_transactions').select('*').order('created_at', { ascending: false });
-    if (!error && data) {
-      return data.map((item: any) => ({
+    if (!error && data && data.length > 0) {
+      const dbTx = data.map((item: any) => ({
         id: item.id,
         reservationId: item.reservation_id,
         carId: item.car_id,
@@ -557,32 +620,43 @@ export async function getTransactions(): Promise<CarTransaction[]> {
         transactionDate: item.transaction_date,
         createdAt: item.created_at,
       }));
+      store.transactions = dbTx;
+      saveDiskStore(store);
+      return dbTx;
     }
-  } catch (err) {
-    console.warn('Supabase transactions fetch error:', err);
-  }
-  return memoryTransactions;
+  } catch (err) {}
+  return store.transactions;
 }
 
 export async function saveTransaction(txData: Partial<CarTransaction>): Promise<CarTransaction> {
+  const store = loadDiskStore();
   const isEdit = Boolean(txData.id);
   const id = txData.id || 'tx-' + Math.random().toString(36).substring(2, 9);
   const now = new Date().toISOString();
 
+  const existing = store.transactions.find(t => t.id === id);
+
   const transaction: CarTransaction = {
     id,
-    reservationId: txData.reservationId || '',
-    carId: txData.carId || '',
-    customerName: txData.customerName || '',
-    amount: Number(txData.amount) || 0,
-    type: txData.type || 'rent_fee',
-    paymentMethod: txData.paymentMethod || 'bank_reza',
-    description: txData.description || '',
-    receiptFileUrl: txData.receiptFileUrl || '',
-    receiptFileName: txData.receiptFileName || '',
-    transactionDate: txData.transactionDate || new Date().toISOString().split('T')[0],
-    createdAt: txData.createdAt || now,
+    reservationId: txData.reservationId ?? existing?.reservationId ?? '',
+    carId: txData.carId ?? existing?.carId ?? '',
+    customerName: txData.customerName ?? existing?.customerName ?? '',
+    amount: txData.amount !== undefined ? Number(txData.amount) : (existing?.amount || 0),
+    type: txData.type ?? existing?.type ?? 'rent_fee',
+    paymentMethod: txData.paymentMethod ?? existing?.paymentMethod ?? 'bank_reza',
+    description: txData.description ?? existing?.description ?? '',
+    receiptFileUrl: txData.receiptFileUrl ?? existing?.receiptFileUrl ?? '',
+    receiptFileName: txData.receiptFileName ?? existing?.receiptFileName ?? '',
+    transactionDate: txData.transactionDate ?? existing?.transactionDate ?? new Date().toISOString().split('T')[0],
+    createdAt: existing?.createdAt || txData.createdAt || now,
   };
+
+  if (isEdit && store.transactions.some(t => t.id === id)) {
+    store.transactions = store.transactions.map(t => t.id === id ? transaction : t);
+  } else {
+    store.transactions.unshift(transaction);
+  }
+  saveDiskStore(store);
 
   try {
     const dbRow = {
@@ -598,23 +672,18 @@ export async function saveTransaction(txData: Partial<CarTransaction>): Promise<
       receipt_file_name: transaction.receiptFileName,
       transaction_date: transaction.transactionDate,
     };
-
-    const { error } = await supabase.from('car_transactions').upsert(dbRow, { onConflict: 'id' });
-    if (error) console.warn('Supabase transaction save error:', error);
+    await supabase.from('car_transactions').upsert(dbRow, { onConflict: 'id' });
   } catch (err) {}
 
-  if (isEdit) {
-    memoryTransactions = memoryTransactions.map(t => t.id === id ? transaction : t);
-  } else {
-    memoryTransactions.unshift(transaction);
-  }
   return transaction;
 }
 
 export async function deleteTransaction(id: string): Promise<boolean> {
+  const store = loadDiskStore();
+  store.transactions = store.transactions.filter(t => t.id !== id);
+  saveDiskStore(store);
   try {
     await supabase.from('car_transactions').delete().eq('id', id);
   } catch (err) {}
-  memoryTransactions = memoryTransactions.filter(t => t.id !== id);
   return true;
 }
