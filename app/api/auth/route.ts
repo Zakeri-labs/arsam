@@ -10,7 +10,11 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password } = body;
 
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanAdminEmail = ADMIN_EMAIL.trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    if (cleanEmail === cleanAdminEmail && cleanPassword === ADMIN_PASSWORD.trim()) {
       const cookieStore = await cookies();
       cookieStore.set('ofogh_session', 'authenticated', {
         httpOnly: true,
@@ -23,10 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json(
-      { success: false, error: 'ایمیل یا رمز عبور اشتباه است' },
-      { status: 401 }
-    );
+    return NextResponse.json({ success: false, error: 'ایمیل یا رمز عبور اشتباه است' });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'خطایی در سرور رخ داده است' },
