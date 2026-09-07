@@ -1596,7 +1596,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   >
                     {cars.map(c => (
                       <option key={c.id} value={c.id}>
-                        {cleanCarTitle(c.title)} ({cleanCarPlate(c.plateNumber)}) - پایه: {c.dailyRate.toLocaleString()} OMR/روز
+                        {cleanCarTitle(c.title)}
                       </option>
                     ))}
                   </select>
