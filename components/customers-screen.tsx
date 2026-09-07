@@ -217,9 +217,9 @@ export default function CustomersScreen() {
           <span className="text-xs font-bold">درحال دریافت اطلاعات مشتریان...</span>
         </div>
       ) : filteredCustomers.length > 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse text-xs table-fixed">
+        <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden w-full">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-[650px] text-right border-collapse text-xs">
               <thead>
                 <tr className="border-b border-white/10 text-gold font-extrabold text-[11px] bg-[#0f1e37]/90">
                   <th className="py-3.5 px-4 w-[22%]">مشتری</th>

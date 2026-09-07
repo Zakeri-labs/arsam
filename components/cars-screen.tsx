@@ -491,57 +491,57 @@ export default function CarsScreen() {
   };
 
   return (
-    <div className="space-y-5 animate-fadeIn text-white font-sans" dir="rtl">
+    <div className="space-y-5 animate-fadeIn text-white font-sans w-full max-w-full overflow-x-hidden min-w-0" dir="rtl">
 
       {/* ── TOP ACTION HEADER & SUB-TABS NAVIGATION ── */}
-      <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-2xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shadow-lg shadow-gold/10">
-            <CarIcon size={24} />
+      <div className="bg-[#0b172a] p-3.5 sm:p-4 rounded-2xl border border-white/10 shadow-xl flex flex-col md:flex-row md:items-center md:justify-between gap-4 w-full min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-gold/15 text-gold border border-gold/30 flex items-center justify-center shadow-lg shadow-gold/10 shrink-0">
+            <CarIcon size={22} />
           </div>
-          <div>
-            <h1 className="text-lg font-black text-white tracking-wide">مدیریت و رزرو خودروها (Car Rental System)</h1>
-            <p className="text-xs text-white/50">مدیریت کامل ناوگان، تقویم اشغال روزانه، سیستم رزرو CRM و حسابداری مالی اجاره</p>
+          <div className="min-w-0">
+            <h1 className="text-sm sm:text-lg font-black text-white tracking-wide truncate">مدیریت و رزرو خودروها (Car Rental System)</h1>
+            <p className="text-[10px] sm:text-xs text-white/50 truncate">مدیریت کامل ناوگان، تقویم اشغال روزانه، سیستم رزرو CRM و حسابداری مالی اجاره</p>
           </div>
         </div>
 
-        {/* TAB BUTTONS */}
-        <div className="flex items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1 self-start md:self-auto">
+        {/* TAB BUTTONS (Scrollable on Mobile) */}
+        <div className="flex items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1 overflow-x-auto w-full md:w-auto max-w-full shrink-0 no-scrollbar">
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'calendar'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
-            <CalendarIcon size={15} />
+            <CalendarIcon size={14} />
             <span>تقویم و رزروها</span>
           </button>
 
           <button
             onClick={() => setActiveTab('fleet')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'fleet'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
-            <CarIcon size={15} />
-            <span>تعریف و ناوگان خودروها</span>
+            <CarIcon size={14} />
+            <span>ناوگان خودروها</span>
             <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{cars.length}</span>
           </button>
 
           <button
             onClick={() => setActiveTab('accounting')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-black transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
               activeTab === 'accounting'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
-            <DollarSign size={15} />
-            <span>حسابداری اجاره خودرو</span>
+            <DollarSign size={14} />
+            <span>حسابداری اجاره</span>
           </button>
         </div>
       </div>

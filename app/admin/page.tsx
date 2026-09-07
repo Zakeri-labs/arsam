@@ -1215,7 +1215,7 @@ export default function AdminPage() {
               <select
                 value={selectedCategoryFilter}
                 onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                className="rounded-xl border border-white/10 bg-[#0f1e37] px-3 py-2.5 text-xs text-white outline-none focus:border-gold cursor-pointer"
+                className="w-full max-w-full truncate rounded-xl border border-white/10 bg-[#0f1e37] px-3 py-2.5 text-xs text-white outline-none focus:border-gold cursor-pointer"
               >
                 <option value="all">همه دسته‌بندی‌ها</option>
                 {categories.map(cat => (
@@ -1227,7 +1227,7 @@ export default function AdminPage() {
               <select
                 value={selectedCountryFilter}
                 onChange={(e) => setSelectedCountryFilter(e.target.value)}
-                className="rounded-xl border border-white/10 bg-[#0f1e37] px-3 py-2.5 text-xs text-white outline-none focus:border-gold cursor-pointer"
+                className="w-full max-w-full truncate rounded-xl border border-white/10 bg-[#0f1e37] px-3 py-2.5 text-xs text-white outline-none focus:border-gold cursor-pointer"
               >
                 <option value="all">همه کشورها (امارات / عمان)</option>
                 <option value="uae">فقط امارات متحده عربی</option>
@@ -1239,7 +1239,7 @@ export default function AdminPage() {
             {/* Add Service Button */}
             <button
               onClick={handleAddClick}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-gold px-5 py-2.5 text-xs font-black text-[#0f1e37] hover:brightness-110 shadow-md transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-gold px-5 py-2.5 text-xs font-black text-[#0f1e37] hover:brightness-110 shadow-md transition-all cursor-pointer shrink-0"
             >
               <Plus className="h-4.5 w-4.5" />
               افزودن خدمت جدید
@@ -1250,8 +1250,8 @@ export default function AdminPage() {
 
         {/* Services Table List */}
         <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl">
-          <div className="overflow-x-auto">
-            <table className="w-full table-auto border-collapse text-right text-xs">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full min-w-[650px] table-auto border-collapse text-right text-xs">
               <thead>
                 <tr className="border-b border-white/10 bg-[#0f1e37]/90 text-gold font-extrabold">
                   <th className="py-4.5 px-4 font-extrabold">عنوان خدمت (فارسی)</th>
@@ -1745,7 +1745,7 @@ export default function AdminPage() {
 
   // --- 5. COMPONENT MAIN RENDER ---
   return (
-    <div className="min-h-screen bg-[#07111f] font-sans text-right text-white" dir="rtl">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#07111f] font-sans text-right text-white" dir="rtl">
       <Toaster position="top-center" toastOptions={{ style: { fontFamily: 'inherit' } }} />
 
       {/* Case Workflow & Task Management Modal */}
@@ -1774,7 +1774,7 @@ export default function AdminPage() {
       </AnimatePresence>
 
       {/* Main Responsive Grid Layout */}
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
         
         {/* DESKTOP SIDEBAR PANEL */}
         <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-screen md:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
@@ -1806,7 +1806,7 @@ export default function AdminPage() {
         </AnimatePresence>
 
         {/* MAIN DISPLAY AREA */}
-        <div className="flex-1 md:mr-64 min-h-screen flex flex-col bg-[#07111f]">
+        <div className="flex-1 min-w-0 w-full max-w-full md:mr-64 min-h-screen flex flex-col bg-[#07111f] overflow-x-hidden">
           
           {/* MOBILE ONLY TOP HEADER */}
           <header className="md:hidden sticky top-0 z-30 w-full border-b border-white/10 bg-[#0b172a]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
@@ -1842,8 +1842,8 @@ export default function AdminPage() {
           </header>
 
           {/* Dynamic Content Panel */}
-          <main className="flex-1 px-4 py-6 md:px-6 w-full">
-            <div className="max-w-6xl mx-auto w-full">
+          <main className="flex-1 px-3 py-4 md:px-6 w-full min-w-0">
+            <div className="max-w-6xl mx-auto w-full min-w-0">
               {isEditorOpen ? (
                 renderServiceEditor()
               ) : activeScreen === 'services' ? (
