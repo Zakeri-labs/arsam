@@ -141,119 +141,56 @@ export default function AdminPage() {
 
   // Check auth status on mount and remove v0 badge watermarks
   useEffect(() => {
-    // 1. Dynamic Runtime Style Sheet Injection
+    // 1. Dynamic Runtime Style Sheet Injection for badge removal (Instant & Zero CPU impact)
     try {
-      const style = document.createElement('style');
-      style.innerHTML = `
-        a[href*="v0.dev"],
-        a[href*="vercel.com"],
-        [class*="v0-badge"],
-        [id*="v0-badge"],
-        #v0-badge,
-        .v0-badge,
-        [class*="v0-brand"],
-        [id*="v0-brand"],
-        [class*="built-with-v0"] {
-          display: none !important;
-          opacity: 0 !important;
-          visibility: hidden !important;
-          pointer-events: none !important;
-          width: 0 !important;
-          height: 0 !important;
-          overflow: hidden !important;
-        }
-      `;
-      document.head.appendChild(style);
+      if (!document.getElementById('remove-v0-styles')) {
+        const style = document.createElement('style');
+        style.id = 'remove-v0-styles';
+        style.innerHTML = `
+          a[href*="v0.dev"],
+          a[href*="vercel.com"],
+          [class*="v0-badge"],
+          [id*="v0-badge"],
+          #v0-badge,
+          .v0-badge,
+          [class*="v0-brand"],
+          [id*="v0-brand"],
+          [class*="built-with-v0"] {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
     } catch (e) {}
 
+    // Fast targeted badge removal without recursive DOM traversal
     const removeBadge = () => {
-      const traverse = (root: Node | ShadowRoot) => {
-        if (!root) return;
-
-        // Query Selector scans on Element roots
-        if ('querySelectorAll' in root) {
-          const selectors = [
-            'a[href*="v0"]',
-            'a[href*="vercel"]',
-            '[class*="v0"]',
-            '[id*="v0"]',
-            '[class*="vercel"]',
-            '[id*="vercel"]',
-            '[class*="built-with"]',
-            'iframe[src*="v0"]',
-            'iframe[src*="vercel"]'
-          ];
-          selectors.forEach(sel => {
-            try {
-              const elements = (root as unknown as HTMLElement).querySelectorAll(sel);
-              elements.forEach(el => el.remove());
-            } catch (e) {}
-          });
-        }
-
-        // Scan child nodes recursively
-        const children = Array.from(root.childNodes);
-        children.forEach(child => {
-          const el = child as HTMLElement;
-          
-          if (el.textContent) {
-            const text = el.textContent;
-            if (
-              text.includes('Built with v0') || 
-              text.includes('built with v0') || 
-              text.includes('with v0') ||
-              (el.innerHTML && el.innerHTML.includes('Built with v0'))
-            ) {
-              const tagName = el.tagName?.toLowerCase();
-              if (tagName && tagName !== 'body' && tagName !== 'html' && tagName !== 'main') {
-                el.remove();
-                return;
-              }
-            }
-          }
-
-          // Deep shadow DOM penetration
-          if (el.shadowRoot) {
-            const shadow = el.shadowRoot;
-            traverse(shadow);
-            
-            try {
-              const hasBadge = shadow.querySelector('a[href*="v0"]') || 
-                               shadow.querySelector('a[href*="vercel"]') ||
-                               (shadow.textContent && shadow.textContent.includes('v0'));
-              if (hasBadge) {
-                el.remove();
-                return;
-              }
-            } catch (e) {}
-          }
-
-          traverse(child);
-        });
-      };
-
       try {
-        traverse(document.documentElement);
+        const selectors = [
+          'a[href*="v0"]',
+          'a[href*="vercel"]',
+          '[class*="v0-badge"]',
+          '[id*="v0-badge"]',
+          '#v0-badge',
+          '.v0-badge',
+          '[class*="built-with"]'
+        ];
+        selectors.forEach(sel => {
+          document.querySelectorAll(sel).forEach(el => el.remove());
+        });
       } catch (e) {}
     };
 
     removeBadge();
-    
-    const observer = new MutationObserver(() => {
-      removeBadge();
-    });
-    
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
-    
-    const interval = setInterval(removeBadge, 80);
-    const timeout = setTimeout(() => {
-      clearInterval(interval);
-      observer.disconnect();
-    }, 7000);
+    const timeout = setTimeout(removeBadge, 500);
 
+    // Fast Auth Check
     fetch('/api/auth')
       .then(res => res.json())
       .then(data => {
@@ -267,8 +204,7 @@ export default function AdminPage() {
       });
 
     return () => {
-      clearInterval(interval);
-      observer.disconnect();
+      clearTimeout(timeout);
     };
   }, []);
 
