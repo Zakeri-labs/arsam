@@ -81,10 +81,10 @@ let memoryCars: Car[] = [
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
-    status: 'available',
+    status: 'rented',
     imageUrl: '/cars/mg-gt-v2.webp',
     features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'دنده اتوماتیک 7 سرعته', 'سقف پانوراما', 'دوربین 360'],
-    notes: 'خودرو نو، صفر کیلومتر 2026 جهت اجاره در مسقط',
+    notes: 'در حال اجاره فعلی - تحویل مسقط',
     createdAt: new Date().toISOString()
   },
   {
@@ -100,10 +100,10 @@ let memoryCars: Car[] = [
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
-    status: 'rented',
+    status: 'available',
     imageUrl: '/cars/mg-gt-v2.webp',
     features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'صندلی چرم', 'GPS'],
-    notes: 'در حال اجاره فعلی',
+    notes: 'آماده رزرو تحویل فوری',
     createdAt: new Date().toISOString()
   },
   {
@@ -199,10 +199,10 @@ let memoryCars: Car[] = [
     transmission: 'automatic',
     fuelType: 'بنزین',
     capacity: 5,
-    status: 'rented',
+    status: 'available',
     imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['ایربگ دوتایی', 'ترمز ABS', 'ورودی AUX/USB'],
-    notes: 'در حال اجاره',
+    notes: 'آماده رزرو تحویل فوری',
     createdAt: new Date().toISOString()
   },
   {
@@ -328,8 +328,8 @@ let memoryCars: Car[] = [
 let memoryReservations: CarReservation[] = [
   {
     id: 'res-1',
-    carId: 'car-2',
-    carTitle: 'دوج چارجر GT',
+    carId: 'car-mg-gt-1',
+    carTitle: 'ام‌جی GT 2026 (#1)',
     customerName: 'رضا علوی',
     customerPhone: '+96891234567',
     startDate: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
@@ -346,24 +346,24 @@ let memoryTransactions: CarTransaction[] = [
   {
     id: 'tx-1',
     reservationId: 'res-1',
-    carId: 'car-2',
+    carId: 'car-mg-gt-1',
     customerName: 'رضا علوی',
     amount: 175,
     type: 'rent_fee',
     paymentMethod: 'bank_reza',
-    description: 'دریافت کرایه کامل دوج چارجر',
+    description: 'دریافت کرایه کامل ام‌جی GT 2026 (#1)',
     transactionDate: new Date().toISOString().split('T')[0],
     createdAt: new Date().toISOString()
   },
   {
     id: 'tx-2',
     reservationId: 'res-1',
-    carId: 'car-2',
+    carId: 'car-mg-gt-1',
     customerName: 'رضا علوی',
     amount: 120,
     type: 'deposit_in',
     paymentMethod: 'cash_mohammadi',
-    description: 'ودیعه نقد دریافتی',
+    description: 'ودیعه نقد دریافتی ام‌جی GT 2026 (#1)',
     transactionDate: new Date().toISOString().split('T')[0],
     createdAt: new Date().toISOString()
   }

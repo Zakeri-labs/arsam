@@ -298,8 +298,8 @@
   "reservations": [
     {
       "id": "res-1",
-      "carId": "car-2",
-      "carTitle": "دوج چارجر GT",
+      "carId": "car-mg-gt-1",
+      "carTitle": "ام‌جی GT 2026 (#1)",
       "customerName": "رضا علوی",
       "customerPhone": "+96891234567",
       "startDate": "2026-09-05",
@@ -315,24 +315,24 @@
     {
       "id": "tx-1",
       "reservationId": "res-1",
-      "carId": "car-2",
+      "carId": "car-mg-gt-1",
       "customerName": "رضا علوی",
       "amount": 175,
       "type": "rent_fee",
       "paymentMethod": "bank_reza",
-      "description": "دریافت کرایه کامل دوج چارجر",
+      "description": "دریافت کرایه کامل ام‌جی GT 2026 (#1)",
       "transactionDate": "2026-09-07",
       "createdAt": "2026-09-07T18:34:43.027Z"
     },
     {
       "id": "tx-2",
       "reservationId": "res-1",
-      "carId": "car-2",
+      "carId": "car-mg-gt-1",
       "customerName": "رضا علوی",
       "amount": 120,
       "type": "deposit_in",
       "paymentMethod": "cash_mohammadi",
-      "description": "ودیعه نقد دریافتی",
+      "description": "ودیعه نقد دریافتی ام‌جی GT 2026 (#1)",
       "transactionDate": "2026-09-07",
       "createdAt": "2026-09-07T18:34:43.027Z"
     }

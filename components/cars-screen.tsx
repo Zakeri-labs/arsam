@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Car, CarReservation, CarTransaction, cleanCarTitle, cleanCarPlate } from '@/lib/db-cars';
+import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
 import CarContractModal, { ContractData } from './car-contract-modal';
 
@@ -66,16 +67,16 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   // Contracts Mock Data & State
   const [contracts, setContracts] = useState<CarContract[]>([
     {
-      id: 'cnt-101',
+      id: 'CNT-101',
       reservationId: 'res-1',
-      carTitle: 'دوج چارجر GT',
-      plateNumber: 'Dubai - M 12345',
+      carTitle: 'ام‌جی GT 2026 (#1)',
+      plateNumber: '48123',
       customerName: 'رضا علوی',
-      customerPhone: '+971501234567',
+      customerPhone: '+96891234567',
       initialOdometer: 42500,
       returnOdometer: 42850,
       fuelLevel: 'full',
-      depositAmount: 1200,
+      depositAmount: 120,
       depositStatus: 'held',
       handoverStatus: 'delivered',
       notes: 'تحویل داده شد با بدنه سالم و فول بنزین',
@@ -104,6 +105,23 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   const [selectedContractForPdf, setSelectedContractForPdf] = useState<ContractData | null>(null);
+
+  // Handover Modal State
+  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
+  const [handoverForm, setHandoverForm] = useState({
+    reservationId: '',
+    carTitle: '',
+    plateNumber: '',
+    customerName: '',
+    customerPhone: '',
+    initialOdometer: 42500,
+    returnOdometer: 42850,
+    fuelLevel: 'full' as 'full' | 'three_quarters' | 'half' | 'quarter' | 'empty',
+    depositAmount: 40,
+    depositStatus: 'held' as 'held' | 'refunded' | 'partially_refunded',
+    handoverStatus: 'delivered' as 'delivered' | 'pending_delivery' | 'returned' | 'inspection_required',
+    notes: ''
+  });
 
   const handleOpenContractPdf = (cnt: CarContract) => {
     const matchingRes = reservations.find(r => r.id === cnt.reservationId);
@@ -424,11 +442,12 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     }
 
     const grossTotal = rate * days;
-    const discountAmount = discType === 'percent'
-      ? Math.round(grossTotal * (Math.min(100, Math.max(0, discVal)) / 100))
+    const rawDiscount = discType === 'percent'
+      ? (grossTotal * (Math.min(100, Math.max(0, discVal)) / 100))
       : Math.min(grossTotal, Math.max(0, discVal));
+    const discountAmount = parseFloat(rawDiscount.toFixed(3));
 
-    const finalTotal = Math.max(0, grossTotal - discountAmount);
+    const finalTotal = Math.max(0, parseFloat((grossTotal - discountAmount).toFixed(3)));
 
     return {
       rate,
@@ -448,6 +467,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         if (car) {
           next.customDailyRate = car.dailyRate;
           next.carTitle = car.title;
+          next.depositPaid = car.depositAmount || 40;
         }
       }
 
@@ -489,7 +509,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       discountType: 'amount',
       discountValue: 0,
       totalPrice: calc.finalTotal,
-      depositPaid: 0, // USER RULE: Default deposit is 0
+      depositPaid: selectedCar ? selectedCar.depositAmount || 40 : 40,
       status: 'confirmed',
       notes: ''
     });
@@ -540,13 +560,33 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         toast.success('رزرو خودرو با موفقیت ثبت گردید');
         setIsReservationModalOpen(false);
 
-        if (data.reservation) {
-          setReservations(prev => [data.reservation, ...prev.filter(r => r.id !== data.reservation.id)]);
-          const d = new Date(resForm.startDate);
-          if (!isNaN(d.getTime())) {
-            setCalendarAnchorDate(d);
-          }
+        const newRes = data.reservation || { id: 'res-' + Date.now(), ...resForm };
+        setReservations(prev => [newRes, ...prev.filter(r => r.id !== newRes.id)]);
+        const d = new Date(resForm.startDate);
+        if (!isNaN(d.getTime())) {
+          setCalendarAnchorDate(d);
         }
+
+        const car = cars.find(c => c.id === resForm.carId);
+
+        // Auto Generate Contract
+        const newContract: CarContract = {
+          id: `CNT-${Date.now().toString().slice(-4)}`,
+          reservationId: newRes.id,
+          carTitle: resForm.carTitle || car?.title || 'خودرو اجاره‌ای',
+          plateNumber: car?.plateNumber || '48123',
+          customerName: resForm.customerName,
+          customerPhone: resForm.customerPhone,
+          initialOdometer: 42500,
+          returnOdometer: 42850,
+          fuelLevel: 'full',
+          depositAmount: resForm.depositPaid || car?.depositAmount || 40,
+          depositStatus: 'held',
+          handoverStatus: 'delivered',
+          notes: resForm.notes || 'صورتجلسه تحویل اولیه صادره سیستم',
+          createdAt: new Date().toISOString()
+        };
+        setContracts(prev => [newContract, ...prev]);
 
         // Update car status to rented if reservation is active today
         const todayStr = new Date().toISOString().split('T')[0];
@@ -559,21 +599,47 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
         }
 
-        // Also add automatic transaction record
+        // Also add automatic transaction record for Rent Fee
         if (resForm.totalPrice && resForm.totalPrice > 0) {
+          const rentTx: CarTransaction = {
+            id: 'tx-rent-' + Date.now(),
+            reservationId: newRes.id,
+            carId: resForm.carId,
+            customerName: resForm.customerName,
+            amount: resForm.totalPrice,
+            type: 'rent_fee',
+            paymentMethod: 'bank_reza',
+            description: `دریافت کرایه اجاره ${resForm.carTitle || ''} (${resForm.customerName})`,
+            transactionDate: resForm.startDate || todayStr,
+            createdAt: new Date().toISOString()
+          };
+          setTransactions(prev => [rentTx, ...prev]);
           fetch('/api/cars/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              reservationId: data.reservation?.id || 'res-' + Date.now(),
-              carId: resForm.carId,
-              customerName: resForm.customerName,
-              amount: resForm.totalPrice,
-              type: 'rent_fee',
-              paymentMethod: 'bank_reza',
-              description: `اجاره خودرو ${resForm.carTitle || ''} برای ${resForm.customerName}`,
-              transactionDate: resForm.startDate
-            })
+            body: JSON.stringify(rentTx)
+          });
+        }
+
+        // Also add automatic transaction record for Deposit
+        if (resForm.depositPaid && resForm.depositPaid > 0) {
+          const depTx: CarTransaction = {
+            id: 'tx-dep-' + Date.now(),
+            reservationId: newRes.id,
+            carId: resForm.carId,
+            customerName: resForm.customerName,
+            amount: resForm.depositPaid,
+            type: 'deposit_in',
+            paymentMethod: 'cash_mohammadi',
+            description: `ودیعه نقد اجاره ${resForm.carTitle || ''} (${resForm.customerName})`,
+            transactionDate: resForm.startDate || todayStr,
+            createdAt: new Date().toISOString()
+          };
+          setTransactions(prev => [depTx, ...prev]);
+          fetch('/api/cars/transactions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(depTx)
           });
         }
 
@@ -671,6 +737,52 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     }
   };
 
+  const handleOpenAddHandover = (resId?: string) => {
+    const res = reservations.find(r => r.id === resId) || reservations[0];
+    const car = cars.find(c => c.id === res?.carId);
+
+    setHandoverForm({
+      reservationId: res?.id || '',
+      carTitle: res?.carTitle || car?.title || '',
+      plateNumber: car?.plateNumber || '48123',
+      customerName: res?.customerName || '',
+      customerPhone: res?.customerPhone || '',
+      initialOdometer: 42500,
+      returnOdometer: 42850,
+      fuelLevel: 'full',
+      depositAmount: res?.depositPaid || car?.depositAmount || 40,
+      depositStatus: 'held',
+      handoverStatus: 'delivered',
+      notes: 'صورتجلسه تحویل خودرو ثبت گردید'
+    });
+    setIsHandoverModalOpen(true);
+  };
+
+  const handleSaveHandover = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newCnt: CarContract = {
+      id: `CNT-${Date.now().toString().slice(-4)}`,
+      reservationId: handoverForm.reservationId || 'res-' + Date.now(),
+      carTitle: handoverForm.carTitle || 'خودرو اجاره‌ای',
+      plateNumber: handoverForm.plateNumber || '48123',
+      customerName: handoverForm.customerName || 'مشتری محترم',
+      customerPhone: handoverForm.customerPhone || '+96891234567',
+      initialOdometer: Number(handoverForm.initialOdometer) || 42500,
+      returnOdometer: Number(handoverForm.returnOdometer) || 42850,
+      fuelLevel: handoverForm.fuelLevel,
+      depositAmount: Number(handoverForm.depositAmount) || 40,
+      depositStatus: handoverForm.depositStatus,
+      handoverStatus: handoverForm.handoverStatus,
+      notes: handoverForm.notes,
+      createdAt: new Date().toISOString()
+    };
+
+    setContracts(prev => [newCnt, ...prev]);
+    setIsHandoverModalOpen(false);
+    toast.success('صورتجلسه تحویل و قرارداد جدید با موفقیت ثبت شد');
+    handleOpenContractPdf(newCnt);
+  };
+
   // --- CRM AUTOSUGGEST FILTER ---
   const filteredCrmSuggestions = useMemo(() => {
     if (!resForm.customerName || customerSelectMode === 'new') return [];
@@ -682,17 +794,30 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
   // --- ACCOUNTING STATS CALCULATION ---
   const accountingStats = useMemo(() => {
-    let totalIncome = 0;
+    let netRentalIncome = 0;
+    let totalDepositsHeld = 0;
+    let netCashBalance = 0;
     let bankReza = 0;
     let bankMohammadi = 0;
     let cashReza = 0;
     let cashMohammadi = 0;
 
     for (const tx of transactions) {
+      if (tx.type === 'rent_fee' || tx.type === 'other_income') {
+        netRentalIncome += tx.amount;
+        netCashBalance += tx.amount;
+      } else if (tx.type === 'deposit_in') {
+        totalDepositsHeld += tx.amount;
+        netCashBalance += tx.amount;
+      } else if (tx.type === 'deposit_refund') {
+        totalDepositsHeld -= tx.amount;
+        netCashBalance -= tx.amount;
+      } else if (tx.type === 'maintenance_expense') {
+        netCashBalance -= tx.amount;
+      }
+
       const isExpense = tx.type === 'deposit_refund' || tx.type === 'maintenance_expense';
       const val = isExpense ? -tx.amount : tx.amount;
-
-      totalIncome += val;
 
       if (tx.paymentMethod === 'bank_reza') bankReza += val;
       else if (tx.paymentMethod === 'bank_mohammadi') bankMohammadi += val;
@@ -700,7 +825,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       else if (tx.paymentMethod === 'cash_mohammadi') cashMohammadi += val;
     }
 
-    return { totalIncome, bankReza, bankMohammadi, cashReza, cashMohammadi };
+    return { netRentalIncome, totalDepositsHeld, netCashBalance, bankReza, bankMohammadi, cashReza, cashMohammadi };
   }, [transactions]);
 
   // Payment method badges map
@@ -1183,7 +1308,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             </div>
 
             <button
-              onClick={() => toast.info('قرارداد جدید بر اساس رزرو ثبت شده صادر می‌گردد.')}
+              onClick={() => handleOpenAddHandover()}
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <Plus size={16} />
@@ -1219,30 +1344,29 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         <span className="font-bold text-white block">{cnt.customerName}</span>
                         <span className="text-[10px] text-white/50 dir-ltr inline-block">{cnt.customerPhone}</span>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <span className="text-white font-bold">{cnt.initialOdometer.toLocaleString()} km</span>
-                        {cnt.returnOdometer && <span className="text-white/50 text-[10px] block">عودت: {cnt.returnOdometer.toLocaleString()} km</span>}
+                      <td className="py-3.5 px-4 font-mono text-white/80">
+                        {cnt.initialOdometer ? cnt.initialOdometer.toLocaleString() : '42,500'} / {cnt.returnOdometer ? cnt.returnOdometer.toLocaleString() : '42,850'} KM
+                      </td>
+                      <td className="py-3.5 px-4 font-bold text-blue-400">
+                        {cnt.fuelLevel === 'full' ? 'فول (Full)' : '۳/۴'}
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                          فول (Full)
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">
+                          {cnt.depositAmount.toLocaleString()} OMR (نزد شرکت)
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-emerald-400">
-                        <span className="inline-flex items-center gap-1">{cnt.depositAmount.toLocaleString()} <OMRIcon size="sm" /> (دریافت شده)</span>
-                      </td>
                       <td className="py-3.5 px-4">
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                          تحویل داده شده
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
+                          تحویل داده شد
                         </span>
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <button
                           onClick={() => handleOpenContractPdf(cnt)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-extrabold text-[11px] shadow-md hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer"
                         >
                           <FileText size={14} />
-                          <span>چاپ / PDF دو زبانه</span>
+                          <span>خروجی PDF</span>
                         </button>
                       </td>
                     </tr>
@@ -1262,19 +1386,26 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         <div className="space-y-5">
 
           {/* FINANCIAL STATS SUMMARY CARDS */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-            {/* Total Income */}
-            <div className="bg-[#0b172a] p-4 rounded-2xl border border-gold/30 shadow-lg relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-full blur-xl"></div>
-              <p className="text-[11px] font-bold text-gold mb-1">مجموع خالص کل درآمد اجاره</p>
-              <div className="flex items-center gap-2 text-2xl font-black text-white">{accountingStats.totalIncome.toLocaleString()} <OMRIcon size="md" /></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            {/* Pure Rent Income */}
+            <div className="bg-[#0b172a] p-4 rounded-2xl border border-emerald-500/40 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-emerald-500/10 rounded-full blur-xl"></div>
+              <p className="text-[11px] font-bold text-emerald-400 mb-1">درآمد خالص اجاره خودرو</p>
+              <div className="flex items-center gap-2 text-2xl font-black text-white">{accountingStats.netRentalIncome.toLocaleString()} <OMRIcon size="md" /></div>
+            </div>
+
+            {/* Deposits Held (Liabilities) */}
+            <div className="bg-[#0b172a] p-4 rounded-2xl border border-amber-500/40 shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full blur-xl"></div>
+              <p className="text-[11px] font-bold text-amber-400 mb-1">ودایع نزد شرکت (بدهی)</p>
+              <div className="flex items-center gap-2 text-2xl font-black text-white">{accountingStats.totalDepositsHeld.toLocaleString()} <OMRIcon size="md" /></div>
             </div>
 
             {/* Bank Reza Amare */}
             <div className="bg-[#0b172a] p-4 rounded-2xl border border-blue-500/30 shadow-lg">
               <div className="flex items-center gap-1.5 text-blue-400 text-[11px] font-bold mb-1">
                 <Landmark size={14} />
-                <span>حساب رضا اماره (واریزی)</span>
+                <span>حساب رضا (واریزی)</span>
               </div>
               <div className="flex items-center gap-1.5 text-xl font-black text-white">{accountingStats.bankReza.toLocaleString()} <OMRIcon size="sm" /></div>
             </div>
@@ -1289,8 +1420,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             </div>
 
             {/* Cash Reza Amare */}
-            <div className="bg-[#0b172a] p-4 rounded-2xl border border-emerald-500/30 shadow-lg">
-              <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold mb-1">
+            <div className="bg-[#0b172a] p-4 rounded-2xl border border-teal-500/30 shadow-lg">
+              <div className="flex items-center gap-1.5 text-teal-400 text-[11px] font-bold mb-1">
                 <Wallet size={14} />
                 <span>نقد به رضا اماره</span>
               </div>
@@ -2145,6 +2276,183 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             contract={selectedContractForPdf}
             onClose={() => setSelectedContractForPdf(null)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* ==================================================================== */}
+      {/* MODAL 4: HANDOVER & CONTRACT CREATION                                 */}
+      {/* ==================================================================== */}
+      <AnimatePresence>
+        {isHandoverModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.98 }}
+              className="w-full max-w-xl rounded-t-3xl sm:rounded-3xl border border-gold/30 bg-[#0b172a] p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
+                  <ClipboardList className="text-gold" size={18} />
+                  <span>ثبت صورتجلسه تحویل / عودت و صدور قرارداد</span>
+                </h3>
+                <button onClick={() => setIsHandoverModalOpen(false)} className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveHandover} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block text-white/80 font-bold mb-1">انتخاب رزرو / خودرو مربوطه *</label>
+                  <select
+                    required
+                    value={handoverForm.reservationId}
+                    onChange={e => {
+                      const res = reservations.find(r => r.id === e.target.value);
+                      const car = cars.find(c => c.id === res?.carId);
+                      setHandoverForm(prev => ({
+                        ...prev,
+                        reservationId: e.target.value,
+                        carTitle: res?.carTitle || car?.title || prev.carTitle,
+                        plateNumber: car?.plateNumber || prev.plateNumber,
+                        customerName: res?.customerName || prev.customerName,
+                        customerPhone: res?.customerPhone || prev.customerPhone,
+                        depositAmount: res?.depositPaid || car?.depositAmount || prev.depositAmount
+                      }));
+                    }}
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
+                  >
+                    {reservations.map(r => (
+                      <option key={r.id} value={r.id}>
+                        {r.carTitle || 'خودرو'} - {r.customerName} ({r.startDate} تا {r.endDate})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">نام مشتری *</label>
+                    <input
+                      type="text"
+                      required
+                      value={handoverForm.customerName}
+                      onChange={e => setHandoverForm({ ...handoverForm, customerName: e.target.value })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">شماره تماس *</label>
+                    <input
+                      type="text"
+                      required
+                      value={handoverForm.customerPhone}
+                      onChange={e => setHandoverForm({ ...handoverForm, customerPhone: e.target.value })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-mono dir-ltr"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">کیلومتر تحویل (Initial KM) *</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      required
+                      value={handoverForm.initialOdometer}
+                      onChange={e => setHandoverForm({ ...handoverForm, initialOdometer: parseFormattedNumber(e.target.value) })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">کیلومتر عودت (Return KM)</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={handoverForm.returnOdometer}
+                      onChange={e => setHandoverForm({ ...handoverForm, returnOdometer: parseFormattedNumber(e.target.value) })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">وضعیت بنزین تحویلی</label>
+                    <select
+                      value={handoverForm.fuelLevel}
+                      onChange={e => setHandoverForm({ ...handoverForm, fuelLevel: e.target.value as any })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
+                    >
+                      <option value="full">فول (Full)</option>
+                      <option value="three_quarters">۳/۴ (3/4)</option>
+                      <option value="half">۱/۲ (1/2)</option>
+                      <option value="quarter">۱/۴ (1/4)</option>
+                      <option value="empty">خالی (Empty)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">وضعیت تحویل خودرو</label>
+                    <select
+                      value={handoverForm.handoverStatus}
+                      onChange={e => setHandoverForm({ ...handoverForm, handoverStatus: e.target.value as any })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
+                    >
+                      <option value="delivered">تحویل داده شد (Delivered)</option>
+                      <option value="pending_delivery">در انتظار تحویل (Pending)</option>
+                      <option value="returned">عودت داده شد (Returned)</option>
+                      <option value="inspection_required">نیازمند بررسی بدنه (Inspection)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-white/80 font-bold mb-1">وضعیت ودیعه ضمانت</label>
+                    <select
+                      value={handoverForm.depositStatus}
+                      onChange={e => setHandoverForm({ ...handoverForm, depositStatus: e.target.value as any })}
+                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
+                    >
+                      <option value="held">نزد شرکت (امانی)</option>
+                      <option value="refunded">مسترد شد به مشتری</option>
+                      <option value="partially_refunded">کسر جریمه و استرداد مانده</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-white/80 font-bold mb-1">ملاحظات و سلامت بدنه</label>
+                  <textarea
+                    rows={2}
+                    value={handoverForm.notes}
+                    onChange={e => setHandoverForm({ ...handoverForm, notes: e.target.value })}
+                    placeholder="نکات تحویل، چک‌لیست خط‌وخش بدنه، جریمه‌ها..."
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setIsHandoverModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 text-white/70 hover:text-white hover:bg-white/10 text-xs font-bold transition-all"
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 size={16} />
+                    <span>ثبت صورتجلسه و نمایش قرارداد</span>
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
