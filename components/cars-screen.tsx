@@ -990,9 +990,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
               <table className="w-full text-right border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-white/10 text-white/80 font-extrabold text-[11px] bg-[#07111f]">
-                    {/* Fixed Car Column */}
-                    <th className="py-3.5 px-4 w-60 min-w-[240px] sticky right-0 bg-[#07111f] z-20 border-l border-white/10 shadow-md">
-                      خودروهای رنتال ({cars.length})
+                    {/* Fixed Car Column (Mobile Compact Layout) */}
+                    <th className="py-2.5 px-2 sm:px-4 w-32 min-w-[125px] sm:w-56 sm:min-w-[220px] sticky right-0 bg-[#07111f] z-20 border-l border-white/10 shadow-md">
+                      خودروها ({cars.length})
                     </th>
 
                     {/* Timeline Days Headers */}
@@ -1020,15 +1020,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
                     return (
                       <tr key={car.id} className="hover:bg-white/[0.02] transition-colors">
-                        {/* Car Name & Plate Column (Minimal Compact Layout) */}
-                        <td className="py-2.5 px-3 sticky right-0 bg-[#0b172a] z-10 border-l border-white/10 shadow-md">
-                          <div className="min-w-0 flex-1">
-                            <p className="font-extrabold text-white text-xs truncate">{car.title}</p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[10px] font-mono text-gold bg-gold/10 px-1.5 py-0.2 rounded border border-gold/20">
+                        {/* Car Name & Plate Column (Responsive Compact Layout) */}
+                        <td className="py-2 px-2 sm:px-3 sticky right-0 bg-[#0b172a] z-10 border-l border-white/10 shadow-md max-w-[125px] sm:max-w-none">
+                          <div className="min-w-0 flex-1 overflow-hidden">
+                            <p className="font-extrabold text-white text-[11px] sm:text-xs truncate">{car.title}</p>
+                            <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                              <span className="text-[9px] sm:text-[10px] font-mono text-gold bg-gold/10 px-1 py-0.2 rounded border border-gold/20">
                                 {car.plateNumber}
                               </span>
-                              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-bold">{car.dailyRate.toLocaleString()} <OMRIcon size="sm" /></span>
+                              <span className="inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] text-emerald-400 font-bold">{car.dailyRate.toLocaleString()} <OMRIcon size="sm" /></span>
                             </div>
                           </div>
                         </td>
@@ -1617,10 +1617,11 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       نرخ روزانه <OMRIcon size="sm" /> *
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      value={carForm.dailyRate || 0}
-                      onChange={e => setCarForm({ ...carForm, dailyRate: Number(e.target.value) })}
+                      value={carForm.dailyRate || ''}
+                      onChange={e => setCarForm({ ...carForm, dailyRate: parseFormattedNumber(e.target.value) })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-bold"
                     />
                   </div>
@@ -1630,9 +1631,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       مبلغ ودیعه <OMRIcon size="sm" />
                     </label>
                     <input
-                      type="number"
-                      value={carForm.depositAmount || 0}
-                      onChange={e => setCarForm({ ...carForm, depositAmount: Number(e.target.value) })}
+                      type="text"
+                      inputMode="numeric"
+                      value={carForm.depositAmount || ''}
+                      onChange={e => setCarForm({ ...carForm, depositAmount: parseFormattedNumber(e.target.value) })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
@@ -1959,12 +1961,11 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <div>
                     <label className="block text-white/80 font-bold text-[11px] mb-1">نرخ روزانه (OMR) *</label>
                     <input
-                      type="number"
-                      min="0"
-                      step="1"
+                      type="text"
+                      inputMode="numeric"
                       required
-                      value={resForm.customDailyRate}
-                      onChange={e => updateResFormPricing({ customDailyRate: Number(e.target.value) })}
+                      value={resForm.customDailyRate || ''}
+                      onChange={e => updateResFormPricing({ customDailyRate: parseFormattedNumber(e.target.value) })}
                       className="w-full rounded-xl border border-gold/40 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-gold font-bold outline-none focus:border-gold"
                     />
                   </div>
@@ -1993,10 +1994,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       </div>
                     </div>
                     <input
-                      type="number"
-                      min="0"
-                      value={resForm.discountValue}
-                      onChange={e => updateResFormPricing({ discountValue: Number(e.target.value) })}
+                      type="text"
+                      inputMode="numeric"
+                      value={resForm.discountValue || ''}
+                      onChange={e => updateResFormPricing({ discountValue: parseFormattedNumber(e.target.value) })}
                       placeholder="0"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
@@ -2005,10 +2006,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <div>
                     <label className="block text-white/80 font-bold text-[11px] mb-1">مبلغ ودیعه (پیش‌فرض: ۰ OMR)</label>
                     <input
-                      type="number"
-                      min="0"
-                      value={resForm.depositPaid}
-                      onChange={e => updateResFormPricing({ depositPaid: Number(e.target.value) })}
+                      type="text"
+                      inputMode="numeric"
+                      value={resForm.depositPaid || ''}
+                      onChange={e => updateResFormPricing({ depositPaid: parseFormattedNumber(e.target.value) })}
                       placeholder="0"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
                     />
@@ -2164,10 +2165,11 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     مبلغ <OMRIcon size="sm" /> *
                   </label>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
                     value={txForm.amount || ''}
-                    onChange={e => setTxForm({ ...txForm, amount: Number(e.target.value) })}
+                    onChange={e => setTxForm({ ...txForm, amount: parseFormattedNumber(e.target.value) })}
                     placeholder="مثال: 1500"
                     className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold text-sm"
                   />
