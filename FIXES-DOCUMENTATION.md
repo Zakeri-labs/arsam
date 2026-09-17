@@ -143,3 +143,29 @@ This document provides a comprehensive technical breakdown of all issues and bug
   - Converted column width to responsive `w-32 min-w-[125px] sm:w-56 sm:min-w-[220px]`, freeing up over 115px of horizontal space on mobile portrait and landscape viewports.
 * **Affected Files:**
   - `components/cars-screen.tsx`
+
+---
+
+## Item 14: Direct Dedicated Access Links Deployment
+* **Task Description:** Provide two clean, direct links in the primary WhatsApp group for zero-confusion access:
+  - Customer Queue Management: `https://www.abuarsam.com/qms`
+  - Admin Fleet Panel: `https://www.abuarsam.com/admin`
+* **Status:** Actionable / Group Message Ready.
+
+---
+
+## Item 15: SMS Portal Registration Documents Acquisition
+* **Task Description:** Request and collect signed & stamped registration credentials from Mr. Reza (Maktab Sanad): Commercial Registration (CR) copy, VAT Certificate copy, official email, and mobile phone number for Infocomm iSmartSMS API registration.
+* **Status:** Administrative Pending.
+
+---
+
+## Item 16: SMS Sender ID Whitelisting Requisitions Submission
+* **Task Description:** Prepare, sign, stamp, and upload the two official Infocomm SMS Sender ID requisition PDF documents: `AD-AbuArsam` (Promotional) and `AbuArsam` (Transactional OTP).
+* **Status:** Administrative Pending.
+
+---
+
+## Item 17: Physical Print Verification of Updated Contract Blueprint
+* **Task Description:** Ms. Pormasti executes physical A4 paper print test of the newly implemented contract template via `/admin` -> "Contracts & Handover" -> "Print Contract", verifying 100% layout fidelity against physical store copies.
+* **Status:** QA Verification Pending by Ms. Pormasti.
