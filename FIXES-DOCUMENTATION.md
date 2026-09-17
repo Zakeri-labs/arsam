@@ -1,6 +1,6 @@
 # Abu Arsam - Car Rental Management Module Fixes & QA Changelog
 
-This document provides a comprehensive technical breakdown of all 10 issues and bug fixes implemented for the Abu Arsam Car Rental Management System (`/admin` and `/qms`).
+This document provides a comprehensive technical breakdown of all issues and bug fixes implemented for the Abu Arsam Car Rental Management System (`/admin` and `/qms`).
 
 ---
 
@@ -110,5 +110,36 @@ This document provides a comprehensive technical breakdown of all 10 issues and 
   - Added auto-close handlers for all modals upon submit.
   - Added reactive state re-render triggers for the calendar reservation bar.
   - Added loading indicator state to submit buttons (`در حال ثبت...`).
+* **Affected Files:**
+  - `components/cars-screen.tsx`
+
+---
+
+## Item 11: Real-Time Persian & Arabic Soft Keyboard Digit Input Handler
+* **Issue Description:** Typing numbers using native Persian or Arabic soft keyboards (`۱۲۳۴۵۶۷۸۹۰` / `١٢٣٤٥٦٧٨٩٠`) into form numeric fields resulted in blank input or failed form submission.
+* **Root Cause:** Standard `<input type="number">` natively blocks non-ASCII characters from firing change handlers in mobile browsers.
+* **Resolution:**
+  - Replaced all `<input type="number">` elements across forms with `<input type="text" inputMode="numeric">` combined with real-time `parseFormattedNumber` digit conversion.
+* **Affected Files:**
+  - `components/cars-screen.tsx`
+  - `lib/utils.ts`
+
+---
+
+## Item 12: Oman Store Physical Contract Form Blueprint Replication
+* **Issue Description:** The initial printable contract template used a generic digital layout instead of matching Abu Arsam's official physical Oman store rental agreement paper document.
+* **Root Cause:** Placeholder UI template prior to receiving the physical store document sample photo.
+* **Resolution:**
+  - Completely rebuilt `CarContractModal` layout to mirror the physical store paper agreement: includes official Arsam Rent Car red header logo banner, hirer details table, 3-column vehicle specs grid, interactive fuel dial gauge graphic, car body diagram, red "Important Notice" banner, trilingual undertaking text with 50 OMR smoking penalty clause, hirer/manager signature boxes, final payment settlement table, and store address footer with QR code.
+* **Affected Files:**
+  - `components/car-contract-modal.tsx`
+
+---
+
+## Item 13: Mobile Calendar Table Sticky Column Width Optimization
+* **Issue Description:** On mobile screens, the first sticky column (vehicle name and plate number) occupied 240px (over 65% of mobile screen width), obscuring the calendar timeline days grid for mobile operators (Mr. Mohammadi).
+* **Root Cause:** Hardcoded static Tailwind width classes `w-60 min-w-[240px]` on the sticky table header/cells.
+* **Resolution:**
+  - Converted column width to responsive `w-32 min-w-[125px] sm:w-56 sm:min-w-[220px]`, freeing up over 115px of horizontal space on mobile portrait and landscape viewports.
 * **Affected Files:**
   - `components/cars-screen.tsx`
