@@ -240,3 +240,17 @@ a[href*="v0.dev"],
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;  /* Firefox */
 }
+
+/* Prevent iOS Safari auto-zoom on input focus by enforcing 16px font-size on mobile screens */
+@media screen and (max-width: 767px) {
+  input[type="text"],
+  input[type="tel"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
