@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Service, Language } from '@/lib/content';
-import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock, UploadCloud, X, Paperclip } from 'lucide-react';
+import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock, UploadCloud, X, Paperclip, ChevronDown, Search } from 'lucide-react';
 
 const categoryImages: Record<string, string> = {
   'Company Setup Services': 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=600&auto=format&fit=crop',
@@ -33,70 +33,63 @@ function toEnglishDigits(str: string): string {
     .join('');
 }
 
-function normalizePhoneNumber(phoneStr: string): { normalized: string; isValid: boolean } {
-  const cleaned = toEnglishDigits(phoneStr).trim();
-  if (!cleaned) return { normalized: '', isValid: false };
+export interface CountryCodeOption {
+  code: string;
+  flag: string;
+  nameFa: string;
+  nameEn: string;
+}
 
-  // Remove spaces, dashes, dots, parentheses
-  const digitsOnly = cleaned.replace(/[\s\-\(\)\.]/g, '');
+export const priorityCountryCodes: CountryCodeOption[] = [
+  { code: '+968', flag: '🇴🇲', nameFa: 'عمان', nameEn: 'Oman' },
+  { code: '+98', flag: '🇮🇷', nameFa: 'ایران', nameEn: 'Iran' },
+  { code: '+971', flag: '🇦🇪', nameFa: 'امارات', nameEn: 'UAE' },
+  { code: '+1', flag: '🇺🇸', nameFa: 'آمریکا', nameEn: 'USA' },
+];
 
-  // 1. Iran numbers:
-  // 09123456789 (11 digits starting with 09) -> +989123456789
-  if (/^09\d{9}$/.test(digitsOnly)) {
-    return { normalized: '+98' + digitsOnly.substring(1), isValid: true };
-  }
-  // 989123456789 (12 digits starting with 989) -> +989123456789
-  if (/^989\d{9}$/.test(digitsOnly)) {
-    return { normalized: '+' + digitsOnly, isValid: true };
-  }
-  // +989123456789
-  if (/^\+989\d{9}$/.test(digitsOnly)) {
-    return { normalized: digitsOnly, isValid: true };
-  }
+export const alphabeticalCountryCodes: CountryCodeOption[] = [
+  { code: '+61', flag: '🇦🇺', nameFa: 'استرالیا', nameEn: 'Australia' },
+  { code: '+49', flag: '🇩🇪', nameFa: 'آلمان', nameEn: 'Germany' },
+  { code: '+44', flag: '🇬🇧', nameFa: 'بریتانیا (انگلیس)', nameEn: 'United Kingdom' },
+  { code: '+973', flag: '🇧🇭', nameFa: 'بحرین', nameEn: 'Bahrain' },
+  { code: '+90', flag: '🇹🇷', nameFa: 'ترکیه', nameEn: 'Turkey' },
+  { code: '+86', flag: '🇨🇳', nameFa: 'چین', nameEn: 'China' },
+  { code: '+7', flag: '🇷🇺', nameFa: 'روسیه', nameEn: 'Russia' },
+  { code: '+966', flag: '🇸🇦', nameFa: 'عربستان سعودی', nameEn: 'Saudi Arabia' },
+  { code: '+33', flag: '🇫🇷', nameFa: 'فرانسه', nameEn: 'France' },
+  { code: '+974', flag: '🇶🇦', nameFa: 'قطر', nameEn: 'Qatar' },
+  { code: '+1', flag: '🇨🇦', nameFa: 'کانادا', nameEn: 'Canada' },
+  { code: '+965', flag: '🇰🇼', nameFa: 'کویت', nameEn: 'Kuwait' },
+  { code: '+91', flag: '🇮🇳', nameFa: 'هند', nameEn: 'India' },
+];
 
-  // 2. UAE numbers:
-  // 0501234567 or 055... or 058... (10 digits starting with 05) -> +971501234567
-  if (/^05\d{8}$/.test(digitsOnly)) {
-    return { normalized: '+971' + digitsOnly.substring(1), isValid: true };
-  }
-  // 971501234567 or 9715... (12 digits) -> +971501234567
-  if (/^9715\d{8}$/.test(digitsOnly)) {
-    return { normalized: '+' + digitsOnly, isValid: true };
-  }
-  // +9715...
-  if (/^\+9715\d{8}$/.test(digitsOnly)) {
-    return { normalized: digitsOnly, isValid: true };
-  }
+function normalizePhoneNumber(code: string, phoneStr: string): { normalized: string; isValid: boolean } {
+  const cleanedCode = toEnglishDigits(code).trim().replace(/^[^\d+]+/, '');
+  const prefix = cleanedCode.startsWith('+') ? cleanedCode : '+' + cleanedCode.replace(/^\+*/, '');
+  const cleanedNum = toEnglishDigits(phoneStr).trim().replace(/[\s\-\(\)\.]/g, '');
 
-  // 3. Oman numbers:
-  // 8 digits starting with 7 or 9 (e.g. 71713238 or 91234567) -> +96871713238
-  if (/^[79]\d{7}$/.test(digitsOnly)) {
-    return { normalized: '+968' + digitsOnly, isValid: true };
+  if (!cleanedNum) return { normalized: '', isValid: false };
+
+  if (cleanedNum.startsWith('+')) {
+    if (/^\+\d{8,15}$/.test(cleanedNum)) return { normalized: cleanedNum, isValid: true };
   }
-  // 07... or 09... (9 digits) -> +96871713238
-  if (/^0[79]\d{7}$/.test(digitsOnly)) {
-    return { normalized: '+968' + digitsOnly.substring(1), isValid: true };
-  }
-  // 96871713238 or 9689... (11 digits) -> +96871713238
-  if (/^968[79]\d{7}$/.test(digitsOnly)) {
-    return { normalized: '+' + digitsOnly, isValid: true };
-  }
-  // +96871713238
-  if (/^\+968[79]\d{7}$/.test(digitsOnly)) {
-    return { normalized: digitsOnly, isValid: true };
+  if (cleanedNum.startsWith('00')) {
+    const withPlus = '+' + cleanedNum.substring(2);
+    if (/^\+\d{8,15}$/.test(withPlus)) return { normalized: withPlus, isValid: true };
   }
 
-  // 4. Any international number starting with '+' followed by 8 to 15 digits
-  if (/^\+\d{8,15}$/.test(digitsOnly)) {
-    return { normalized: digitsOnly, isValid: true };
+  let localDigits = cleanedNum;
+  if (localDigits.startsWith('0') && prefix.length > 1) {
+    localDigits = localDigits.substring(1);
   }
 
-  // 5. If starts with 00 (e.g. 00971... or 0098...)
-  if (/^00\d{8,15}$/.test(digitsOnly)) {
-    return { normalized: '+' + digitsOnly.substring(2), isValid: true };
-  }
+  const fullNumber = `${prefix}${localDigits}`;
+  const digitsOnly = fullNumber.replace(/[^\d]/g, '');
 
-  return { normalized: cleaned, isValid: false };
+  return {
+    normalized: fullNumber,
+    isValid: digitsOnly.length >= 7 && digitsOnly.length <= 15
+  };
 }
 
 interface ServiceDetailModalProps {
@@ -236,6 +229,10 @@ export function ServiceDetailModal({
   const [extraFiles, setExtraFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [countryCode, setCountryCode] = useState('+968');
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
+
   // Reset form state when modal closes/opens
   useEffect(() => {
     if (isOpen) {
@@ -246,6 +243,9 @@ export function ServiceDetailModal({
       }
       setName('');
       setPhone('');
+      setCountryCode('+968');
+      setShowCountryDropdown(false);
+      setCountrySearch('');
       setDescription('');
       setErrors({});
       setPhoneErrorMsg('');
@@ -292,9 +292,9 @@ export function ServiceDetailModal({
 
   const handlePhoneBlur = () => {
     if (phone.trim()) {
-      const res = normalizePhoneNumber(phone);
+      const res = normalizePhoneNumber(countryCode, phone);
       if (res.isValid) {
-        setPhone(res.normalized);
+        setPhone(res.normalized.replace(countryCode, '').replace(/^0+/, ''));
         setErrors(prev => ({ ...prev, phone: false }));
         setPhoneErrorMsg('');
       }
@@ -310,7 +310,7 @@ export function ServiceDetailModal({
     }
 
     // Smart Phone Validation & Normalization
-    const phoneRes = normalizePhoneNumber(phone);
+    const phoneRes = normalizePhoneNumber(countryCode, phone);
     if (!phone.trim()) {
       newErrors.phone = true;
       setPhoneErrorMsg(t.requiredField);
@@ -586,25 +586,154 @@ export function ServiceDetailModal({
                         )}
                       </div>
 
-                      {/* Phone field */}
+                      {/* Phone field with minimal split country code selector */}
                       <div className="flex flex-col gap-1 text-start">
                         <label className="text-xs font-bold text-foreground px-0.5">
                           {t.phoneLabel} <span className="text-destructive">*</span>
                         </label>
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => {
-                            setPhone(e.target.value);
-                            if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
-                          }}
-                          onBlur={handlePhoneBlur}
-                          placeholder={t.phonePlaceholder}
-                          className={`w-full rounded-xl border bg-card px-3 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                            errors.phone ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                          }`}
-                          dir="ltr"
-                        />
+
+                        <div className={`relative flex items-center rounded-xl border bg-card shadow-2xs transition-all ${
+                          errors.phone ? 'border-destructive focus-within:border-destructive' : 'border-border focus-within:border-gold'
+                        }`}>
+                          {/* Country Code Trigger / Selector */}
+                          <div className="relative shrink-0 border-e border-border/70 flex items-center bg-secondary/30 rounded-s-xl px-2 py-1">
+                            <button
+                              type="button"
+                              onClick={() => setShowCountryDropdown(prev => !prev)}
+                              className="flex items-center gap-1 text-xs font-bold text-foreground hover:opacity-80 transition-opacity me-1"
+                              title={language === 'fa' ? 'انتخاب کشور' : 'Select Country'}
+                            >
+                              <span className="text-base leading-none">
+                                {[...priorityCountryCodes, ...alphabeticalCountryCodes].find(c => c.code === countryCode)?.flag || '🌐'}
+                              </span>
+                              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                            </button>
+
+                            {/* Editable Country Code Input */}
+                            <input
+                              type="text"
+                              value={countryCode}
+                              onChange={(e) => {
+                                let val = e.target.value.trim();
+                                if (!val.startsWith('+') && val.length > 0) val = '+' + val;
+                                setCountryCode(val);
+                                if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
+                              }}
+                              placeholder="+968"
+                              className="w-13 bg-transparent font-mono text-xs font-bold text-foreground outline-none dir-ltr"
+                              dir="ltr"
+                            />
+
+                            {/* Dropdown Popover */}
+                            <AnimatePresence>
+                              {showCountryDropdown && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: 5, scale: 0.98 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, y: 5, scale: 0.98 }}
+                                  transition={{ duration: 0.15 }}
+                                  className="absolute top-full start-0 z-50 mt-1.5 w-60 rounded-2xl border border-border bg-card p-2 shadow-xl"
+                                >
+                                  {/* Search Input */}
+                                  <div className="relative mb-2">
+                                    <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                    <input
+                                      type="text"
+                                      value={countrySearch}
+                                      onChange={(e) => setCountrySearch(e.target.value)}
+                                      placeholder={language === 'fa' ? 'جستجو یا تایپ پیش‌شماره (مثلاً 98)...' : 'Search country or code...'}
+                                      className="w-full rounded-xl border border-border bg-secondary/40 ps-8 pe-3 py-1.5 text-xs text-foreground outline-none focus:border-gold placeholder:text-muted-foreground/60"
+                                      autoFocus
+                                    />
+                                  </div>
+
+                                  <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5 no-scrollbar">
+                                    {/* Priority Header & Items */}
+                                    <div className="px-2 py-1 text-[10px] font-bold text-gold uppercase tracking-wider">
+                                      {language === 'fa' ? 'پیش‌شماره‌های اصلی' : 'Popular Countries'}
+                                    </div>
+                                    {priorityCountryCodes
+                                      .filter(c => 
+                                        c.code.includes(countrySearch) || 
+                                        c.nameFa.includes(countrySearch) || 
+                                        c.nameEn.toLowerCase().includes(countrySearch.toLowerCase())
+                                      )
+                                      .map((c, i) => (
+                                        <button
+                                          key={`p-${i}`}
+                                          type="button"
+                                          onClick={() => {
+                                            setCountryCode(c.code);
+                                            setShowCountryDropdown(false);
+                                            setCountrySearch('');
+                                          }}
+                                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-start transition-colors ${
+                                            countryCode === c.code ? 'bg-navy text-white font-bold' : 'hover:bg-secondary text-foreground'
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-sm">{c.flag}</span>
+                                            <span>{language === 'fa' ? c.nameFa : c.nameEn}</span>
+                                          </div>
+                                          <span className={`font-mono text-xs ${countryCode === c.code ? 'text-gold' : 'text-muted-foreground'}`}>
+                                            {c.code}
+                                          </span>
+                                        </button>
+                                      ))}
+
+                                    {/* Alphabetical Items */}
+                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1 border-t border-border/40 pt-1.5">
+                                      {language === 'fa' ? 'سایر کشورها' : 'Other Countries'}
+                                    </div>
+                                    {alphabeticalCountryCodes
+                                      .filter(c => 
+                                        c.code.includes(countrySearch) || 
+                                        c.nameFa.includes(countrySearch) || 
+                                        c.nameEn.toLowerCase().includes(countrySearch.toLowerCase())
+                                      )
+                                      .map((c, i) => (
+                                        <button
+                                          key={`o-${i}`}
+                                          type="button"
+                                          onClick={() => {
+                                            setCountryCode(c.code);
+                                            setShowCountryDropdown(false);
+                                            setCountrySearch('');
+                                          }}
+                                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-start transition-colors ${
+                                            countryCode === c.code ? 'bg-navy text-white font-bold' : 'hover:bg-secondary text-foreground'
+                                          }`}
+                                        >
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-sm">{c.flag}</span>
+                                            <span>{language === 'fa' ? c.nameFa : c.nameEn}</span>
+                                          </div>
+                                          <span className={`font-mono text-xs ${countryCode === c.code ? 'text-gold' : 'text-muted-foreground'}`}>
+                                            {c.code}
+                                          </span>
+                                        </button>
+                                      ))}
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Local Phone Input */}
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => {
+                              setPhone(e.target.value);
+                              if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
+                            }}
+                            onBlur={handlePhoneBlur}
+                            placeholder={countryCode === '+968' ? '7171 3238' : countryCode === '+98' ? '0912 345 6789' : '50 123 4567'}
+                            className="flex-1 bg-transparent px-3 py-2.5 text-xs text-foreground outline-none dir-ltr placeholder:text-muted-foreground/60"
+                            dir="ltr"
+                          />
+                        </div>
+
                         {errors.phone && (
                           <span className="text-[9px] text-destructive px-0.5 leading-tight">{phoneErrorMsg || t.requiredField}</span>
                         )}
