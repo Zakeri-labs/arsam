@@ -265,7 +265,7 @@ export function ServiceDetailModal({
     window.open(whatsappUrl, '_blank');
   };
 
-  const MAX_FILE_SIZE = 4.2 * 1024 * 1024; // 4.2 MB per file limit
+  const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB per file limit
 
   const handleSlotFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -273,8 +273,8 @@ export function ServiceDetailModal({
       if (file.size > MAX_FILE_SIZE) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
         alert(language === 'fa' 
-          ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۴ مگابایت) است. لطفاً فایل کم‌حجم‌تری انتخاب کنید.` 
-          : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (4 MB). Please choose a smaller file.`
+          ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۵۰ مگابایت) است. لطفاً فایل کمتر از ۵۰ مگابایت انتخاب کنید.` 
+          : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (50 MB). Please choose a smaller file.`
         );
         e.target.value = '';
         return;
@@ -300,8 +300,8 @@ export function ServiceDetailModal({
         if (file.size > MAX_FILE_SIZE) {
           const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
           alert(language === 'fa' 
-            ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۴ مگابایت) است.` 
-            : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (4 MB).`
+            ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۵۰ مگابایت) است.` 
+            : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (50 MB).`
           );
         } else {
           validFiles.push(file);
@@ -374,53 +374,85 @@ export function ServiceDetailModal({
         allFilesToUpload.push(renamedFile);
       });
 
-      // Upload each file individually via server endpoint /api/upload to prevent Vercel 413 payload limit errors
+      // Upload files directly to Supabase Storage via Signed URLs up to 50MB (bypassing Vercel serverless body limits)
       const uploadedFilesMetadata: { name: string; size: number; url: string }[] = [];
 
       for (const file of allFilesToUpload) {
         if (file.size > MAX_FILE_SIZE) {
           const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
           alert(language === 'fa' 
-            ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۴ مگابایت) است.` 
-            : `File "${file.name}" (${sizeMB} MB) exceeds maximum allowed size (4 MB).`
+            ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۵۰ مگابایت) است.` 
+            : `File "${file.name}" (${sizeMB} MB) exceeds maximum allowed size (50 MB).`
           );
           setIsSubmitting(false);
           return;
         }
 
-        const fileFormData = new FormData();
-        fileFormData.append('file', file);
+        let fileUploaded = false;
 
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          body: fileFormData
-        });
-
-        if (!uploadRes.ok) {
-          let errText = '';
-          try {
-            const errJson = await uploadRes.json();
-            errText = errJson.error || errJson.details || '';
-          } catch (e) {
-            errText = uploadRes.status === 413 
-              ? (language === 'fa' ? 'حجم فایل بیش از حد مجاز است' : 'File size too large')
-              : 'خطا در آپلود فایل';
-          }
-          alert(language === 'fa' 
-            ? `خطا در آپلود فایل «${file.name}»: ${errText}` 
-            : `Failed to upload "${file.name}": ${errText}`
-          );
-          setIsSubmitting(false);
-          return;
-        }
-
-        const uploadData = await uploadRes.json();
-        if (uploadData && uploadData.url) {
-          uploadedFilesMetadata.push({
-            name: file.name,
-            size: file.size,
-            url: uploadData.url
+        // 1. Try Signed URL direct stream upload to Supabase Storage (Supports 50MB+)
+        try {
+          const signRes = await fetch('/api/upload/sign', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName: file.name, fileSize: file.size })
           });
+
+          if (signRes.ok) {
+            const signData = await signRes.json();
+            if (signData && signData.signedUrl) {
+              const uploadRes = await fetch(signData.signedUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': file.type || 'application/octet-stream' },
+                body: file
+              });
+
+              if (uploadRes.ok) {
+                uploadedFilesMetadata.push({
+                  name: file.name,
+                  size: file.size,
+                  url: signData.publicUrl
+                });
+                fileUploaded = true;
+              }
+            }
+          }
+        } catch (signErr) {
+          console.warn('Signed upload failed, attempting fallback for file:', file.name, signErr);
+        }
+
+        // 2. Fallback to /api/upload endpoint for smaller files (< 4.2 MB) if signed upload failed
+        if (!fileUploaded) {
+          if (file.size <= 4.2 * 1024 * 1024) {
+            const fileFormData = new FormData();
+            fileFormData.append('file', file);
+
+            const fallbackRes = await fetch('/api/upload', {
+              method: 'POST',
+              body: fileFormData
+            });
+
+            if (fallbackRes.ok) {
+              const fallbackData = await fallbackRes.json();
+              if (fallbackData && fallbackData.url) {
+                uploadedFilesMetadata.push({
+                  name: file.name,
+                  size: file.size,
+                  url: fallbackData.url
+                });
+                fileUploaded = true;
+              }
+            }
+          }
+        }
+
+        if (!fileUploaded) {
+          alert(language === 'fa' 
+            ? `خطا در آپلود فایل «${file.name}». لطفاً اینترنت خود یا حجم فایل را بررسی و دوباره تلاش کنید.` 
+            : `Failed to upload "${file.name}". Please check network connection and try again.`
+          );
+          setIsSubmitting(false);
+          return;
         }
       }
 
