@@ -633,11 +633,15 @@ export function ServiceDetailModal({
                     <div className="flex flex-col gap-2.5 text-start border-t border-border/50 pt-3">
                       <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
                         <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
-                        <span>{t.requirementsUploadTitle}</span>
+                        <span>
+                          {service.id === 'other-services'
+                            ? (language === 'fa' ? 'آپلود مدارک و فایل‌ها (اختیاری)' : language === 'ar' ? 'تحميل المستندات والملفات (اختياري)' : 'Upload Documents & Files (Optional)')
+                            : t.requirementsUploadTitle}
+                        </span>
                       </label>
 
-                      {/* Requirement upload rows */}
-                      {service.requirements && service.requirements.length > 0 && (
+                      {/* Requirement upload rows (Only for specific predefined services) */}
+                      {service.id !== 'other-services' && service.requirements && service.requirements.length > 0 && (
                         <div className="flex flex-col gap-2">
                           {service.requirements.map((req, idx) => {
                             const slotFile = slotFiles[idx];
@@ -681,12 +685,16 @@ export function ServiceDetailModal({
                         </div>
                       )}
 
-                      {/* Extra / Other Documents Slot */}
+                      {/* Extra / Single Upload Area (Allows multiple file selection) */}
                       <div className="flex flex-col gap-2 rounded-xl border border-dashed border-border/90 bg-secondary/20 px-3.5 py-2.5 text-xs">
                         <div className="flex items-center justify-between gap-3">
                           <span className="font-semibold text-foreground/80 text-xs flex items-center gap-2">
                             <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
-                            <span>{t.otherDocsLabel}</span>
+                            <span>
+                              {service.id === 'other-services'
+                                ? (language === 'fa' ? 'پیوست فایل‌ها (انتخاب همزمان چند فایل)' : language === 'ar' ? 'إرفاق الملفات (عدة ملفات)' : 'Attach Files (Multiple Files)')
+                                : t.otherDocsLabel}
+                            </span>
                           </span>
                           <label className="flex items-center gap-1.5 rounded-xl bg-card border border-border/90 px-3 py-1.5 text-xs font-bold text-navy dark:text-gold hover:border-gold cursor-pointer transition-all shadow-2xs shrink-0 active:scale-95">
                             <UploadCloud className="h-3.5 w-3.5 text-gold shrink-0" />
@@ -696,21 +704,21 @@ export function ServiceDetailModal({
                               multiple
                               onChange={handleExtraFileChange}
                               className="hidden"
-                              accept=".pdf,.jpg,.jpeg,.png"
+                              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                             />
                           </label>
                         </div>
 
                         {/* Extra Files list */}
                         {extraFiles.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-1">
+                          <div className="flex flex-wrap gap-1.5 mt-1 border-t border-border/40 pt-2">
                             {extraFiles.map((file, idx) => (
                               <div
                                 key={idx}
                                 className="flex items-center gap-1.5 rounded-lg bg-card border border-border/50 px-2.5 py-1 text-xs shadow-2xs"
                               >
                                 <Paperclip className="h-3.5 w-3.5 text-gold shrink-0" />
-                                <span className="truncate max-w-[120px] font-medium text-foreground">
+                                <span className="truncate max-w-[130px] font-medium text-foreground">
                                   {file.name}
                                 </span>
                                 <button
