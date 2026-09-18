@@ -265,9 +265,20 @@ export function ServiceDetailModal({
     window.open(whatsappUrl, '_blank');
   };
 
+  const MAX_FILE_SIZE = 4.2 * 1024 * 1024; // 4.2 MB per file limit
+
   const handleSlotFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > MAX_FILE_SIZE) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        alert(language === 'fa' 
+          ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۴ مگابایت) است. لطفاً فایل کم‌حجم‌تری انتخاب کنید.` 
+          : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (4 MB). Please choose a smaller file.`
+        );
+        e.target.value = '';
+        return;
+      }
       setSlotFiles(prev => ({ ...prev, [index]: file }));
     }
   };
@@ -283,7 +294,24 @@ export function ServiceDetailModal({
   const handleExtraFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const newFiles = Array.from(e.target.files);
-      setExtraFiles(prev => [...prev, ...newFiles]);
+      const validFiles: File[] = [];
+
+      for (const file of newFiles) {
+        if (file.size > MAX_FILE_SIZE) {
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+          alert(language === 'fa' 
+            ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۴ مگابایت) است.` 
+            : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (4 MB).`
+          );
+        } else {
+          validFiles.push(file);
+        }
+      }
+
+      if (validFiles.length > 0) {
+        setExtraFiles(prev => [...prev, ...validFiles]);
+      }
+      e.target.value = '';
     }
   };
 
@@ -346,101 +374,82 @@ export function ServiceDetailModal({
         allFilesToUpload.push(renamedFile);
       });
 
-      // Try uploading files directly from client side to Supabase Storage to bypass Vercel serverless payload limits
+      // Upload each file individually via server endpoint /api/upload to prevent Vercel 413 payload limit errors
       const uploadedFilesMetadata: { name: string; size: number; url: string }[] = [];
-      let directUploadFailed = false;
 
       for (const file of allFilesToUpload) {
-        try {
-          const fileExt = file.name.substring(file.name.lastIndexOf('.')) || '';
-          const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
-          const cleanBaseName = file.name.replace(fileExt, '').replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
-          const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
+        if (file.size > MAX_FILE_SIZE) {
+          const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+          alert(language === 'fa' 
+            ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۴ مگابایت) است.` 
+            : `File "${file.name}" (${sizeMB} MB) exceeds maximum allowed size (4 MB).`
+          );
+          setIsSubmitting(false);
+          return;
+        }
 
-          const { data: storageData, error: uploadErr } = await supabase.storage
-            .from('uploads')
-            .upload(safeFileName, file, {
-              contentType: file.type || 'application/octet-stream',
-              upsert: false
-            });
+        const fileFormData = new FormData();
+        fileFormData.append('file', file);
 
-          if (!uploadErr && storageData) {
-            const { data: publicUrlData } = supabase.storage
-              .from('uploads')
-              .getPublicUrl(safeFileName);
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: fileFormData
+        });
 
-            uploadedFilesMetadata.push({
-              name: file.name,
-              size: file.size,
-              url: publicUrlData.publicUrl
-            });
-          } else {
-            console.warn('Client direct upload failed for:', file.name, uploadErr);
-            directUploadFailed = true;
-            break;
+        if (!uploadRes.ok) {
+          let errText = '';
+          try {
+            const errJson = await uploadRes.json();
+            errText = errJson.error || errJson.details || '';
+          } catch (e) {
+            errText = uploadRes.status === 413 
+              ? (language === 'fa' ? 'حجم فایل بیش از حد مجاز است' : 'File size too large')
+              : 'خطا در آپلود فایل';
           }
-        } catch (fileErr) {
-          console.error('File upload exception:', fileErr);
-          directUploadFailed = true;
-          break;
+          alert(language === 'fa' 
+            ? `خطا در آپلود فایل «${file.name}»: ${errText}` 
+            : `Failed to upload "${file.name}": ${errText}`
+          );
+          setIsSubmitting(false);
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        if (uploadData && uploadData.url) {
+          uploadedFilesMetadata.push({
+            name: file.name,
+            size: file.size,
+            url: uploadData.url
+          });
         }
       }
 
-      let res: Response;
+      // Send lightweight JSON request to /api/requests
+      const reqRes = await fetch('/api/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phoneRes.normalized,
+          description: description.trim(),
+          serviceTitle: service.title,
+          files: uploadedFilesMetadata
+        })
+      });
 
-      // If direct client-side upload succeeded (or there were no files), send lightweight JSON
-      if (!directUploadFailed) {
-        res = await fetch('/api/requests', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: name.trim(),
-            phone: phoneRes.normalized,
-            description: description.trim(),
-            serviceTitle: service.title,
-            files: uploadedFilesMetadata
-          })
-        });
-      } else {
-        // Fallback to sending multipart FormData
-        const formData = new FormData();
-        formData.append('name', name.trim());
-        formData.append('phone', phoneRes.normalized);
-        formData.append('description', description.trim());
-        formData.append('serviceTitle', service.title);
-        allFilesToUpload.forEach(file => formData.append('files', file));
-
-        res = await fetch('/api/requests', {
-          method: 'POST',
-          body: formData
-        });
-      }
-
-      if (res.ok) {
+      if (reqRes.ok) {
         setView('success');
       } else {
         let errorMsg = '';
-        if (res.status === 413) {
-          errorMsg = language === 'fa' 
-            ? 'حجم فایل‌های پیوست بیشتر از حد مجاز است (حداکثر ۴.۵ مگابایت). لطفاً فایل‌های کوچک‌تری انتخاب کنید.' 
-            : 'File size limit exceeded (max 4.5 MB). Please choose a smaller file.';
-        } else {
-          try {
-            const rawText = await res.text();
-            try {
-              const errorData = JSON.parse(rawText);
-              errorMsg = errorData.details || errorData.error || rawText;
-            } catch (jErr) {
-              errorMsg = rawText.substring(0, 120);
-            }
-          } catch (tErr) {
-            errorMsg = 'خطا در خواندن پاسخ سرور';
-          }
+        try {
+          const errorData = await reqRes.json();
+          errorMsg = errorData.details || errorData.error || '';
+        } catch (e) {
+          errorMsg = 'پاسخ نامعتبر از سرور';
         }
-
         alert(language === 'fa' 
-          ? `خطا در ثبت درخواست: ${errorMsg || 'پاسخ نامعتبر از سرور'}` 
-          : `Failed to submit request: ${errorMsg || 'Server error'}`
+          ? `خطا در ثبت درخواست: ${errorMsg}` 
+          : `Failed to submit request: ${errorMsg}`
         );
       }
     } catch (err: any) {
