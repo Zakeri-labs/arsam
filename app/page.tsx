@@ -9,7 +9,7 @@ import { ServiceList } from '@/components/service-card';
 import { ServiceDetailModal } from '@/components/service-detail-modal';
 import { BottomNav } from '@/components/bottom-nav';
 import { AboutModal } from '@/components/about-modal';
-import { type Language, type Country, type Service, content, convertToOmanServices } from '@/lib/content';
+import { type Language, type Country, type Service, content, convertToOmanServices, servicesListFA, servicesListEN, servicesListAR } from '@/lib/content';
 
 const categories = [
   'all',
@@ -191,19 +191,46 @@ export default function Home() {
     const interval = setInterval(removeBadge, 80);
     const timeout = setTimeout(() => clearInterval(interval), 7000);
 
-    // Splash screen logic
-    // const savedLang = localStorage.getItem('preferredLanguage') as Language;
-    // const savedCountry = localStorage.getItem('preferredCountry') as Country;
-    
+    // Check URL parameters for direct link to a service or request modal
+    let directServiceOpened = false;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const serviceParam = urlParams.get('service') || urlParams.get('request') || urlParams.get('req');
+      const langParam = urlParams.get('lang') as Language;
+
+      if (langParam && ['en', 'fa', 'ar'].includes(langParam)) {
+        setSelectedLanguage(langParam);
+        localStorage.setItem('preferredLanguage', langParam);
+      }
+
+      if (serviceParam) {
+        directServiceOpened = true;
+        setHasShownSplash(true);
+        setShowModal(false);
+
+        const targetId = (serviceParam === 'true' || serviceParam === 'other') ? 'other-services' : serviceParam;
+        const currentLang = (langParam && ['en', 'fa', 'ar'].includes(langParam)) ? langParam : (selectedLanguage || 'fa');
+        
+        const contentList = currentLang === 'fa' ? servicesListFA : currentLang === 'ar' ? servicesListAR : servicesListEN;
+        const matched = contentList.find(s => s.id === targetId) || contentList.find(s => s.id === 'other-services');
+        
+        if (matched) {
+          setSelectedService(matched);
+          setShowServiceModal(true);
+        }
+      }
+    } catch (e) {}
+
     let splashTimer: NodeJS.Timeout;
     
-    // Always show splash after 3 seconds for demonstration
-    splashTimer = setTimeout(() => {
-      if (!hasShownSplash) {
-        setShowModal(true);
-        setHasShownSplash(true);
-      }
-    }, 3000);
+    if (!directServiceOpened) {
+      splashTimer = setTimeout(() => {
+        if (!hasShownSplash) {
+          setShowModal(true);
+          setHasShownSplash(true);
+        }
+      }, 3000);
+    }
 
     // Fetch dynamic services in real-time
     fetch('/api/services')
@@ -211,12 +238,24 @@ export default function Home() {
       .then((data) => {
         if (data && data.en && data.fa && data.ar) {
           setDynamicServices(data);
+
+          // Update selected service with dynamic data if direct link was used
+          try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const serviceParam = urlParams.get('service') || urlParams.get('request') || urlParams.get('req');
+            if (serviceParam) {
+              const targetId = (serviceParam === 'true' || serviceParam === 'other') ? 'other-services' : serviceParam;
+              const currentLang = selectedLanguage || 'fa';
+              const dynList = data[currentLang] || [];
+              const matched = dynList.find((s: Service) => s.id === targetId);
+              if (matched) {
+                setSelectedService(matched);
+              }
+            }
+          } catch (e) {}
         }
       })
       .catch((err) => console.error('Failed to fetch dynamic services:', err));
-
-    // If we want to restore localStorage check, we can uncomment:
-    // if (savedLang && savedCountry) { ... }
 
     return () => {
       observer.disconnect();
@@ -281,6 +320,21 @@ export default function Home() {
   };
 
   const activeServices = getActiveServices();
+
+  const handleCloseServiceModal = () => {
+    setShowServiceModal(false);
+    if (typeof window !== 'undefined' && window.location.search) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('service');
+        url.searchParams.delete('request');
+        url.searchParams.delete('req');
+        url.searchParams.delete('lang');
+        const newSearch = url.searchParams.toString();
+        window.history.replaceState({}, '', url.pathname + (newSearch ? `?${newSearch}` : ''));
+      } catch (e) {}
+    }
+  };
 
   return (
     <div 
@@ -447,7 +501,7 @@ export default function Home() {
       <ServiceDetailModal
         service={selectedService}
         isOpen={showServiceModal}
-        onClose={() => setShowServiceModal(false)}
+        onClose={handleCloseServiceModal}
         language={selectedLanguage || 'en'}
         ctaButton={currentContent?.cta.button || 'Contact Us'}
       />
