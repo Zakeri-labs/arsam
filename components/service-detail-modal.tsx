@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Service, Language } from '@/lib/content';
 import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock, UploadCloud, X, Paperclip, ChevronDown, Search } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const categoryImages: Record<string, string> = {
   'Company Setup Services': 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=600&auto=format&fit=crop',
@@ -326,15 +327,9 @@ export function ServiceDetailModal({
 
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('name', name.trim());
-      formData.append('phone', phoneRes.normalized);
-      formData.append('description', description.trim());
-      formData.append('serviceTitle', service.title);
-      
+      // Collect files to upload
       const allFilesToUpload: File[] = [];
 
-      // Requirement slot files
       if (service.requirements && service.requirements.length > 0) {
         service.requirements.forEach((req, idx) => {
           const file = slotFiles[idx];
@@ -346,28 +341,106 @@ export function ServiceDetailModal({
         });
       }
 
-      // Extra files
       extraFiles.forEach(file => {
         const renamedFile = new File([file], `[${t.otherDocPrefix}] ${file.name}`, { type: file.type });
         allFilesToUpload.push(renamedFile);
       });
 
-      allFilesToUpload.forEach(file => {
-        formData.append('files', file);
-      });
+      // Try uploading files directly from client side to Supabase Storage to bypass Vercel serverless payload limits
+      const uploadedFilesMetadata: { name: string; size: number; url: string }[] = [];
+      let directUploadFailed = false;
 
-      const res = await fetch('/api/requests', {
-        method: 'POST',
-        body: formData
-      });
+      for (const file of allFilesToUpload) {
+        try {
+          const fileExt = file.name.substring(file.name.lastIndexOf('.')) || '';
+          const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+          const cleanBaseName = file.name.replace(fileExt, '').replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
+          const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
+
+          const { data: storageData, error: uploadErr } = await supabase.storage
+            .from('uploads')
+            .upload(safeFileName, file, {
+              contentType: file.type || 'application/octet-stream',
+              upsert: false
+            });
+
+          if (!uploadErr && storageData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('uploads')
+              .getPublicUrl(safeFileName);
+
+            uploadedFilesMetadata.push({
+              name: file.name,
+              size: file.size,
+              url: publicUrlData.publicUrl
+            });
+          } else {
+            console.warn('Client direct upload failed for:', file.name, uploadErr);
+            directUploadFailed = true;
+            break;
+          }
+        } catch (fileErr) {
+          console.error('File upload exception:', fileErr);
+          directUploadFailed = true;
+          break;
+        }
+      }
+
+      let res: Response;
+
+      // If direct client-side upload succeeded (or there were no files), send lightweight JSON
+      if (!directUploadFailed) {
+        res = await fetch('/api/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: name.trim(),
+            phone: phoneRes.normalized,
+            description: description.trim(),
+            serviceTitle: service.title,
+            files: uploadedFilesMetadata
+          })
+        });
+      } else {
+        // Fallback to sending multipart FormData
+        const formData = new FormData();
+        formData.append('name', name.trim());
+        formData.append('phone', phoneRes.normalized);
+        formData.append('description', description.trim());
+        formData.append('serviceTitle', service.title);
+        allFilesToUpload.forEach(file => formData.append('files', file));
+
+        res = await fetch('/api/requests', {
+          method: 'POST',
+          body: formData
+        });
+      }
 
       if (res.ok) {
         setView('success');
       } else {
-        const errorData = await res.json().catch(() => ({}));
+        let errorMsg = '';
+        if (res.status === 413) {
+          errorMsg = language === 'fa' 
+            ? 'حجم فایل‌های پیوست بیشتر از حد مجاز است (حداکثر ۴.۵ مگابایت). لطفاً فایل‌های کوچک‌تری انتخاب کنید.' 
+            : 'File size limit exceeded (max 4.5 MB). Please choose a smaller file.';
+        } else {
+          try {
+            const rawText = await res.text();
+            try {
+              const errorData = JSON.parse(rawText);
+              errorMsg = errorData.details || errorData.error || rawText;
+            } catch (jErr) {
+              errorMsg = rawText.substring(0, 120);
+            }
+          } catch (tErr) {
+            errorMsg = 'خطا در خواندن پاسخ سرور';
+          }
+        }
+
         alert(language === 'fa' 
-          ? `خطا در ثبت درخواست: ${errorData.details || errorData.error || 'پاسخ نامعتبر از سرور'}` 
-          : `Failed to submit request: ${errorData.details || errorData.error || 'Server error'}`
+          ? `خطا در ثبت درخواست: ${errorMsg || 'پاسخ نامعتبر از سرور'}` 
+          : `Failed to submit request: ${errorMsg || 'Server error'}`
         );
       }
     } catch (err: any) {

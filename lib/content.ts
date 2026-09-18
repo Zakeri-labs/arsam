@@ -1334,9 +1334,42 @@ export const servicesListAR: Service[] = [
   }
 ];
 
-// ─── MASTER ID LISTS ─────────────────────────────────────────────────────────
-// ─── MASTER ID LISTS ─────────────────────────────────────────────────────────
-export const uaeServiceIds: string[] = ['other-services'];
+export const uaeServiceIds: string[] = [
+  'company-mainland',
+  'company-freezone',
+  'trademark-registration',
+  'business-setup-consulting',
+  'feasibility-study',
+  'family-residency-visa',
+  'partner-investor-visa',
+  'business-employment-visa',
+  'golden-visa-services',
+  'tourist-visa-30-days',
+  'tourist-visa-60-days',
+  'tourist-visa-multi-60-days',
+  'tourist-visa-renewal',
+  'trade-license-renewal',
+  'establishment-card-renewal',
+  'ejari-1-year',
+  'car-rental-daily-monthly',
+  'luxury-car-rental',
+  'chauffeur-car-rental',
+  'suv-family-car-rental',
+  'business-account-high-risk',
+  'business-account-low-risk',
+  'personal-account-guidance',
+  'corporate-tax-registration',
+  'corporate-tax-filing',
+  'vat-registration',
+  'fta-profile-update',
+  'tax-reconsideration',
+  'industrial-tax-exemptions',
+  'driving-license-guidance',
+  'dubai-municipality-permits',
+  'sports-council-permits',
+  'rera-permits',
+  'other-services'
+];
 
 export const omanServiceIds = [
   'company-mainland',

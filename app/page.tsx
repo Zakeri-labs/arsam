@@ -302,21 +302,37 @@ export default function Home() {
   const getActiveServices = (): Service[] => {
     if (!selectedLanguage || !selectedCountry) return [];
 
+    let list: Service[] = [];
+
     if (dynamicServices) {
       const allServices = dynamicServices[selectedLanguage] || [];
       const allowedIds = selectedCountry === 'uae' 
         ? dynamicServices.uaeServiceIds 
         : dynamicServices.omanServiceIds;
       
-      const filtered = allServices.filter(s => allowedIds.includes(s.id));
+      const allowedSet = new Set([...allowedIds, 'other-services']);
+      list = allServices.filter(s => allowedSet.has(s.id));
       
       if (selectedCountry === 'oman') {
-        return convertToOmanServices(filtered, selectedLanguage);
+        list = convertToOmanServices(list, selectedLanguage);
       }
-      return filtered;
+    } else if (currentContent) {
+      list = currentContent.services.items || [];
     }
 
-    return currentContent?.services.items || [];
+    // Always guarantee 'other-services' is present in the homepage list
+    if (!list.some(s => s.id === 'other-services')) {
+      const fallbackList = selectedLanguage === 'fa' ? servicesListFA : selectedLanguage === 'ar' ? servicesListAR : servicesListEN;
+      const otherItem = fallbackList.find(s => s.id === 'other-services');
+      if (otherItem) {
+        const itemToAdd = selectedCountry === 'oman' 
+          ? convertToOmanServices([otherItem], selectedLanguage)[0] 
+          : otherItem;
+        list.push(itemToAdd);
+      }
+    }
+
+    return list;
   };
 
   const activeServices = getActiveServices();

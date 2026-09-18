@@ -4,60 +4,77 @@ import { supabase } from '@/lib/supabase';
 import path from 'path';
 import { verifyAdminAuth } from '@/lib/auth-check';
 
-// POST (Public) - Submit a new request from landing page form with physical file uploads
+// POST (Public) - Submit a new request from landing page form with physical file uploads or pre-uploaded metadata
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const name = formData.get('name') as string;
-    const phone = formData.get('phone') as string;
-    const description = formData.get('description') as string;
-    const serviceTitle = formData.get('serviceTitle') as string;
+    const contentType = request.headers.get('content-type') || '';
+    let name = '';
+    let phone = '';
+    let description = '';
+    let serviceTitle = '';
+    let uploadedFilesMetadata: { name: string; size: number; url: string }[] = [];
+
+    if (contentType.includes('application/json')) {
+      const body = await request.json();
+      name = (body.name || '').toString();
+      phone = (body.phone || '').toString();
+      description = (body.description || '').toString();
+      serviceTitle = (body.serviceTitle || '').toString();
+      if (Array.isArray(body.files)) {
+        uploadedFilesMetadata = body.files;
+      }
+    } else {
+      const formData = await request.formData();
+      name = (formData.get('name') as string) || '';
+      phone = (formData.get('phone') as string) || '';
+      description = (formData.get('description') as string) || '';
+      serviceTitle = (formData.get('serviceTitle') as string) || '';
+
+      // Process and save physical files to Supabase Storage
+      const fileObjects = formData.getAll('files') as File[];
+
+      for (const file of fileObjects) {
+        if (!file || typeof file === 'string' || !file.name || !file.size) continue;
+
+        try {
+          const buffer = await file.arrayBuffer();
+          const fileExt = path.extname(file.name) || '';
+          const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
+          const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
+          const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
+
+          const { data, error } = await supabase.storage
+            .from('uploads')
+            .upload(safeFileName, buffer, {
+              contentType: file.type || 'application/octet-stream',
+              upsert: false
+            });
+
+          if (error) {
+            console.error('Failed to upload file to Supabase:', file.name, error);
+            continue;
+          }
+
+          const { data: publicUrlData } = supabase.storage
+            .from('uploads')
+            .getPublicUrl(safeFileName);
+
+          uploadedFilesMetadata.push({
+            name: file.name,
+            size: file.size,
+            url: publicUrlData.publicUrl
+          });
+        } catch (fileErr) {
+          console.error('Failed to save file:', file.name, fileErr);
+        }
+      }
+    }
 
     if (!name || !name.trim() || !phone || !phone.trim() || !serviceTitle) {
       return NextResponse.json(
         { error: 'پر کردن نام، تلفن و عنوان خدمت الزامی است' },
         { status: 400 }
       );
-    }
-
-    // Process and save physical files to Supabase Storage
-    const fileObjects = formData.getAll('files') as File[];
-    const uploadedFilesMetadata = [];
-
-    for (const file of fileObjects) {
-      if (!file || typeof file === 'string' || !file.name || !file.size) continue;
-
-      try {
-        const buffer = await file.arrayBuffer();
-        const fileExt = path.extname(file.name) || '';
-        const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
-        const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
-        const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
-
-        const { data, error } = await supabase.storage
-          .from('uploads')
-          .upload(safeFileName, buffer, {
-            contentType: file.type || 'application/octet-stream',
-            upsert: false
-          });
-
-        if (error) {
-          console.error('Failed to upload file to Supabase:', file.name, error);
-          continue;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('uploads')
-          .getPublicUrl(safeFileName);
-
-        uploadedFilesMetadata.push({
-          name: file.name,
-          size: file.size,
-          url: publicUrlData.publicUrl
-        });
-      } catch (fileErr) {
-        console.error('Failed to save file:', file.name, fileErr);
-      }
     }
 
     const newRequest = await addRequest({
