@@ -562,182 +562,179 @@ export function ServiceDetailModal({
                   </div>
 
                   <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-                    {/* Name & Phone side-by-side in ONE row (2 columns) */}
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* Name field */}
-                      <div className="flex flex-col gap-1 text-start">
-                        <label className="text-xs font-bold text-foreground px-0.5">
-                          {t.nameLabel} <span className="text-destructive">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => {
-                            setName(e.target.value);
-                            if (errors.name) setErrors(prev => ({ ...prev, name: false }));
-                          }}
-                          placeholder={t.namePlaceholder}
-                          className={`w-full rounded-xl border bg-card px-3 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
-                            errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
-                          }`}
-                        />
-                        {errors.name && (
-                          <span className="text-[10px] text-destructive px-0.5">{t.requiredField}</span>
-                        )}
-                      </div>
+                    {/* Name field */}
+                    <div className="flex flex-col gap-1 text-start">
+                      <label className="text-xs font-bold text-foreground px-0.5">
+                        {t.nameLabel} <span className="text-destructive">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => {
+                          setName(e.target.value);
+                          if (errors.name) setErrors(prev => ({ ...prev, name: false }));
+                        }}
+                        placeholder={t.namePlaceholder}
+                        className={`w-full rounded-xl border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none transition-all placeholder:text-muted-foreground/60 ${
+                          errors.name ? 'border-destructive focus:border-destructive' : 'border-border focus:border-gold'
+                        }`}
+                      />
+                      {errors.name && (
+                        <span className="text-[10px] text-destructive px-0.5">{t.requiredField}</span>
+                      )}
+                    </div>
 
-                      {/* Phone field with minimal split country code selector */}
-                      <div className="flex flex-col gap-1 text-start">
-                        <label className="text-xs font-bold text-foreground px-0.5">
-                          {t.phoneLabel} <span className="text-destructive">*</span>
-                        </label>
+                    {/* Phone field with minimal split country code selector */}
+                    <div className="flex flex-col gap-1 text-start">
+                      <label className="text-xs font-bold text-foreground px-0.5">
+                        {t.phoneLabel} <span className="text-destructive">*</span>
+                      </label>
 
-                        <div className={`relative flex items-center rounded-xl border bg-card shadow-2xs transition-all ${
-                          errors.phone ? 'border-destructive focus-within:border-destructive' : 'border-border focus-within:border-gold'
-                        }`}>
-                          {/* Country Code Trigger / Selector */}
-                          <div className="relative shrink-0 border-e border-border/70 flex items-center bg-secondary/30 rounded-s-xl px-2 py-1">
-                            <button
-                              type="button"
-                              onClick={() => setShowCountryDropdown(prev => !prev)}
-                              className="flex items-center gap-1 text-xs font-bold text-foreground hover:opacity-80 transition-opacity me-1"
-                              title={language === 'fa' ? 'انتخاب کشور' : 'Select Country'}
-                            >
-                              <span className="text-base leading-none">
-                                {[...priorityCountryCodes, ...alphabeticalCountryCodes].find(c => c.code === countryCode)?.flag || '🌐'}
-                              </span>
-                              <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                            </button>
+                      <div className={`relative flex items-center rounded-xl border bg-card shadow-2xs transition-all overflow-hidden ${
+                        errors.phone ? 'border-destructive focus-within:border-destructive' : 'border-border focus-within:border-gold'
+                      }`}>
+                        {/* Country Code Trigger / Selector */}
+                        <div className="relative shrink-0 border-e border-border/70 flex items-center bg-secondary/30 px-2.5 py-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowCountryDropdown(prev => !prev)}
+                            className="flex items-center gap-1.5 text-xs font-bold text-foreground hover:opacity-80 transition-opacity me-1"
+                            title={language === 'fa' ? 'انتخاب کشور' : 'Select Country'}
+                          >
+                            <span className="text-base leading-none">
+                              {[...priorityCountryCodes, ...alphabeticalCountryCodes].find(c => c.code === countryCode)?.flag || '🌐'}
+                            </span>
+                            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          </button>
 
-                            {/* Editable Country Code Input */}
-                            <input
-                              type="text"
-                              value={countryCode}
-                              onChange={(e) => {
-                                let val = e.target.value.trim();
-                                if (!val.startsWith('+') && val.length > 0) val = '+' + val;
-                                setCountryCode(val);
-                                if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
-                              }}
-                              placeholder="+968"
-                              className="w-13 bg-transparent font-mono text-xs font-bold text-foreground outline-none dir-ltr"
-                              dir="ltr"
-                            />
-
-                            {/* Dropdown Popover */}
-                            <AnimatePresence>
-                              {showCountryDropdown && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 5, scale: 0.98 }}
-                                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                                  exit={{ opacity: 0, y: 5, scale: 0.98 }}
-                                  transition={{ duration: 0.15 }}
-                                  className="absolute top-full start-0 z-50 mt-1.5 w-60 rounded-2xl border border-border bg-card p-2 shadow-xl"
-                                >
-                                  {/* Search Input */}
-                                  <div className="relative mb-2">
-                                    <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                                    <input
-                                      type="text"
-                                      value={countrySearch}
-                                      onChange={(e) => setCountrySearch(e.target.value)}
-                                      placeholder={language === 'fa' ? 'جستجو یا تایپ پیش‌شماره (مثلاً 98)...' : 'Search country or code...'}
-                                      className="w-full rounded-xl border border-border bg-secondary/40 ps-8 pe-3 py-1.5 text-xs text-foreground outline-none focus:border-gold placeholder:text-muted-foreground/60"
-                                      autoFocus
-                                    />
-                                  </div>
-
-                                  <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5 no-scrollbar">
-                                    {/* Priority Header & Items */}
-                                    <div className="px-2 py-1 text-[10px] font-bold text-gold uppercase tracking-wider">
-                                      {language === 'fa' ? 'پیش‌شماره‌های اصلی' : 'Popular Countries'}
-                                    </div>
-                                    {priorityCountryCodes
-                                      .filter(c => 
-                                        c.code.includes(countrySearch) || 
-                                        c.nameFa.includes(countrySearch) || 
-                                        c.nameEn.toLowerCase().includes(countrySearch.toLowerCase())
-                                      )
-                                      .map((c, i) => (
-                                        <button
-                                          key={`p-${i}`}
-                                          type="button"
-                                          onClick={() => {
-                                            setCountryCode(c.code);
-                                            setShowCountryDropdown(false);
-                                            setCountrySearch('');
-                                          }}
-                                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-start transition-colors ${
-                                            countryCode === c.code ? 'bg-navy text-white font-bold' : 'hover:bg-secondary text-foreground'
-                                          }`}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-sm">{c.flag}</span>
-                                            <span>{language === 'fa' ? c.nameFa : c.nameEn}</span>
-                                          </div>
-                                          <span className={`font-mono text-xs ${countryCode === c.code ? 'text-gold' : 'text-muted-foreground'}`}>
-                                            {c.code}
-                                          </span>
-                                        </button>
-                                      ))}
-
-                                    {/* Alphabetical Items */}
-                                    <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1 border-t border-border/40 pt-1.5">
-                                      {language === 'fa' ? 'سایر کشورها' : 'Other Countries'}
-                                    </div>
-                                    {alphabeticalCountryCodes
-                                      .filter(c => 
-                                        c.code.includes(countrySearch) || 
-                                        c.nameFa.includes(countrySearch) || 
-                                        c.nameEn.toLowerCase().includes(countrySearch.toLowerCase())
-                                      )
-                                      .map((c, i) => (
-                                        <button
-                                          key={`o-${i}`}
-                                          type="button"
-                                          onClick={() => {
-                                            setCountryCode(c.code);
-                                            setShowCountryDropdown(false);
-                                            setCountrySearch('');
-                                          }}
-                                          className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-start transition-colors ${
-                                            countryCode === c.code ? 'bg-navy text-white font-bold' : 'hover:bg-secondary text-foreground'
-                                          }`}
-                                        >
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-sm">{c.flag}</span>
-                                            <span>{language === 'fa' ? c.nameFa : c.nameEn}</span>
-                                          </div>
-                                          <span className={`font-mono text-xs ${countryCode === c.code ? 'text-gold' : 'text-muted-foreground'}`}>
-                                            {c.code}
-                                          </span>
-                                        </button>
-                                      ))}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-
-                          {/* Local Phone Input */}
+                          {/* Editable Country Code Input */}
                           <input
-                            type="tel"
-                            value={phone}
+                            type="text"
+                            value={countryCode}
                             onChange={(e) => {
-                              setPhone(e.target.value);
+                              let val = e.target.value.trim();
+                              if (!val.startsWith('+') && val.length > 0) val = '+' + val;
+                              setCountryCode(val);
                               if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
                             }}
-                            onBlur={handlePhoneBlur}
-                            placeholder={countryCode === '+968' ? '7171 3238' : countryCode === '+98' ? '0912 345 6789' : '50 123 4567'}
-                            className="flex-1 bg-transparent px-3 py-2.5 text-xs text-foreground outline-none dir-ltr placeholder:text-muted-foreground/60"
+                            placeholder="+968"
+                            className="w-12 bg-transparent font-mono text-xs font-bold text-foreground outline-none dir-ltr text-center"
                             dir="ltr"
                           />
+
+                          {/* Dropdown Popover */}
+                          <AnimatePresence>
+                            {showCountryDropdown && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 5, scale: 0.98 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 5, scale: 0.98 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute top-full start-0 z-50 mt-1.5 w-64 max-w-[calc(100vw-4rem)] rounded-2xl border border-border bg-card p-2.5 shadow-2xl"
+                              >
+                                {/* Search Input */}
+                                <div className="relative mb-2">
+                                  <Search className="absolute start-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                                  <input
+                                    type="text"
+                                    value={countrySearch}
+                                    onChange={(e) => setCountrySearch(e.target.value)}
+                                    placeholder={language === 'fa' ? 'جستجو یا تایپ پیش‌شماره (مثلاً 98)...' : 'Search country or code...'}
+                                    className="w-full rounded-xl border border-border bg-secondary/40 ps-8 pe-3 py-1.5 text-xs text-foreground outline-none focus:border-gold placeholder:text-muted-foreground/60"
+                                    autoFocus
+                                  />
+                                </div>
+
+                                <div className="max-h-48 overflow-y-auto flex flex-col gap-0.5 no-scrollbar">
+                                  {/* Priority Header & Items */}
+                                  <div className="px-2 py-1 text-[10px] font-bold text-gold uppercase tracking-wider">
+                                    {language === 'fa' ? 'پیش‌شماره‌های اصلی' : 'Popular Countries'}
+                                  </div>
+                                  {priorityCountryCodes
+                                    .filter(c => 
+                                      c.code.includes(countrySearch) || 
+                                      c.nameFa.includes(countrySearch) || 
+                                      c.nameEn.toLowerCase().includes(countrySearch.toLowerCase())
+                                    )
+                                    .map((c, i) => (
+                                      <button
+                                        key={`p-${i}`}
+                                        type="button"
+                                        onClick={() => {
+                                          setCountryCode(c.code);
+                                          setShowCountryDropdown(false);
+                                          setCountrySearch('');
+                                        }}
+                                        className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-start transition-colors ${
+                                          countryCode === c.code ? 'bg-navy text-white font-bold' : 'hover:bg-secondary text-foreground'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm">{c.flag}</span>
+                                          <span>{language === 'fa' ? c.nameFa : c.nameEn}</span>
+                                        </div>
+                                        <span className={`font-mono text-xs ${countryCode === c.code ? 'text-gold' : 'text-muted-foreground'}`}>
+                                          {c.code}
+                                        </span>
+                                      </button>
+                                    ))}
+
+                                  {/* Alphabetical Items */}
+                                  <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1 border-t border-border/40 pt-1.5">
+                                    {language === 'fa' ? 'سایر کشورها' : 'Other Countries'}
+                                  </div>
+                                  {alphabeticalCountryCodes
+                                    .filter(c => 
+                                      c.code.includes(countrySearch) || 
+                                      c.nameFa.includes(countrySearch) || 
+                                      c.nameEn.toLowerCase().includes(countrySearch.toLowerCase())
+                                    )
+                                    .map((c, i) => (
+                                      <button
+                                        key={`o-${i}`}
+                                        type="button"
+                                        onClick={() => {
+                                          setCountryCode(c.code);
+                                          setShowCountryDropdown(false);
+                                          setCountrySearch('');
+                                        }}
+                                        className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-start transition-colors ${
+                                          countryCode === c.code ? 'bg-navy text-white font-bold' : 'hover:bg-secondary text-foreground'
+                                        }`}
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-sm">{c.flag}</span>
+                                          <span>{language === 'fa' ? c.nameFa : c.nameEn}</span>
+                                        </div>
+                                        <span className={`font-mono text-xs ${countryCode === c.code ? 'text-gold' : 'text-muted-foreground'}`}>
+                                          {c.code}
+                                        </span>
+                                      </button>
+                                    ))}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
 
-                        {errors.phone && (
-                          <span className="text-[9px] text-destructive px-0.5 leading-tight">{phoneErrorMsg || t.requiredField}</span>
-                        )}
+                        {/* Local Phone Input */}
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => {
+                            setPhone(e.target.value);
+                            if (errors.phone) setErrors(prev => ({ ...prev, phone: false }));
+                          }}
+                          onBlur={handlePhoneBlur}
+                          placeholder={countryCode === '+968' ? '7171 3238' : countryCode === '+98' ? '0912 345 6789' : '50 123 4567'}
+                          className="flex-1 min-w-0 w-full bg-transparent px-3.5 py-2.5 text-xs text-foreground outline-none dir-ltr placeholder:text-muted-foreground/60"
+                          dir="ltr"
+                        />
                       </div>
+
+                      {errors.phone && (
+                        <span className="text-[9px] text-destructive px-0.5 leading-tight">{phoneErrorMsg || t.requiredField}</span>
+                      )}
                     </div>
 
                     {/* Description field */}
