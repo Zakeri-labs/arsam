@@ -600,12 +600,9 @@ export function ServiceDetailModal({
                             <button
                               type="button"
                               onClick={() => setShowCountryDropdown(prev => !prev)}
-                              className="flex items-center gap-1 text-[11px] font-mono font-bold text-foreground hover:opacity-80 transition-opacity"
+                              className="flex items-center gap-1 text-[11px] font-mono font-bold text-foreground hover:opacity-80 transition-opacity px-1"
                               title={language === 'fa' ? 'انتخاب کشور' : 'Select Country'}
                             >
-                              <span>
-                                {[...priorityCountryCodes, ...alphabeticalCountryCodes].find(c => c.code === countryCode)?.flag || '🌐'}
-                              </span>
                               <span className="dir-ltr">{countryCode}</span>
                               <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
                             </button>
