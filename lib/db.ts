@@ -122,6 +122,59 @@ export async function getServicesDB(): Promise<ServicesDB> {
         });
       }
 
+      const hasOther = (rows as ServiceRow[]).some(r => r.id === 'other-services');
+      if (!hasOther) {
+        const otherEN: Service = {
+          id: 'other-services',
+          title: 'Other Services / Custom Request',
+          description: 'If your required service is not listed above, submit your description and attach any files. Our team will contact you promptly.',
+          workingDays: 'Fast Response',
+          requirements: ['Request Description & Details', 'Relevant Documents / Files (Optional)'],
+          category: 'General Government Services'
+        };
+        const otherFA: Service = {
+          id: 'other-services',
+          title: 'سایر خدمات / درخواست اختصاصی',
+          description: 'چنانچه خدمت مورد نظر شما در لیست بالا نیست، توضیحات و فایل‌های خود را ارسال کنید تا کارشناسان ما بررسی و با شما تماس بگیرند.',
+          workingDays: 'پاسخ‌گویی سریع',
+          requirements: ['توضیحات کامل درخواست', 'پیوست مدارک و فایل‌های مرتبط (اختیاری)'],
+          category: 'General Government Services'
+        };
+        const otherAR: Service = {
+          id: 'other-services',
+          title: 'خدمات أخرى / طلب خاص',
+          description: 'إذا لم تكن الخدمة المطلوبة مدرجة في القائمة، أرسل تفاصيل طلبك والملفات وسيتواصل معك فريقنا في أقرب وقت.',
+          workingDays: 'استجابة سريعة',
+          requirements: ['تفاصيل الطلب', 'إرفاق المستندات والملفات (اختياري)'],
+          category: 'General Government Services'
+        };
+
+        en.push(otherEN);
+        fa.push(otherFA);
+        ar.push(otherAR);
+        if (!uaeServiceIds.includes('other-services')) uaeServiceIds.push('other-services');
+        if (!omanServiceIds.includes('other-services')) omanServiceIds.push('other-services');
+
+        upsertServiceRow({
+          id: 'other-services',
+          category: 'General Government Services',
+          title_en: otherEN.title,
+          title_fa: otherFA.title,
+          title_ar: otherAR.title,
+          description_en: otherEN.description,
+          description_fa: otherFA.description,
+          description_ar: otherAR.description,
+          working_days_en: otherEN.workingDays,
+          working_days_fa: otherFA.workingDays,
+          working_days_ar: otherAR.workingDays,
+          requirements_en: otherEN.requirements,
+          requirements_fa: otherFA.requirements,
+          requirements_ar: otherAR.requirements,
+          is_uae: true,
+          is_oman: true,
+        }).catch(err => console.error('Failed auto upserting other-services:', err));
+      }
+
       return { en, fa, ar, uaeServiceIds, omanServiceIds };
     }
   } catch (error) {

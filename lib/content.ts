@@ -467,6 +467,14 @@ export const servicesListEN: Service[] = [
     workingDays: '7 Working Days',
     requirements: ['Audited Financial Statements', 'Omanisation Ratio Report', 'Local Purchase Invoices'],
     category: 'General Government Services'
+  },
+  {
+    id: 'other-services',
+    title: 'Other Services / Custom Request',
+    description: 'If your required service is not listed above, submit your description and attach any files. Our team will contact you promptly.',
+    workingDays: 'Fast Response',
+    requirements: ['Request Description & Details', 'Relevant Documents / Files (Optional)'],
+    category: 'General Government Services'
   }
 ];
 
@@ -886,6 +894,14 @@ export const servicesListFA: Service[] = [
     serviceFee: '۱۵۰ ریال عمان',
     workingDays: '۷ روز کاری',
     requirements: ['صورت‌های مالی حسابرسی شده', 'گزارش عمان‌سازی', 'فاکتورهای خرید داخلی'],
+    category: 'General Government Services'
+  },
+  {
+    id: 'other-services',
+    title: 'سایر خدمات / درخواست اختصاصی',
+    description: 'چنانچه خدمت مورد نظر شما در لیست بالا نیست، توضیحات و فایل‌های خود را ارسال کنید تا کارشناسان ما بررسی و با شما تماس بگیرند.',
+    workingDays: 'پاسخ‌گویی سریع',
+    requirements: ['توضیحات کامل درخواست', 'پیوست مدارک و فایل‌های مرتبط (اختیاری)'],
     category: 'General Government Services'
   }
 ];
@@ -1307,12 +1323,20 @@ export const servicesListAR: Service[] = [
     workingDays: '7 أيام عمل',
     requirements: ['القوائم المالية المدققة', 'تقرير نسبة التعمين', 'فواتير الشراء المحلية'],
     category: 'General Government Services'
+  },
+  {
+    id: 'other-services',
+    title: 'خدمات أخرى / طلب خاص',
+    description: 'إذا لم تكن الخدمة المطلوبة مدرجة في القائمة، أرسل تفاصيل طلبك والملفات وسيتواصل معك فريقنا في أقرب وقت.',
+    workingDays: 'استجابة سريعة',
+    requirements: ['تفاصيل الطلب', 'إرفاق المستندات والملفات (اختياري)'],
+    category: 'General Government Services'
   }
 ];
 
 // ─── MASTER ID LISTS ─────────────────────────────────────────────────────────
 // ─── MASTER ID LISTS ─────────────────────────────────────────────────────────
-export const uaeServiceIds: string[] = [];
+export const uaeServiceIds: string[] = ['other-services'];
 
 export const omanServiceIds = [
   'company-mainland',
@@ -1357,7 +1381,8 @@ export const omanServiceIds = [
   'product-standards',
   'government-land-rental',
   'accounting-auditing',
-  'omanisation-management'
+  'omanisation-management',
+  'other-services'
 ];
 
 // Helper function to map OMR services list to OMR for Oman

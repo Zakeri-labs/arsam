@@ -1,11 +1,12 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ChevronRight, Building2, FileText, CreditCard, Users, Building, Landmark } from 'lucide-react';
+import { ChevronRight, Building2, FileText, CreditCard, Users, Building, Landmark, HelpCircle } from 'lucide-react';
 import type { Service, Language } from '@/lib/content';
 
 // Map service IDs to icons
 const serviceIcons: Record<string, React.ReactNode> = {
+  'other-services': <HelpCircle className="h-5 w-5" />,
   'establishment-card-renewal': <FileText className="h-5 w-5" />,
   'family-residency-renewal': <Users className="h-5 w-5" />,
   'investor-residency-renewal': <Users className="h-5 w-5" />,

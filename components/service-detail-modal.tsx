@@ -239,7 +239,11 @@ export function ServiceDetailModal({
   // Reset form state when modal closes/opens
   useEffect(() => {
     if (isOpen) {
-      setView('details');
+      if (service?.id === 'other-services') {
+        setView('form');
+      } else {
+        setView('details');
+      }
       setName('');
       setPhone('');
       setDescription('');
@@ -249,7 +253,7 @@ export function ServiceDetailModal({
       setExtraFiles([]);
       setIsSubmitting(false);
     }
-  }, [isOpen]);
+  }, [isOpen, service?.id]);
 
   if (!service) return null;
 
@@ -610,13 +614,17 @@ export function ServiceDetailModal({
                     {/* Description field */}
                     <div className="flex flex-col gap-1 text-start">
                       <label className="text-xs font-bold text-foreground px-0.5">
-                        {t.descLabel}
+                        {service.id === 'other-services'
+                          ? (language === 'fa' ? 'توضیحات و شرح درخواست شما' : language === 'ar' ? 'تفاصيل ومعلومات الطلب' : 'Request Description & Details')
+                          : t.descLabel}
                       </label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder={t.descPlaceholder}
-                        rows={2}
+                        placeholder={service.id === 'other-services'
+                          ? (language === 'fa' ? 'لطفاً توضیحات کامل درباره خدمت یا درخواست مورد نظر خود را بنویسید...' : language === 'ar' ? 'يرجى كتابة تفاصيل الخدمة أو الطلب المطلوب...' : 'Please describe the service or request you need in detail...')
+                          : t.descPlaceholder}
+                        rows={3}
                         className="w-full rounded-xl border border-border bg-card px-3.5 py-2.5 text-xs text-foreground outline-none transition-all focus:border-gold placeholder:text-muted-foreground/60 resize-none"
                       />
                     </div>
