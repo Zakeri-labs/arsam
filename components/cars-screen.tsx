@@ -393,14 +393,14 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
     for (const c of crmClients) {
       if (c.phone && c.name) {
-        const clean = c.phone.replace(/[^0-9+]/g, '');
+        const clean = normalizeDigits(c.phone).replace(/[^0-9+]/g, '');
         if (clean) clientMap.set(clean, { name: c.name.trim(), phone: c.phone.trim() });
       }
     }
 
     for (const r of reservations) {
       if (r.customerPhone && r.customerName) {
-        const clean = r.customerPhone.replace(/[^0-9+]/g, '');
+        const clean = normalizeDigits(r.customerPhone).replace(/[^0-9+]/g, '');
         if (clean && !clientMap.has(clean)) {
           clientMap.set(clean, { name: r.customerName.trim(), phone: r.customerPhone.trim() });
         }
@@ -413,9 +413,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   // Live Phone Match Check
   const matchedExistingClient = useMemo(() => {
     if (customerSelectMode !== 'new' || !resForm.customerPhone) return null;
-    const clean = resForm.customerPhone.replace(/[^0-9+]/g, '');
+    const clean = normalizeDigits(resForm.customerPhone).replace(/[^0-9+]/g, '');
     if (!clean || clean.length < 4) return null;
-    return allClients.find(c => c.phone.replace(/[^0-9+]/g, '') === clean) || null;
+    return allClients.find(c => normalizeDigits(c.phone).replace(/[^0-9+]/g, '') === clean) || null;
   }, [customerSelectMode, resForm.customerPhone, allClients]);
 
   // --- RESERVATION HANDLERS & PRICING CALCULATOR ---
@@ -535,8 +535,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         return;
       }
 
-      const cleanPhone = resForm.customerPhone.replace(/[^0-9+]/g, '');
-      const existing = allClients.find(c => c.phone.replace(/[^0-9+]/g, '') === cleanPhone);
+      const cleanPhone = normalizeDigits(resForm.customerPhone).replace(/[^0-9+]/g, '');
+      const existing = allClients.find(c => normalizeDigits(c.phone).replace(/[^0-9+]/g, '') === cleanPhone);
       if (existing && existing.name !== resForm.customerName.trim()) {
         toast.error(`خطا: شماره تماس ${resForm.customerPhone} متعلق به «${existing.name}» است. لطفاً از پرونده مشتری استفاده نمایید.`);
         return;
@@ -1604,7 +1604,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       type="text"
                       required
                       value={carForm.plateNumber || ''}
-                      onChange={e => setCarForm({ ...carForm, plateNumber: e.target.value })}
+                      onChange={e => setCarForm({ ...carForm, plateNumber: normalizeDigits(e.target.value) })}
                       placeholder="مثال: 12301"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-mono"
                     />
@@ -1669,7 +1669,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <input
                       type="text"
                       value={carForm.modelYear || ''}
-                      onChange={e => setCarForm({ ...carForm, modelYear: e.target.value })}
+                      onChange={e => setCarForm({ ...carForm, modelYear: normalizeDigits(e.target.value) })}
                       placeholder="2023"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
@@ -1926,7 +1926,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         type="text"
                         required
                         value={resForm.customerPhone || ''}
-                        onChange={e => setResForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        onChange={e => setResForm(prev => ({ ...prev, customerPhone: normalizeDigits(e.target.value) }))}
                         placeholder="شماره تماس (+968 91234567) *"
                         className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold dir-ltr"
                       />
