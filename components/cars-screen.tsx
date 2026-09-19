@@ -10,7 +10,10 @@ import {
   ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Car, CarReservation, CarTransaction, cleanCarTitle, cleanCarPlate } from '@/lib/db-cars';
+import {
+  Car, CarReservation, CarTransaction, CarContract, FuelLevel,
+  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate
+} from '@/lib/db-cars';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
 import CarContractModal, { ContractData } from './car-contract-modal';
@@ -20,22 +23,22 @@ interface CRMClient {
   phone: string;
 }
 
-export interface CarContract {
-  id: string;
-  reservationId: string;
-  carTitle: string;
-  plateNumber: string;
-  customerName: string;
-  customerPhone: string;
-  initialOdometer: number;
-  returnOdometer?: number;
-  fuelLevel: 'full' | 'three_quarters' | 'half' | 'quarter' | 'empty';
-  depositAmount: number;
-  depositStatus: 'held' | 'refunded' | 'partially_refunded';
-  handoverStatus: 'delivered' | 'pending_delivery' | 'returned' | 'inspection_required';
-  notes?: string;
-  createdAt: string;
-}
+export type { CarContract };
+
+const HANDOVER_STATUS_BADGES: Record<CarContract['handoverStatus'], { label: string; cls: string }> = {
+  delivered: { label: 'تحویل داده شد', cls: 'bg-emerald-500/20 text-emerald-300' },
+  pending_delivery: { label: 'در انتظار تحویل', cls: 'bg-amber-500/20 text-amber-300' },
+  returned: { label: 'عودت داده شد', cls: 'bg-blue-500/20 text-blue-300' },
+  inspection_required: { label: 'نیازمند بررسی بدنه', cls: 'bg-rose-500/20 text-rose-300' },
+};
+
+const DEPOSIT_STATUS_LABELS: Record<CarContract['depositStatus'], string> = {
+  held: 'نزد شرکت',
+  refunded: 'مسترد شد',
+  partially_refunded: 'استرداد با کسر جریمه',
+};
+
+const allChecked = () => Object.fromEntries(HANDOVER_CHECKLIST_ITEMS.map(i => [i.key, true]));
 
 interface CarsScreenProps {
   initialTab?: 'calendar' | 'fleet' | 'contracts' | 'accounting';
@@ -65,24 +68,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   const [loading, setLoading] = useState(true);
 
   // Contracts Mock Data & State
-  const [contracts, setContracts] = useState<CarContract[]>([
-    {
-      id: 'CNT-101',
-      reservationId: 'res-1',
-      carTitle: 'ام‌جی GT 2026 (#1)',
-      plateNumber: '48123',
-      customerName: 'رضا علوی',
-      customerPhone: '+96891234567',
-      initialOdometer: 42500,
-      returnOdometer: 42850,
-      fuelLevel: 'full',
-      depositAmount: 120,
-      depositStatus: 'held',
-      handoverStatus: 'delivered',
-      notes: 'تحویل داده شد با بدنه سالم و فول بنزین',
-      createdAt: new Date().toISOString()
-    }
-  ]);
+  const [contracts, setContracts] = useState<CarContract[]>([]);
+  const [savingHandover, setSavingHandover] = useState(false);
 
   // Hover Tooltip State for Calendar Gantt Bar
   const [hoveredRes, setHoveredRes] = useState<{ res: CarReservation; car: Car; x: number; y: number } | null>(null);
@@ -114,12 +101,13 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     plateNumber: '',
     customerName: '',
     customerPhone: '',
-    initialOdometer: 42500,
-    returnOdometer: 42850,
-    fuelLevel: 'full' as 'full' | 'three_quarters' | 'half' | 'quarter' | 'empty',
+    initialOdometer: 0,
+    returnOdometer: 0,
+    fuelLevel: 'full' as FuelLevel,
     depositAmount: 40,
-    depositStatus: 'held' as 'held' | 'refunded' | 'partially_refunded',
-    handoverStatus: 'delivered' as 'delivered' | 'pending_delivery' | 'returned' | 'inspection_required',
+    depositStatus: 'held' as CarContract['depositStatus'],
+    handoverStatus: 'delivered' as CarContract['handoverStatus'],
+    checklist: allChecked() as Record<string, boolean>,
     notes: ''
   });
 
@@ -151,7 +139,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       totalPrice: matchingRes?.totalPrice || 90,
       depositPaid: cnt.depositAmount || 50,
       initialOdometer: cnt.initialOdometer,
-      fuelLevel: cnt.fuelLevel === 'full' ? 'فول (Full)' : '۳/۴',
+      fuelLevel: FUEL_LEVEL_LABELS[cnt.fuelLevel] || FUEL_LEVEL_LABELS.full,
       notes: cnt.notes
     };
 
@@ -235,13 +223,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [carsRes, resRes, txRes, crmRes] = await Promise.all([
+      const [carsRes, resRes, txRes, crmRes, contractsRes] = await Promise.all([
         fetch('/api/cars').then(r => r.json()),
         fetch('/api/cars/reservations').then(r => r.json()),
         fetch('/api/cars/transactions').then(r => r.json()),
-        fetch('/api/requests').then(r => r.json()).catch(() => [])
+        fetch('/api/requests').then(r => r.json()).catch(() => []),
+        fetch('/api/cars/contracts').then(r => r.json()).catch(() => [])
       ]);
 
+      if (Array.isArray(contractsRes)) setContracts(contractsRes);
       if (Array.isArray(carsRes)) setCars(carsRes);
       if (Array.isArray(resRes)) setReservations(resRes);
       if (Array.isArray(txRes)) setTransactions(txRes);
@@ -569,25 +559,6 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
         const car = cars.find(c => c.id === resForm.carId);
 
-        // Auto Generate Contract
-        const newContract: CarContract = {
-          id: `CNT-${Date.now().toString().slice(-4)}`,
-          reservationId: newRes.id,
-          carTitle: resForm.carTitle || car?.title || 'خودرو اجاره‌ای',
-          plateNumber: car?.plateNumber || '48123',
-          customerName: resForm.customerName,
-          customerPhone: resForm.customerPhone,
-          initialOdometer: 42500,
-          returnOdometer: 42850,
-          fuelLevel: 'full',
-          depositAmount: resForm.depositPaid || car?.depositAmount || 40,
-          depositStatus: 'held',
-          handoverStatus: 'delivered',
-          notes: resForm.notes || 'صورتجلسه تحویل اولیه صادره سیستم',
-          createdAt: new Date().toISOString()
-        };
-        setContracts(prev => [newContract, ...prev]);
-
         // Update car status to rented if reservation is active today
         const todayStr = new Date().toISOString().split('T')[0];
         if (resForm.startDate! <= todayStr && resForm.endDate! >= todayStr) {
@@ -599,26 +570,12 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
         }
 
-        // Also add automatic transaction record for Rent Fee
-        if (resForm.totalPrice && resForm.totalPrice > 0) {
-          const rentTx: CarTransaction = {
-            id: 'tx-rent-' + Date.now(),
-            reservationId: newRes.id,
-            carId: resForm.carId,
-            customerName: resForm.customerName,
-            amount: resForm.totalPrice,
-            type: 'rent_fee',
-            paymentMethod: 'bank_reza',
-            description: `دریافت کرایه اجاره ${resForm.carTitle || ''} (${resForm.customerName})`,
-            transactionDate: resForm.startDate || todayStr,
-            createdAt: new Date().toISOString()
-          };
-          setTransactions(prev => [rentTx, ...prev]);
-          fetch('/api/cars/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(rentTx)
-          });
+        // Contract and rent-fee revenue are issued server-side; reflect them locally
+        if (data.transaction) {
+          setTransactions(prev => [data.transaction, ...prev.filter(t => t.id !== data.transaction.id)]);
+        }
+        if (data.contract) {
+          toast.success(`قرارداد ${data.contract.id} صادر و درآمد اجاره ثبت شد`);
         }
 
         // Also add automatic transaction record for Deposit
@@ -741,46 +698,82 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     const res = reservations.find(r => r.id === resId) || reservations[0];
     const car = cars.find(c => c.id === res?.carId);
 
+    const plate = car?.plateNumber || '';
+    // Start from the last recorded odometer of the same vehicle
+    const lastCnt = contracts.find(c => plate && c.plateNumber === plate);
+
     setHandoverForm({
       reservationId: res?.id || '',
       carTitle: res?.carTitle || car?.title || '',
-      plateNumber: car?.plateNumber || '48123',
+      plateNumber: plate,
       customerName: res?.customerName || '',
       customerPhone: res?.customerPhone || '',
-      initialOdometer: 42500,
-      returnOdometer: 42850,
+      initialOdometer: lastCnt ? (lastCnt.returnOdometer || lastCnt.initialOdometer) : 0,
+      returnOdometer: 0,
       fuelLevel: 'full',
-      depositAmount: res?.depositPaid || car?.depositAmount || 40,
+      depositAmount: res?.depositPaid || car?.depositAmount || 0,
       depositStatus: 'held',
       handoverStatus: 'delivered',
-      notes: 'صورتجلسه تحویل خودرو ثبت گردید'
+      checklist: allChecked(),
+      notes: ''
     });
     setIsHandoverModalOpen(true);
   };
 
-  const handleSaveHandover = (e: React.FormEvent) => {
+  const handleSaveHandover = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newCnt: CarContract = {
-      id: `CNT-${Date.now().toString().slice(-4)}`,
-      reservationId: handoverForm.reservationId || 'res-' + Date.now(),
-      carTitle: handoverForm.carTitle || 'خودرو اجاره‌ای',
-      plateNumber: handoverForm.plateNumber || '48123',
-      customerName: handoverForm.customerName || 'مشتری محترم',
-      customerPhone: handoverForm.customerPhone || '+96891234567',
-      initialOdometer: Number(handoverForm.initialOdometer) || 42500,
-      returnOdometer: Number(handoverForm.returnOdometer) || 42850,
-      fuelLevel: handoverForm.fuelLevel,
-      depositAmount: Number(handoverForm.depositAmount) || 40,
-      depositStatus: handoverForm.depositStatus,
-      handoverStatus: handoverForm.handoverStatus,
-      notes: handoverForm.notes,
-      createdAt: new Date().toISOString()
-    };
 
-    setContracts(prev => [newCnt, ...prev]);
-    setIsHandoverModalOpen(false);
-    toast.success('صورتجلسه تحویل و قرارداد جدید با موفقیت ثبت شد');
-    handleOpenContractPdf(newCnt);
+    const initialKm = Number(handoverForm.initialOdometer);
+    const returnKm = Number(handoverForm.returnOdometer);
+    if (!handoverForm.customerName.trim() || !handoverForm.carTitle) {
+      toast.error('انتخاب رزرو و نام مشتری الزامی است');
+      return;
+    }
+    if (!initialKm || initialKm < 0) {
+      toast.error('کیلومتر تحویل را وارد کنید');
+      return;
+    }
+    if (returnKm && returnKm < initialKm) {
+      toast.error('کیلومتر عودت نمی‌تواند کمتر از کیلومتر تحویل باشد');
+      return;
+    }
+
+    setSavingHandover(true);
+    try {
+      const res = await fetch('/api/cars/contracts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reservationId: handoverForm.reservationId,
+          carTitle: handoverForm.carTitle,
+          plateNumber: handoverForm.plateNumber,
+          customerName: handoverForm.customerName.trim(),
+          customerPhone: handoverForm.customerPhone,
+          initialOdometer: initialKm,
+          returnOdometer: returnKm || undefined,
+          fuelLevel: handoverForm.fuelLevel,
+          depositAmount: Number(handoverForm.depositAmount) || 0,
+          depositStatus: handoverForm.depositStatus,
+          handoverStatus: handoverForm.handoverStatus,
+          checklist: handoverForm.checklist,
+          notes: handoverForm.notes
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const saved: CarContract = data.contract;
+        setContracts(prev => [saved, ...prev.filter(c => c.id !== saved.id)]);
+        setIsHandoverModalOpen(false);
+        toast.success('صورتجلسه تحویل با موفقیت ثبت شد');
+        handleOpenContractPdf(saved);
+      } else {
+        toast.error(data.error || 'خطا در ثبت صورتجلسه');
+      }
+    } catch (err) {
+      toast.error('خطای برقراری ارتباط با سرور');
+    } finally {
+      setSavingHandover(false);
+    }
   };
 
   // --- CRM AUTOSUGGEST FILTER ---
@@ -1345,20 +1338,25 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         <span className="text-[10px] text-white/50 dir-ltr inline-block">{cnt.customerPhone}</span>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-white/80">
-                        {cnt.initialOdometer ? cnt.initialOdometer.toLocaleString() : '42,500'} / {cnt.returnOdometer ? cnt.returnOdometer.toLocaleString() : '42,850'} KM
+                        {cnt.initialOdometer.toLocaleString()} / {cnt.returnOdometer ? cnt.returnOdometer.toLocaleString() : '—'} KM
                       </td>
                       <td className="py-3.5 px-4 font-bold text-blue-400">
-                        {cnt.fuelLevel === 'full' ? 'فول (Full)' : '۳/۴'}
+                        {FUEL_LEVEL_LABELS[cnt.fuelLevel] || cnt.fuelLevel}
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">
-                          {cnt.depositAmount.toLocaleString()} OMR (نزد شرکت)
+                          {cnt.depositAmount.toLocaleString()} OMR ({DEPOSIT_STATUS_LABELS[cnt.depositStatus]})
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">
-                          تحویل داده شد
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${HANDOVER_STATUS_BADGES[cnt.handoverStatus].cls}`}>
+                          {HANDOVER_STATUS_BADGES[cnt.handoverStatus].label}
                         </span>
+                        {cnt.checklist && (
+                          <span className="block text-[10px] text-white/50 mt-1">
+                            چک‌لیست: {HANDOVER_CHECKLIST_ITEMS.filter(i => cnt.checklist?.[i.key]).length}/{HANDOVER_CHECKLIST_ITEMS.length} مورد سالم
+                          </span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 text-center">
                         <button
@@ -1397,7 +1395,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             {/* Deposits Held (Liabilities) */}
             <div className="bg-[#0b172a] p-4 rounded-2xl border border-amber-500/40 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full blur-xl"></div>
-              <p className="text-[11px] font-bold text-amber-400 mb-1">ودایع نزد شرکت (بدهی)</p>
+              <p className="text-[11px] font-bold text-amber-400 mb-1">ودیعه نزد شرکت (بدهی)</p>
               <div className="flex items-center gap-2 text-2xl font-black text-white">{accountingStats.totalDepositsHeld.toLocaleString()} <OMRIcon size="md" /></div>
             </div>
 
@@ -2426,6 +2424,35 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 </div>
 
                 <div>
+                  <label className="block text-white/80 font-bold mb-1.5">چک‌لیست سلامت خودرو</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {HANDOVER_CHECKLIST_ITEMS.map(item => {
+                      const ok = !!handoverForm.checklist[item.key];
+                      return (
+                        <label
+                          key={item.key}
+                          className={`flex items-center gap-2 rounded-xl border p-2.5 cursor-pointer transition-colors ${
+                            ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/40 bg-rose-500/10 text-rose-200'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={ok}
+                            onChange={e => setHandoverForm(prev => ({
+                              ...prev,
+                              checklist: { ...prev.checklist, [item.key]: e.target.checked }
+                            }))}
+                            className="h-4 w-4 accent-emerald-500 shrink-0"
+                          />
+                          <span className="flex-1 text-[11px] font-bold">{item.label}</span>
+                          <span className="text-[10px] font-black">{ok ? 'سالم' : 'مشکل دارد'}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-white/80 font-bold mb-1">ملاحظات و سلامت بدنه</label>
                   <textarea
                     rows={2}
@@ -2446,10 +2473,11 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5"
+                    disabled={savingHandover}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     <CheckCircle2 size={16} />
-                    <span>ثبت صورتجلسه و نمایش قرارداد</span>
+                    <span>{savingHandover ? 'در حال ذخیره...' : 'ثبت صورتجلسه و نمایش قرارداد'}</span>
                   </button>
                 </div>
               </form>

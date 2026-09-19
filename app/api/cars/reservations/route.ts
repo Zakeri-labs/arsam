@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation } from '@/lib/db-cars';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue } from '@/lib/db-cars';
 import { verifyAdminAuth } from '@/lib/auth-check';
 
 async function checkAuth() {
@@ -34,8 +34,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'اطلاعات ضروری رزرو ناقص است' }, { status: 400 });
     }
 
+    const isNew = !body.id;
     const reservation = await saveReservation(body);
-    return NextResponse.json({ success: true, reservation });
+    if (!isNew) {
+      return NextResponse.json({ success: true, reservation });
+    }
+
+    // Auto chain: new reservation -> official contract (serial) -> rental revenue in accounting
+    try {
+      const { contract, transaction } = await issueContractAndRevenue(reservation, body.paymentMethod);
+      return NextResponse.json({ success: true, reservation, contract, transaction });
+    } catch (chainErr) {
+      console.error('Error issuing contract/revenue for reservation:', chainErr);
+      return NextResponse.json({ success: true, reservation, chainError: true });
+    }
   } catch (error: any) {
     console.error('Error saving reservation:', error);
     return NextResponse.json({ error: 'خطا در ذخیره‌سازی رزرو' }, { status: 500 });
