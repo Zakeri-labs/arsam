@@ -10,13 +10,13 @@
   "theme_color": "#0f1e37",
   "icons": [
     {
-      "src": "/favicon.png",
-      "sizes": "252x268",
+      "src": "/admin-icon-192.png",
+      "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/apple-icon.png",
-      "sizes": "180x180",
+      "src": "/admin-icon-512.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ]
