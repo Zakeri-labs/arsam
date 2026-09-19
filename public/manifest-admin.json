@@ -11,12 +11,12 @@
   "icons": [
     {
       "src": "/favicon.png",
-      "sizes": "192x192",
+      "sizes": "252x268",
       "type": "image/png"
     },
     {
       "src": "/apple-icon.png",
-      "sizes": "512x512",
+      "sizes": "180x180",
       "type": "image/png"
     }
   ]
