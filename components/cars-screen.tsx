@@ -431,13 +431,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       } catch (err) {}
     }
 
-    const grossTotal = rate * days;
-    const rawDiscount = discType === 'percent'
-      ? (grossTotal * (Math.min(100, Math.max(0, discVal)) / 100))
-      : Math.min(grossTotal, Math.max(0, discVal));
-    const discountAmount = parseFloat(rawDiscount.toFixed(3));
+    // Work in integer baisa (1 OMR = 1000 baisa) so percent discounts are exact to 3 decimals
+    const grossBaisa = Math.round(rate * days * 1000);
+    const discountBaisa = discType === 'percent'
+      ? Math.round(Number((grossBaisa * Math.min(100, Math.max(0, discVal)) / 100).toPrecision(12)))
+      : Math.min(grossBaisa, Math.round(Math.max(0, discVal) * 1000));
 
-    const finalTotal = Math.max(0, parseFloat((grossTotal - discountAmount).toFixed(3)));
+    const grossTotal = grossBaisa / 1000;
+    const discountAmount = discountBaisa / 1000;
+    const finalTotal = Math.max(0, grossBaisa - discountBaisa) / 1000;
 
     return {
       rate,
