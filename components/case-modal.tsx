@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import {
   FileText, Download, Upload, Phone, MessageSquare, Clock,
@@ -142,11 +143,8 @@ export default function CaseModal({
           description,
           files,
         });
-        setToastMsg('تغییرات پرونده با موفقیت ذخیره شد');
-        setTimeout(() => {
-          setToastMsg(null);
-          onClose();
-        }, 1200);
+        toast.success('تغییرات پرونده با موفقیت ذخیره شد');
+        onClose();
       } else {
         alert('خطا در ذخیره‌سازی تغییرات پرونده');
       }
