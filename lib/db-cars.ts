@@ -879,3 +879,62 @@ export async function deleteContract(id: string): Promise<boolean> {
   } catch (err) {}
   return true;
 }
+
+// --- RESERVATION CHAIN: reservation -> contract -> accounting revenue ---
+async function nextContractSerial(): Promise<string> {
+  const year = new Date().getFullYear();
+  const prefix = `CNT-${year}-`;
+  const contracts = await getContracts();
+  const maxSeq = contracts.reduce((max, c) => {
+    if (!c.id.startsWith(prefix)) return max;
+    const n = parseInt(c.id.slice(prefix.length), 10);
+    return Number.isNaN(n) ? max : Math.max(max, n);
+  }, 0);
+  return `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+}
+
+// Idempotent: re-running for the same reservation never creates a duplicate contract or revenue row.
+export async function issueContractAndRevenue(
+  reservation: CarReservation,
+  paymentMethod: CarTransaction['paymentMethod'] = 'bank_reza'
+): Promise<{ contract: CarContract; transaction?: CarTransaction }> {
+  const contracts = await getContracts();
+  let contract = contracts.find(c => c.reservationId === reservation.id);
+
+  if (!contract) {
+    const cars = await getCars();
+    const car = cars.find(c => c.id === reservation.carId);
+    contract = await saveContract({
+      id: await nextContractSerial(),
+      reservationId: reservation.id,
+      carTitle: reservation.carTitle || car?.title || '',
+      plateNumber: car?.plateNumber || '',
+      customerName: reservation.customerName,
+      customerPhone: reservation.customerPhone,
+      depositAmount: reservation.depositPaid,
+      handoverStatus: 'pending_delivery',
+    });
+  }
+
+  let transaction: CarTransaction | undefined;
+  if (reservation.totalPrice > 0) {
+    const txId = `tx-rent-${reservation.id}`;
+    const transactions = await getTransactions();
+    transaction = transactions.find(t => t.id === txId);
+    if (!transaction) {
+      transaction = await saveTransaction({
+        id: txId,
+        reservationId: reservation.id,
+        carId: reservation.carId,
+        customerName: reservation.customerName,
+        amount: reservation.totalPrice,
+        type: 'rent_fee',
+        paymentMethod,
+        description: `درآمد اجاره ${reservation.carTitle || 'خودرو'} - قرارداد ${contract.id}`,
+        transactionDate: reservation.startDate,
+      });
+    }
+  }
+
+  return { contract, transaction };
+}

@@ -570,26 +570,12 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
         }
 
-        // Also add automatic transaction record for Rent Fee
-        if (resForm.totalPrice && resForm.totalPrice > 0) {
-          const rentTx: CarTransaction = {
-            id: 'tx-rent-' + Date.now(),
-            reservationId: newRes.id,
-            carId: resForm.carId,
-            customerName: resForm.customerName,
-            amount: resForm.totalPrice,
-            type: 'rent_fee',
-            paymentMethod: 'bank_reza',
-            description: `دریافت کرایه اجاره ${resForm.carTitle || ''} (${resForm.customerName})`,
-            transactionDate: resForm.startDate || todayStr,
-            createdAt: new Date().toISOString()
-          };
-          setTransactions(prev => [rentTx, ...prev]);
-          fetch('/api/cars/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(rentTx)
-          });
+        // Contract and rent-fee revenue are issued server-side; reflect them locally
+        if (data.transaction) {
+          setTransactions(prev => [data.transaction, ...prev.filter(t => t.id !== data.transaction.id)]);
+        }
+        if (data.contract) {
+          toast.success(`قرارداد ${data.contract.id} صادر و درآمد اجاره ثبت شد`);
         }
 
         // Also add automatic transaction record for Deposit
