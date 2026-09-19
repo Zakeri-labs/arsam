@@ -341,7 +341,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       if (res.ok && data.success) {
         toast.success(editingCar ? 'مشخصات خودرو با موفقیت ویرایش شد' : 'خودرو جدید با موفقیت ثبت شد');
         setIsCarModalOpen(false);
-        fetchAllData();
+        await fetchAllData();
       } else {
         toast.error(data.error || 'خطا در ذخیره‌سازی');
       }
@@ -568,6 +568,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         }
 
         const car = cars.find(c => c.id === resForm.carId);
+        const sideEffects: Promise<unknown>[] = [];
 
         // Auto Generate Contract
         const newContract: CarContract = {
@@ -591,11 +592,11 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         // Update car status to rented if reservation is active today
         const todayStr = new Date().toISOString().split('T')[0];
         if (resForm.startDate! <= todayStr && resForm.endDate! >= todayStr) {
-          fetch('/api/cars', {
+          sideEffects.push(fetch('/api/cars', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: resForm.carId, status: 'rented' })
-          });
+          }));
           setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
         }
 
@@ -614,11 +615,11 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             createdAt: new Date().toISOString()
           };
           setTransactions(prev => [rentTx, ...prev]);
-          fetch('/api/cars/transactions', {
+          sideEffects.push(fetch('/api/cars/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(rentTx)
-          });
+          }));
         }
 
         // Also add automatic transaction record for Deposit
@@ -636,14 +637,16 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             createdAt: new Date().toISOString()
           };
           setTransactions(prev => [depTx, ...prev]);
-          fetch('/api/cars/transactions', {
+          sideEffects.push(fetch('/api/cars/transactions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(depTx)
-          });
+          }));
         }
 
-        fetchAllData();
+        // Wait for the follow-up writes so the refresh below can't overwrite them with stale data
+        await Promise.allSettled(sideEffects);
+        await fetchAllData();
       } else {
         toast.error(data.error || 'خطا در ثبت رزرو');
       }
@@ -713,7 +716,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       if (res.ok && data.success) {
         toast.success('تراکنش مالی جدید با موفقیت ثبت شد');
         setIsTransactionModalOpen(false);
-        fetchAllData();
+        await fetchAllData();
       } else {
         toast.error(data.error || 'خطا در ثبت تراکنش');
       }
