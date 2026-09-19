@@ -52,6 +52,47 @@ export interface CarTransaction {
   createdAt?: string;
 }
 
+export type FuelLevel = 'full' | 'three_quarters' | 'half' | 'quarter' | 'empty';
+
+export const FUEL_LEVEL_LABELS: Record<FuelLevel, string> = {
+  full: 'فول (Full)',
+  three_quarters: '۳/۴',
+  half: '۱/۲',
+  quarter: '۱/۴',
+  empty: 'خالی (Empty)',
+};
+
+export const HANDOVER_CHECKLIST_ITEMS: { key: string; label: string }[] = [
+  { key: 'body', label: 'سلامت بدنه (بدون خط‌وخش و فرورفتگی)' },
+  { key: 'windshield', label: 'شیشه‌ها و آینه‌ها' },
+  { key: 'tires', label: 'لاستیک‌ها و رینگ‌ها' },
+  { key: 'spareTire', label: 'لاستیک زاپاس' },
+  { key: 'tools', label: 'جک و آچار چرخ' },
+  { key: 'lights', label: 'چراغ‌ها و راهنماها' },
+  { key: 'ac', label: 'کولر / سیستم تهویه' },
+  { key: 'interior', label: 'سلامت و نظافت داخل خودرو' },
+  { key: 'documents', label: 'کارت خودرو و بیمه‌نامه' },
+  { key: 'safety', label: 'مثلث و کپسول ایمنی' },
+];
+
+export interface CarContract {
+  id: string;
+  reservationId: string;
+  carTitle: string;
+  plateNumber: string;
+  customerName: string;
+  customerPhone: string;
+  initialOdometer: number;
+  returnOdometer?: number;
+  fuelLevel: FuelLevel;
+  depositAmount: number;
+  depositStatus: 'held' | 'refunded' | 'partially_refunded';
+  handoverStatus: 'delivered' | 'pending_delivery' | 'returned' | 'inspection_required';
+  checklist?: Record<string, boolean>;
+  notes?: string;
+  createdAt: string;
+}
+
 export function cleanCarTitle(title: string): string {
   if (!title) return '';
   return title
@@ -413,7 +454,9 @@ function ensureDataDirExists() {
   } catch (err) {}
 }
 
-function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[] } {
+type DiskStore = { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[]; contracts: CarContract[] };
+
+function loadDiskStore(): DiskStore {
   try {
     const { fs } = getFsAndPath();
     const dataFile = getDataFilePath();
@@ -432,6 +475,7 @@ function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transac
           cars: resolvedCars,
           reservations: Array.isArray(parsed.reservations) ? parsed.reservations : memoryReservations,
           transactions: Array.isArray(parsed.transactions) ? parsed.transactions : memoryTransactions,
+          contracts: Array.isArray(parsed.contracts) ? parsed.contracts : [],
         };
       }
     }
@@ -443,12 +487,13 @@ function loadDiskStore(): { cars: Car[]; reservations: CarReservation[]; transac
     cars: memoryCars,
     reservations: memoryReservations,
     transactions: memoryTransactions,
+    contracts: [],
   };
   saveDiskStore(initial);
   return initial;
 }
 
-function saveDiskStore(store: { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[] }) {
+function saveDiskStore(store: DiskStore) {
   try {
     const { fs } = getFsAndPath();
     const dataFile = getDataFilePath();
@@ -738,6 +783,99 @@ export async function deleteTransaction(id: string): Promise<boolean> {
   saveDiskStore(store);
   try {
     await supabase.from('car_transactions').delete().eq('id', id);
+  } catch (err) {}
+  return true;
+}
+
+// --- CONTRACTS / HANDOVER CRUD ---
+export async function getContracts(): Promise<CarContract[]> {
+  const store = loadDiskStore();
+  try {
+    const { data, error } = await supabase.from('car_contracts').select('*').order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) {
+      const dbContracts: CarContract[] = data.map((item: any) => ({
+        id: item.id,
+        reservationId: item.reservation_id,
+        carTitle: item.car_title,
+        plateNumber: item.plate_number,
+        customerName: item.customer_name,
+        customerPhone: item.customer_phone,
+        initialOdometer: Number(item.initial_odometer),
+        returnOdometer: item.return_odometer != null ? Number(item.return_odometer) : undefined,
+        fuelLevel: item.fuel_level,
+        depositAmount: Number(item.deposit_amount),
+        depositStatus: item.deposit_status,
+        handoverStatus: item.handover_status,
+        checklist: item.checklist || {},
+        notes: item.notes,
+        createdAt: item.created_at,
+      }));
+      store.contracts = dbContracts;
+      saveDiskStore(store);
+      return dbContracts;
+    }
+  } catch (err) {}
+  return store.contracts;
+}
+
+export async function saveContract(data: Partial<CarContract>): Promise<CarContract> {
+  const store = loadDiskStore();
+  const id = data.id || 'CNT-' + Date.now().toString().slice(-6);
+  const existing = store.contracts.find(c => c.id === id);
+
+  const contract: CarContract = {
+    id,
+    reservationId: data.reservationId ?? existing?.reservationId ?? '',
+    carTitle: data.carTitle ?? existing?.carTitle ?? '',
+    plateNumber: data.plateNumber ?? existing?.plateNumber ?? '',
+    customerName: data.customerName ?? existing?.customerName ?? '',
+    customerPhone: data.customerPhone ?? existing?.customerPhone ?? '',
+    initialOdometer: data.initialOdometer !== undefined ? Number(data.initialOdometer) : (existing?.initialOdometer || 0),
+    returnOdometer: data.returnOdometer !== undefined ? Number(data.returnOdometer) : existing?.returnOdometer,
+    fuelLevel: data.fuelLevel ?? existing?.fuelLevel ?? 'full',
+    depositAmount: data.depositAmount !== undefined ? Number(data.depositAmount) : (existing?.depositAmount || 0),
+    depositStatus: data.depositStatus ?? existing?.depositStatus ?? 'held',
+    handoverStatus: data.handoverStatus ?? existing?.handoverStatus ?? 'delivered',
+    checklist: data.checklist ?? existing?.checklist ?? {},
+    notes: data.notes ?? existing?.notes ?? '',
+    createdAt: existing?.createdAt || data.createdAt || new Date().toISOString(),
+  };
+
+  if (existing) {
+    store.contracts = store.contracts.map(c => c.id === id ? contract : c);
+  } else {
+    store.contracts.unshift(contract);
+  }
+  saveDiskStore(store);
+
+  try {
+    await supabase.from('car_contracts').upsert({
+      id: contract.id,
+      reservation_id: contract.reservationId,
+      car_title: contract.carTitle,
+      plate_number: contract.plateNumber,
+      customer_name: contract.customerName,
+      customer_phone: contract.customerPhone,
+      initial_odometer: contract.initialOdometer,
+      return_odometer: contract.returnOdometer ?? null,
+      fuel_level: contract.fuelLevel,
+      deposit_amount: contract.depositAmount,
+      deposit_status: contract.depositStatus,
+      handover_status: contract.handoverStatus,
+      checklist: contract.checklist,
+      notes: contract.notes,
+    }, { onConflict: 'id' });
+  } catch (err) {}
+
+  return contract;
+}
+
+export async function deleteContract(id: string): Promise<boolean> {
+  const store = loadDiskStore();
+  store.contracts = store.contracts.filter(c => c.id !== id);
+  saveDiskStore(store);
+  try {
+    await supabase.from('car_contracts').delete().eq('id', id);
   } catch (err) {}
   return true;
 }
