@@ -1395,7 +1395,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
             {/* Deposits Held (Liabilities) */}
             <div className="bg-[#0b172a] p-4 rounded-2xl border border-amber-500/40 shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-20 h-20 bg-amber-500/10 rounded-full blur-xl"></div>
-              <p className="text-[11px] font-bold text-amber-400 mb-1">ودایع نزد شرکت (بدهی)</p>
+              <p className="text-[11px] font-bold text-amber-400 mb-1">ودیعه نزد شرکت (بدهی)</p>
               <div className="flex items-center gap-2 text-2xl font-black text-white">{accountingStats.totalDepositsHeld.toLocaleString()} <OMRIcon size="md" /></div>
             </div>
 
