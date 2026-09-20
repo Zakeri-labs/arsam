@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Printer, FileText } from 'lucide-react';
 
@@ -41,6 +41,13 @@ export interface ContractData {
   netRefundable?: number;
   discountAmount?: number;
   notes?: string;
+  // Fields filled by hand on the paper form
+  workAddress?: string;
+  whatsapp?: string;
+  cleanInside?: string;
+  cleanOutside?: string;
+  extraKm?: string;
+  extraKmAmount?: number;
 }
 
 interface CarContractModalProps {
@@ -48,8 +55,16 @@ interface CarContractModalProps {
   onClose: () => void;
 }
 
-export default function CarContractModal({ contract, onClose }: CarContractModalProps) {
+export default function CarContractModal({ contract: initialContract, onClose }: CarContractModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  // Editable copy: the form panel edits this and the printed sheet re-renders live
+  const [contract, setContract] = useState<ContractData>(initialContract);
+  const upd = (key: keyof ContractData, value: string | number | undefined) =>
+    setContract(prev => ({ ...prev, [key]: value }));
+  const updNum = (key: keyof ContractData, raw: string) => {
+    const n = parseFloat(raw.replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632)));
+    upd(key, Number.isNaN(n) ? undefined : n);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -74,6 +89,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
     : /empty|خالی/.test(fuelText) ? Math.PI - 0.2
     : null;
   const deductions = contract.deductionsAmount || 0;
+  const extraKmAmount = contract.extraKmAmount || 0;
   const netRefund = (contract.netRefundable !== undefined) 
     ? contract.netRefundable 
     : Math.max(0, contract.depositPaid - deductions);
@@ -131,7 +147,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="contract-print-shell w-full max-w-4xl bg-[#0b172a] rounded-3xl border border-white/20 shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
+        className="contract-print-shell w-full max-w-7xl bg-[#0b172a] rounded-3xl border border-white/20 shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
       >
         {/* Modal Toolbar Header */}
         <div className="bg-[#0f1e37] px-5 py-4 border-b border-white/10 flex items-center justify-between no-print shrink-0">
@@ -163,7 +179,98 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
         </div>
 
         {/* Scrollable Printable Document Body */}
-        <div className="contract-print-shell flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-900">
+        <div className="contract-print-shell flex-1 min-h-0 flex flex-col lg:flex-row-reverse overflow-hidden">
+        {/* DATA ENTRY FORM (screen only) */}
+        <aside className="no-print lg:w-[22rem] shrink-0 overflow-y-auto bg-[#0f1e37] border-b lg:border-b-0 lg:border-l border-white/10 p-4 space-y-4 max-h-[40vh] lg:max-h-none" dir="rtl">
+          <p className="text-[11px] text-white/50">اطلاعات را وارد کنید؛ پیش‌نمایش هم‌زمان به‌روز می‌شود و همین نسخه چاپ/PDF می‌شود.</p>
+          {[
+            { title: 'مشتری', fields: [
+              { label: 'نام مشتری (انگلیسی)', key: 'customerNameEn', ph: contract.customerName },
+              { label: 'آدرس محل سکونت', key: 'customerAddress' },
+              { label: 'آدرس محل کار', key: 'workAddress' },
+              { label: 'تلفن', key: 'customerPhone', ltr: true },
+              { label: 'واتس‌اپ', key: 'whatsapp', ltr: true, ph: contract.customerPhone },
+              { label: 'ملیت', key: 'customerNationality' },
+              { label: 'نوع گواهینامه', key: 'licenceType' },
+              { label: 'شماره گواهینامه', key: 'licenceNo', ltr: true },
+              { label: 'شماره کارت ملی / پاسپورت', key: 'customerNationalId', ltr: true },
+            ] },
+            { title: 'خودرو', fields: [
+              { label: 'نوع خودرو', key: 'carTitleEn', ph: contract.carTitle },
+              { label: 'پلاک', key: 'plateNumber', ltr: true },
+              { label: 'رنگ', key: 'color' },
+              { label: 'نظافت داخل (از ۱۰)', key: 'cleanInside', ltr: true },
+              { label: 'نظافت خارج (از ۱۰)', key: 'cleanOutside', ltr: true },
+            ] },
+            { title: 'زمان', fields: [
+              { label: 'تاریخ خروج', key: 'startDate', ltr: true },
+              { label: 'ساعت خروج', key: 'departureTime', ltr: true },
+              { label: 'تاریخ بازگشت', key: 'endDate', ltr: true },
+              { label: 'ساعت بازگشت', key: 'returnTime', ltr: true },
+              { label: 'تاریخ قرارداد', key: 'date', ltr: true },
+            ] },
+            { title: 'ملاحظات', fields: [{ label: 'ملاحظات', key: 'notes', area: true }] },
+          ].map(group => (
+            <fieldset key={group.title} className="space-y-2">
+              <legend className="text-xs font-black text-amber-400 mb-1">{group.title}</legend>
+              {group.fields.map((f: { label: string; key: string; ltr?: boolean; ph?: string; area?: boolean }) => {
+                const cls = `w-full rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-amber-400 ${f.ltr ? 'text-left' : ''}`;
+                const val = String((contract as any)[f.key] ?? '');
+                return (
+                  <label key={f.key} className="block">
+                    <span className="block text-[10.5px] text-white/60 mb-0.5">{f.label}</span>
+                    {f.area ? (
+                      <textarea rows={3} className={cls} value={val} onChange={e => upd(f.key as keyof ContractData, e.target.value)} />
+                    ) : (
+                      <input className={cls} dir={f.ltr ? 'ltr' : 'auto'} value={val} placeholder={f.ph} onChange={e => upd(f.key as keyof ContractData, e.target.value)} />
+                    )}
+                  </label>
+                );
+              })}
+            </fieldset>
+          ))}
+
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-black text-amber-400 mb-1">کیلومتر، سوخت و مبالغ (ر.ع)</legend>
+            {[
+              { label: 'مدت اجاره (روز)', key: 'rentalDays' },
+              { label: 'کیلومتر هنگام خروج', key: 'initialOdometer' },
+              { label: 'کیلومتر هنگام بازگشت', key: 'returnOdometer' },
+              { label: 'کیلومتر اضافه', key: 'extraKm', text: true },
+              { label: 'اجاره روزانه', key: 'dailyRate' },
+              { label: 'مبلغ پرداخت‌شده', key: 'depositPaid' },
+              { label: 'مبلغ اجاره کل', key: 'totalPrice' },
+              { label: 'مبلغ کیلومتر اضافه', key: 'extraKmAmount' },
+              { label: 'مبلغ حادثه', key: 'deductionsAmount' },
+            ].map(f => (
+              <label key={f.key} className="block">
+                <span className="block text-[10.5px] text-white/60 mb-0.5">{f.label}</span>
+                <input
+                  inputMode="decimal"
+                  dir="ltr"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white text-left focus:outline-none focus:border-amber-400"
+                  value={String((contract as any)[f.key] ?? '')}
+                  onChange={e => (f.text ? upd(f.key as keyof ContractData, e.target.value) : updNum(f.key as keyof ContractData, e.target.value))}
+                />
+              </label>
+            ))}
+            <label className="block">
+              <span className="block text-[10.5px] text-white/60 mb-0.5">سطح سوخت</span>
+              <select
+                className="w-full rounded-lg bg-[#0b172a] border border-white/10 px-2.5 py-1.5 text-xs text-white"
+                value={/full|فول|پر/i.test(contract.fuelLevel || '') ? 'Full' : /half|نصف|نیم/i.test(contract.fuelLevel || '') ? 'Half' : /empty|خالی/i.test(contract.fuelLevel || '') ? 'Empty' : ''}
+                onChange={e => upd('fuelLevel', e.target.value)}
+              >
+                <option value="">— خالی (با دست علامت زده شود) —</option>
+                <option value="Full">پر (Full)</option>
+                <option value="Half">نصف (Half)</option>
+                <option value="Empty">خالی (Empty)</option>
+              </select>
+            </label>
+          </fieldset>
+        </aside>
+
+        <div className="contract-print-shell flex-1 min-w-0 overflow-y-auto p-3 sm:p-6 bg-slate-900">
           {/* Physical paper form is laid out LTR: English labels left, Arabic labels right */}
           <div
             id="printable-contract-container"
@@ -192,9 +299,9 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
               {[
                 { en: "Customer's Name:", ar: 'إسم المستأجر:', value: contract.customerNameEn || contract.customerName, upper: true },
                 { en: 'Res. Add. :', ar: 'العنوان الحالي:', value: contract.customerAddress || '' },
-                { en: 'Work Add. :', ar: 'عنوان العمل:', value: '' },
+                { en: 'Work Add. :', ar: 'عنوان العمل:', value: contract.workAddress || '' },
                 { en: 'Tel. :', ar: 'هاتف:', value: toEng(contract.customerPhone), mono: true },
-                { en: 'Whatsapp No. :', ar: 'رقم واتس اب:', value: toEng(contract.customerPhone), mono: true },
+                { en: 'Whatsapp No. :', ar: 'رقم واتس اب:', value: toEng(contract.whatsapp ?? contract.customerPhone), mono: true },
               ].map(row => (
                 <div key={row.en} className="flex items-center gap-2 px-1.5 py-1 min-h-[22px]">
                   <span className="w-28 shrink-0 text-gray-700 font-semibold">{row.en}</span>
@@ -228,8 +335,8 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
                 <div className="grid grid-cols-2 gap-1.5 items-center">
                   <div className="border border-gray-700 text-[9px]">
                     <div className="text-center bg-gray-100 border-b border-gray-500 font-bold leading-tight">Cleanliness level <span dir="rtl">مستوى النظافة</span></div>
-                    <div className="flex justify-between px-1 py-0.5"><span>inside</span><span className="font-mono">__ /10</span><span dir="rtl">داخل السيارة</span></div>
-                    <div className="flex justify-between px-1 py-0.5 border-t border-gray-400"><span>outside</span><span className="font-mono">__ /10</span><span dir="rtl">خارج السيارة</span></div>
+                    <div className="flex justify-between px-1 py-0.5"><span>inside</span><span className="font-mono text-blue-900 font-bold">{toEng(contract.cleanInside) || '__'} /10</span><span dir="rtl">داخل السيارة</span></div>
+                    <div className="flex justify-between px-1 py-0.5 border-t border-gray-400"><span>outside</span><span className="font-mono text-blue-900 font-bold">{toEng(contract.cleanOutside) || '__'} /10</span><span dir="rtl">خارج السيارة</span></div>
                   </div>
                   {/* Fuel gauge */}
                   <div className="text-center">
@@ -299,7 +406,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
                     <div dir="rtl">الكيلومترات زائدة</div>
                     <div>Extra KM</div>
                   </div>
-                  <div className="h-7" />
+                  <div className="h-7 flex items-center justify-center font-bold text-[12px] text-blue-900 font-mono">{toEng(contract.extraKm)}</div>
                 </div>
               </div>
             </div>
@@ -370,9 +477,9 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
               <div className="col-span-5 space-y-1">
                 {[
                   { ar: 'المبلغ المستحق لمدة الإيجار', v: contract.totalPrice },
-                  { ar: 'المبلغ المستحق للكيلومترات الزائدة', v: null },
+                  { ar: 'المبلغ المستحق للكيلومترات الزائدة', v: extraKmAmount || null },
                   { ar: 'المبلغ المستحق لأي حادث', v: deductions || null },
-                  { ar: 'المبلغ الإجمالي', v: contract.totalPrice + deductions },
+                  { ar: 'المبلغ الإجمالي', v: contract.totalPrice + deductions + extraKmAmount },
                 ].map(r => (
                   <div key={r.ar} className="flex items-center justify-between border border-gray-700 rounded-sm px-1.5 py-1">
                     <span className="font-mono text-[11px] text-blue-900">{r.v !== null ? toEng(r.v) : ''}</span>
@@ -399,6 +506,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
               </div>
             </div>
           </div>
+        </div>
         </div>
       </motion.div>
     </div>
