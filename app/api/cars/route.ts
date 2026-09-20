@@ -30,7 +30,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    if (!body.title || !body.dailyRate) {
+    if (body.id && !body.title && !body.dailyRate) {
+      // Partial update (e.g. status only) — the car must already exist
+      const cars = await getCars();
+      if (!cars.some(c => c.id === body.id)) {
+        return NextResponse.json({ error: 'خودرو یافت نشد' }, { status: 404 });
+      }
+    } else if (!body.title || !body.dailyRate) {
       return NextResponse.json({ error: 'عنوان خودرو و نرخ روزانه الزامی است' }, { status: 400 });
     }
 
