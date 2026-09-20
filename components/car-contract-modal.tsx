@@ -1,6 +1,9 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import ContractHeader from './contract-header-template';
+import ContractFooter from './contract-footer-template';
 import { motion } from 'framer-motion';
 import { X, Printer, FileText } from 'lucide-react';
 
@@ -41,6 +44,13 @@ export interface ContractData {
   netRefundable?: number;
   discountAmount?: number;
   notes?: string;
+  // Fields filled by hand on the paper form
+  workAddress?: string;
+  whatsapp?: string;
+  cleanInside?: string;
+  cleanOutside?: string;
+  extraKm?: string;
+  extraKmAmount?: number;
 }
 
 interface CarContractModalProps {
@@ -48,8 +58,38 @@ interface CarContractModalProps {
   onClose: () => void;
 }
 
-export default function CarContractModal({ contract, onClose }: CarContractModalProps) {
+type FuelKey = 'full' | '3/4' | 'half' | '1/4' | 'empty';
+const FUEL_ANGLES: Record<FuelKey, number> = { full: 0.2, '3/4': Math.PI * 0.25, half: Math.PI / 2, '1/4': Math.PI * 0.75, empty: Math.PI - 0.2 };
+
+// Maps the handover labels (e.g. 'فول (Full)', '۳/۴', '۱/۲', 'خالی (Empty)') to a dial position
+function fuelKeyOf(text?: string): FuelKey | null {
+  const t = (text || '').toLowerCase().replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776));
+  if (/full|فول|پر/.test(t)) return 'full';
+  if (/3\/4|three/.test(t)) return '3/4';
+  if (/1\/2|half|نصف/.test(t)) return 'half';
+  if (/1\/4|quarter/.test(t)) return '1/4';
+  if (/empty|خالی/.test(t)) return 'empty';
+  return null;
+}
+
+export default function CarContractModal({ contract: initialContract, onClose }: CarContractModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  // Render into <body> so printing can hide every other page element (otherwise the admin layout pushes the contract onto page 2)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  // Editable copy: the form panel edits this and the printed sheet re-renders live
+  const [contract, setContract] = useState<ContractData>(() => ({
+    ...initialContract,
+    customerNameEn: initialContract.customerNameEn || initialContract.customerName,
+    whatsapp: initialContract.whatsapp ?? initialContract.customerPhone,
+    carTitleEn: initialContract.carTitleEn || initialContract.carTitle,
+  }));
+  const upd = (key: keyof ContractData, value: string | number | undefined) =>
+    setContract(prev => ({ ...prev, [key]: value }));
+  const updNum = (key: keyof ContractData, raw: string) => {
+    const n = parseFloat(raw.replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632)));
+    upd(key, Number.isNaN(n) ? undefined : n);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -64,42 +104,76 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
 
   const contractDate = toEng(contract.date || new Date().toISOString().split('T')[0]);
   const contractNumber = (contract.contractNo || contract.id || `CNT-${Date.now().toString().slice(-4)}`).toUpperCase();
-  const days = contract.rentalDays || 1;
-  const initialKm = contract.initialOdometer || 135597;
-  const returnKm = contract.returnOdometer || '';
-  const fuelStatus = contract.fuelLevel || 'فول (Full)';
+  const dailyRate = contract.dailyRate || (contract.rentalDays ? contract.totalPrice / contract.rentalDays : 0);
+  const initialKm = contract.initialOdometer || 0;
+  const returnKm = contract.returnOdometer || 0;
+  const fuelKey = fuelKeyOf(contract.fuelLevel);
+  // Needle angle in radians (PI = Empty, 0 = Full); null leaves the dial blank for hand marking
+  const fuelAngle: number | null = fuelKey ? FUEL_ANGLES[fuelKey] : null;
   const deductions = contract.deductionsAmount || 0;
+  const extraKmAmount = contract.extraKmAmount || 0;
   const netRefund = (contract.netRefundable !== undefined) 
     ? contract.netRefundable 
     : Math.max(0, contract.depositPaid - deductions);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto" dir="rtl">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="contract-print-root contract-print-shell fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto" dir="rtl">
       {/* CSS Print Styles for exact A4 physical contract layout matching Oman store form */}
       <style jsx global>{`
+        @page {
+          size: A4 portrait;
+          margin: 4mm;
+        }
         @media print {
-          body * {
-            visibility: hidden !important;
+          /* Only the contract is printed: every other element in <body> is removed from layout */
+          body > *:not(.contract-print-root) {
+            display: none !important;
           }
-          #printable-contract-container,
-          #printable-contract-container * {
-            visibility: visible !important;
+          html, body {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          /* Un-clip every modal wrapper so the whole contract flows onto the printed page */
+          .contract-print-shell {
+            position: static !important;
+            display: block !important;
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+            opacity: 1 !important;
+            transform: none !important;
           }
           #printable-contract-container {
-            position: absolute !important;
+            position: static !important;
             left: 0 !important;
             top: 0 !important;
             width: 100% !important;
             background: #ffffff !important;
             color: #000000 !important;
-            padding: 4mm !important;
+            padding: 2mm !important;
             margin: 0 !important;
+            break-inside: avoid;
+            page-break-after: avoid;
             box-shadow: none !important;
             border: none !important;
           }
-          @page {
-            size: A4 portrait;
-            margin: 4mm;
+          /* Force backgrounds (red notice banner, gold bar, ...) to print even when the "Background graphics" option is off */
+          .contract-print-root,
+          .contract-print-root * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
           .no-print {
             display: none !important;
@@ -111,7 +185,7 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.96 }}
-        className="w-full max-w-4xl bg-[#0b172a] rounded-3xl border border-white/20 shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
+        className="contract-print-shell w-full max-w-7xl bg-[#0b172a] rounded-3xl border border-white/20 shadow-2xl overflow-hidden flex flex-col max-h-[95vh]"
       >
         {/* Modal Toolbar Header */}
         <div className="bg-[#0f1e37] px-5 py-4 border-b border-white/10 flex items-center justify-between no-print shrink-0">
@@ -143,332 +217,301 @@ export default function CarContractModal({ contract, onClose }: CarContractModal
         </div>
 
         {/* Scrollable Printable Document Body */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-6 bg-slate-900">
+        <div className="contract-print-shell flex-1 min-h-0 flex flex-col lg:flex-row-reverse overflow-hidden">
+        {/* DATA ENTRY FORM (screen only) */}
+        <aside className="no-print lg:w-[22rem] shrink-0 overflow-y-auto bg-[#0f1e37] border-b lg:border-b-0 lg:border-l border-white/10 p-4 space-y-4 max-h-[40vh] lg:max-h-none" dir="rtl">
+          <p className="text-[11px] text-white/50">اطلاعات را وارد کنید؛ پیش‌نمایش هم‌زمان به‌روز می‌شود و همین نسخه چاپ/PDF می‌شود.</p>
+          {[
+            { title: 'مشتری', fields: [
+              { label: 'نام مشتری (انگلیسی)', key: 'customerNameEn', ph: contract.customerName },
+              { label: 'آدرس محل سکونت', key: 'customerAddress' },
+              { label: 'آدرس محل کار', key: 'workAddress' },
+              { label: 'تلفن', key: 'customerPhone', ltr: true },
+              { label: 'واتس‌اپ', key: 'whatsapp', ltr: true, ph: contract.customerPhone },
+              { label: 'ملیت', key: 'customerNationality' },
+              { label: 'نوع گواهینامه', key: 'licenceType' },
+              { label: 'شماره گواهینامه', key: 'licenceNo', ltr: true },
+              { label: 'شماره کارت ملی / پاسپورت', key: 'customerNationalId', ltr: true },
+            ] },
+            { title: 'خودرو', fields: [
+              { label: 'نوع خودرو', key: 'carTitleEn', ph: contract.carTitle },
+              { label: 'پلاک', key: 'plateNumber', ltr: true },
+              { label: 'رنگ', key: 'color' },
+              { label: 'نظافت داخل (از ۱۰)', key: 'cleanInside', ltr: true },
+              { label: 'نظافت خارج (از ۱۰)', key: 'cleanOutside', ltr: true },
+            ] },
+            { title: 'زمان', fields: [
+              { label: 'تاریخ خروج', key: 'startDate', ltr: true },
+              { label: 'ساعت خروج', key: 'departureTime', ltr: true },
+              { label: 'تاریخ بازگشت', key: 'endDate', ltr: true },
+              { label: 'ساعت بازگشت', key: 'returnTime', ltr: true },
+              { label: 'تاریخ قرارداد', key: 'date', ltr: true },
+            ] },
+            { title: 'ملاحظات', fields: [{ label: 'ملاحظات', key: 'notes', area: true }] },
+          ].map(group => (
+            <fieldset key={group.title} className="space-y-2">
+              <legend className="text-xs font-black text-amber-400 mb-1">{group.title}</legend>
+              {group.fields.map((f: { label: string; key: string; ltr?: boolean; ph?: string; area?: boolean }) => {
+                const cls = `w-full rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-amber-400 ${f.ltr ? 'text-left' : ''}`;
+                const val = String((contract as any)[f.key] ?? '');
+                return (
+                  <label key={f.key} className="block">
+                    <span className="block text-[10.5px] text-white/60 mb-0.5">{f.label}</span>
+                    {f.area ? (
+                      <textarea rows={3} className={cls} value={val} onChange={e => upd(f.key as keyof ContractData, e.target.value)} />
+                    ) : (
+                      <input className={cls} dir={f.ltr ? 'ltr' : 'auto'} value={val} placeholder={f.ph} onChange={e => upd(f.key as keyof ContractData, e.target.value)} />
+                    )}
+                  </label>
+                );
+              })}
+            </fieldset>
+          ))}
+
+          <fieldset className="space-y-2">
+            <legend className="text-xs font-black text-amber-400 mb-1">کیلومتر، سوخت و مبالغ (ر.ع)</legend>
+            {[
+              { label: 'مدت اجاره (روز)', key: 'rentalDays' },
+              { label: 'کیلومتر هنگام خروج', key: 'initialOdometer' },
+              { label: 'کیلومتر هنگام بازگشت', key: 'returnOdometer' },
+              { label: 'کیلومتر اضافه', key: 'extraKm', text: true },
+              { label: 'اجاره روزانه', key: 'dailyRate' },
+              { label: 'مبلغ پرداخت‌شده', key: 'depositPaid' },
+              { label: 'مبلغ اجاره کل', key: 'totalPrice' },
+              { label: 'مبلغ کیلومتر اضافه', key: 'extraKmAmount' },
+              { label: 'مبلغ حادثه', key: 'deductionsAmount' },
+            ].map(f => (
+              <label key={f.key} className="block">
+                <span className="block text-[10.5px] text-white/60 mb-0.5">{f.label}</span>
+                <input
+                  inputMode="decimal"
+                  dir="ltr"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white text-left focus:outline-none focus:border-amber-400"
+                  value={String((contract as any)[f.key] ?? '')}
+                  onChange={e => (f.text ? upd(f.key as keyof ContractData, e.target.value) : updNum(f.key as keyof ContractData, e.target.value))}
+                />
+              </label>
+            ))}
+            <label className="block">
+              <span className="block text-[10.5px] text-white/60 mb-0.5">سطح سوخت</span>
+              <select
+                className="w-full rounded-lg bg-[#0b172a] border border-white/10 px-2.5 py-1.5 text-xs text-white"
+                value={fuelKey || ''}
+                onChange={e => upd('fuelLevel', e.target.value)}
+              >
+                <option value="">— خالی (با دست علامت زده شود) —</option>
+                <option value="full">پر (Full)</option>
+                <option value="3/4">۳/۴</option>
+                <option value="half">نصف (۱/۲)</option>
+                <option value="1/4">۱/۴</option>
+                <option value="empty">خالی (Empty)</option>
+              </select>
+            </label>
+          </fieldset>
+        </aside>
+
+        <div className="contract-print-shell flex-1 min-w-0 overflow-y-auto p-3 sm:p-6 bg-slate-900">
+          {/* Physical paper form is laid out LTR: English labels left, Arabic labels right */}
           <div
             id="printable-contract-container"
             ref={printRef}
-            className="w-full bg-white text-black p-4 sm:p-6 shadow-2xl text-[11px] space-y-2.5 font-sans leading-tight border border-gray-400 font-medium"
+            dir="ltr"
+            className="w-full bg-white text-black p-4 sm:p-6 shadow-2xl text-[11px] space-y-1.5 font-sans leading-tight border border-gray-400 font-medium"
           >
-            {/* HEADER BRANDING BANNER MATCHING OMAN CONTRACT */}
-            <div className="border-b-2 border-red-700 pb-2 flex items-center justify-between">
-              <div className="text-right w-1/3">
-                <span className="text-[10px] text-gray-600 block">CAR RENTAL AGREEMENT</span>
-                <span className="font-mono font-bold text-xs text-gray-800">No: {contractNumber}</span>
-              </div>
+            {/* HEADER (template: lib/contract-template.ts) */}
+            <ContractHeader contractNumber={contractNumber} />
 
-              <div className="text-center w-1/3 space-y-0.5">
-                <div className="bg-red-700 text-white py-1 px-3 rounded font-black text-sm uppercase tracking-wider inline-block">
-                  ARSAM RENT CAR
+            {/* CUSTOMER LINES: English (left) — value — Arabic (right) */}
+            <div className="border border-gray-700 divide-y divide-gray-500 text-[10px]">
+              {[
+                { en: "Customer's Name:", ar: 'إسم المستأجر:', value: contract.customerNameEn || contract.customerName, upper: true },
+                { en: 'Res. Add. :', ar: 'العنوان الحالي:', value: contract.customerAddress || '' },
+                { en: 'Work Add. :', ar: 'عنوان العمل:', value: contract.workAddress || '' },
+                { en: 'Tel. :', ar: 'هاتف:', value: toEng(contract.customerPhone), mono: true },
+                { en: 'Whatsapp No. :', ar: 'رقم واتس اب:', value: toEng(contract.whatsapp ?? contract.customerPhone), mono: true },
+              ].map(row => (
+                <div key={row.en} className="flex items-center gap-2 px-1.5 py-1 min-h-[22px]">
+                  <span className="w-28 shrink-0 text-gray-700 font-semibold">{row.en}</span>
+                  <span className={`flex-1 font-bold text-[12px] text-blue-900 ${row.upper ? 'uppercase' : ''} ${row.mono ? 'font-mono' : ''}`}>{row.value}</span>
+                  <span className="w-24 shrink-0 text-right text-gray-700 font-semibold" dir="rtl">{row.ar}</span>
                 </div>
-                <div className="text-xs font-black text-red-700 dir-rtl">أبو أرسام لإستئجار السيارات</div>
-                <div className="text-[9.5px] font-bold text-gray-700 dir-ltr font-mono">
-                  Call & WhatsApp: 94521746 | C.R: 1426046
-                </div>
-              </div>
-
-              <div className="text-left w-1/3 font-black text-sm text-gray-900 dir-rtl">
-                عقــد إيجــار سيارات
-                <div className="text-[9.5px] font-normal text-gray-600 mt-0.5">التاريخ / Date: {contractDate}</div>
-              </div>
+              ))}
             </div>
 
-            {/* SECTION 1: HIRER / CUSTOMER INFORMATION GRID */}
-            <div className="border border-black rounded overflow-hidden divide-y divide-black text-[10.5px]">
-              <div className="grid grid-cols-2 divide-x divide-x-reverse divide-black bg-gray-50">
-                <div className="p-1.5 flex justify-between items-center">
-                  <span className="font-bold text-gray-700">إسم المستأجر:</span>
-                  <span className="font-black text-black uppercase font-mono">{contract.customerNameEn || contract.customerName}</span>
-                  <span className="text-[9px] text-gray-500 font-sans">Customer's Name:</span>
+            {/* NATIONALITY / LICENCE / ID ROW */}
+            <div className="grid grid-cols-4 gap-1.5 text-center">
+              {[
+                { ar: 'الجنسية', en: 'Nationality', value: contract.customerNationality || '' },
+                { ar: 'نوع الرخصة', en: 'Type of Licence', value: contract.licenceType || '' },
+                { ar: 'رخصة قيادة رقم', en: 'Driving Licence No.', value: toEng(contract.licenceNo || ''), mono: true },
+                { ar: 'بطاقة شخصية / جواز السفر رقم', en: 'ID Card / Passport No.', value: toEng(contract.customerNationalId || contract.customerPassport || ''), mono: true },
+              ].map(f => (
+                <div key={f.en} className="border border-gray-700 rounded-lg overflow-hidden">
+                  <div className="text-[8.5px] leading-tight text-gray-700 border-b border-gray-400 py-0.5 px-2">
+                    <div dir="rtl">{f.ar}</div>
+                    <div>{f.en}</div>
+                  </div>
+                  <div className={`h-6 flex items-center justify-center font-bold text-[12px] text-blue-900 uppercase ${f.mono ? 'font-mono' : ''}`}>{f.value}</div>
                 </div>
-                <div className="p-1.5 flex justify-between items-center">
-                  <span className="font-bold text-gray-700">العنوان الحالي:</span>
-                  <span className="font-bold text-black">{contract.customerAddress || 'Muscat, Oman'}</span>
-                  <span className="text-[9px] text-gray-500 font-sans">Res. Add. :</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 divide-x divide-x-reverse divide-black bg-gray-50">
-                <div className="p-1.5 flex justify-between items-center">
-                  <span className="font-bold text-gray-700">عنوان العمل:</span>
-                  <span className="font-bold text-black">-</span>
-                  <span className="text-[9px] text-gray-500 font-sans">Work Add. :</span>
-                </div>
-                <div className="p-1.5 flex justify-between items-center">
-                  <span className="font-bold text-gray-700">هاتف / واتس اب:</span>
-                  <span className="font-mono font-bold text-black dir-ltr">{toEng(contract.customerPhone)}</span>
-                  <span className="text-[9px] text-gray-500 font-sans">Tel & Whatsapp:</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 divide-x divide-x-reverse divide-black text-center text-[10px] bg-white">
-                <div className="p-1">
-                  <div className="text-gray-600 text-[9px]">الجنسية / Nationality</div>
-                  <div className="font-bold uppercase mt-0.5">{contract.customerNationality || 'IRANI'}</div>
-                </div>
-                <div className="p-1">
-                  <div className="text-gray-600 text-[9px]">نوع الرخصة / Type of Licence</div>
-                  <div className="font-bold uppercase mt-0.5">{contract.licenceType || 'INTER'}</div>
-                </div>
-                <div className="p-1">
-                  <div className="text-gray-600 text-[9px]">رخصة قيادة رقم / Licence No.</div>
-                  <div className="font-mono font-bold mt-0.5">{toEng(contract.licenceNo || '68246175')}</div>
-                </div>
-                <div className="p-1">
-                  <div className="text-gray-600 text-[9px]">بطاقة / جواز السفر / Passport ID</div>
-                  <div className="font-mono font-bold mt-0.5">{toEng(contract.customerNationalId || contract.customerPassport || 'H64229853')}</div>
-                </div>
-              </div>
+              ))}
             </div>
 
-            {/* SECTION 2: VEHICLE SPECS, HANDOVER & DIAGRAM MATRIX */}
-            <div className="grid grid-cols-12 gap-2 text-[10px]">
-              {/* Left Column: Cleanliness, Fuel Dial & Car Body Diagram */}
-              <div className="col-span-5 border border-black rounded p-1.5 space-y-1.5 bg-gray-50 flex flex-col justify-between">
-                <div className="flex justify-between items-center text-[9.5px] border-b border-gray-300 pb-1">
-                  <div>
-                    <span className="font-bold">مستوى النظافة / Cleanliness</span>
-                  </div>
-                  <div className="space-x-1 space-x-reverse font-mono">
-                    <span>داخل 10/<strong className="text-black">9</strong></span>
-                    <span>خارج 10/<strong className="text-black">9</strong></span>
-                  </div>
-                </div>
-
-                {/* Fuel dial gauge graphic */}
-                <div className="flex items-center justify-around py-1 bg-white rounded border border-gray-200">
-                  <span className="text-[9px] font-bold text-gray-500">E</span>
-                  <div className="w-24 h-5 relative flex items-center justify-center">
-                    <svg viewBox="0 0 100 30" className="w-full h-full">
-                      <path d="M10 25 A 40 40 0 0 1 90 25" stroke="#94a3b8" strokeWidth="3" fill="none" />
-                      <line x1="10" y1="25" x2="10" y2="18" stroke="#ef4444" strokeWidth="2" />
-                      <line x1="50" y1="10" x2="50" y2="17" stroke="#64748b" strokeWidth="2" />
-                      <line x1="90" y1="25" x2="90" y2="18" stroke="#22c55e" strokeWidth="2" />
-                      {/* Needle pointing to Full */}
-                      <line x1="50" y1="25" x2="82" y2="14" stroke="#000000" strokeWidth="2.5" strokeLinecap="round" />
-                      <circle cx="50" cy="25" r="3" fill="#000000" />
-                    </svg>
-                  </div>
-                  <span className="text-[9px] font-bold text-gray-500">F</span>
-                  <span className="text-[9.5px] font-bold text-blue-800">{fuelStatus}</span>
-                </div>
-
-                {/* Vehicle sedan outline graphic */}
-                <div className="p-1 bg-white rounded border border-gray-200 flex items-center justify-center">
-                  <svg viewBox="0 0 200 60" className="w-full h-12 stroke-black fill-none stroke-[1.5]">
-                    {/* Top view & side view sedan outline */}
-                    <rect x="10" y="15" width="180" height="30" rx="8" stroke="#334155" strokeWidth="1.5" />
-                    <line x1="50" y1="15" x2="65" y2="25" stroke="#475569" />
-                    <line x1="150" y1="15" x2="135" y2="25" stroke="#475569" />
-                    <line x1="50" y1="45" x2="65" y2="35" stroke="#475569" />
-                    <line x1="150" y1="45" x2="135" y2="35" stroke="#475569" />
-                    <circle cx="35" cy="15" r="4" fill="#94a3b8" />
-                    <circle cx="165" cy="15" r="4" fill="#94a3b8" />
-                    <circle cx="35" cy="45" r="4" fill="#94a3b8" />
-                    <circle cx="165" cy="45" r="4" fill="#94a3b8" />
+            {/* VEHICLE SECTION: left = cleanliness / fuel / body diagrams, right = 3-col grid */}
+            <div className="grid grid-cols-12 gap-2">
+              <div className="col-span-5 space-y-1.5">
+                {/* Artwork: public/contract/contractimage.png (1585x992). Overlay uses the same coordinate space. */}
+                <div className="relative w-full" style={{ aspectRatio: '1585 / 992' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/contract/contractimage.png" alt="" className="absolute inset-0 w-full h-full object-contain" />
+                  <svg viewBox="0 0 1585 992" className="absolute inset-0 w-full h-full" fontFamily="monospace" fontWeight="bold">
+                    <text x="395" y="205" fontSize="54" textAnchor="end" fill="#1e3a8a">{toEng(contract.cleanInside)}</text>
+                    <text x="395" y="297" fontSize="54" textAnchor="end" fill="#1e3a8a">{toEng(contract.cleanOutside)}</text>
+                    {fuelAngle !== null && (
+                      <line
+                        x1={1181 + 292 * Math.cos(fuelAngle)} y1={348 - 292 * Math.sin(fuelAngle)}
+                        x2={1181 + 352 * Math.cos(fuelAngle)} y2={348 - 352 * Math.sin(fuelAngle)}
+                        stroke="#dc2626" strokeWidth="14" strokeLinecap="round"
+                      />
+                    )}
                   </svg>
                 </div>
 
-                <div className="text-[8.5px] text-gray-700 text-center leading-tight bg-yellow-50 p-1 rounded border border-yellow-200 font-bold">
-                  خاص بالإيجار قصير الأجل فقط ما يزيد عن ۲۰۰ كم يحسب بواقع ۵۰ بيسة لكل كم
-                  <div className="text-[8px] font-sans font-normal">EXCESS OF 200 KM 0.050 BZS PER KM WILL BE CHARGED APPLICABLE FOR SHORT TERM LEASE ONLY</div>
+                <div className="text-[8px] leading-tight text-gray-800 font-semibold text-center">
+                  <div dir="rtl">خاص بالإيجار قصير الأجل فقط ما يزيد عن ٢٠٠ كم يحسب بواقع ٥٠ بيسة لكل كم</div>
+                  <div>EXCESS OF 200 KM 0.050 BZS PER KM WILL BE CHARGED APPLICABLE FOR SHORT TERM LEASE ONLY</div>
                 </div>
               </div>
 
-              {/* Right Column: 3-column Grid for Vehicle & Handover Details */}
-              <div className="col-span-7 border border-black rounded overflow-hidden divide-y divide-black bg-white">
-                <div className="grid grid-cols-3 divide-x divide-x-reverse divide-black p-1 text-center bg-gray-100 font-bold text-[9.5px]">
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">نوع السيارة / Type of Car</span>
-                    <span className="uppercase font-extrabold text-black text-xs">{contract.carTitle}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">اللون / Colour</span>
-                    <span className="uppercase font-bold text-black">{contract.color || 'WHITE'}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">رقم اللوحة / Plate No.</span>
-                    <span className="font-mono font-extrabold text-black text-xs">{toEng(contract.plateNumber)}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 divide-x divide-x-reverse divide-black p-1 text-center text-[9.5px]">
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">تاريخ المغادرة / Departure Date</span>
-                    <span className="font-mono font-bold">{toEng(contract.startDate)}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">الأجرة اليومية / Daily Rent</span>
-                    <span className="font-mono font-bold text-black">{toEng(contract.dailyRate || contract.totalPrice / days)} OMR</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">المبلغ المدفوع / Paid Amount</span>
-                    <span className="font-mono font-bold text-black">{toEng(contract.depositPaid || contract.totalPrice)} OMR</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 divide-x divide-x-reverse divide-black p-1 text-center text-[9.5px]">
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">وقت الخروج / Departure Time</span>
-                    <span className="font-mono font-bold">{toEng(contract.departureTime || '12:00')}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">الكيلومتر عند الخروج / KM Exit</span>
-                    <span className="font-mono font-bold text-black">{toEng(initialKm.toLocaleString())} KM</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">مدة الإيجار / Rent Duration</span>
-                    <span className="font-mono font-bold text-black">{toEng(days)} DAYS</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 divide-x divide-x-reverse divide-black p-1 text-center text-[9.5px]">
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">تاريخ العودة / Return Date</span>
-                    <span className="font-mono font-bold">{toEng(contract.endDate)}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">وقت العودة / Return Time</span>
-                    <span className="font-mono font-bold">{toEng(contract.returnTime || '12:00')}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600 block text-[8.5px]">الكيلومتر عند العودة / KM Return</span>
-                    <span className="font-mono font-bold text-black">{returnKm ? `${toEng(returnKm.toLocaleString())} KM` : '-'}</span>
-                  </div>
-                </div>
-
-                <div className="p-1 text-center bg-gray-50">
-                  <span className="text-gray-600 text-[8.5px] inline-block ml-2">الكيلومترات الزائدة / Extra KM:</span>
-                  <span className="font-mono font-bold text-black">0 KM</span>
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 3: IMPORTANT NOTICE RED BANNER */}
-            <div className="bg-red-600 text-white rounded p-1.5 text-center space-y-0.5 shadow-sm">
-              <div className="font-black text-[11px] tracking-wide uppercase">
-                IMPORTANT NOTICE تنبيه هام
-              </div>
-              <div className="text-[9px] leading-tight font-medium dir-rtl">
-                يجب على المستأجر أن يقرأ بعناية ويفهم جيدا جميع الشروط الواردة أعلاه وعلى ظهر عقد الإيجار هذا قبل التوقيع عليه.
-              </div>
-              <div className="text-[8.5px] leading-tight font-sans dir-ltr opacity-95">
-                THE RENTER SHOULD READ AND UNDERSTAND OUR TERMS & CONDITIONS WHICH ARE PRINTED ABOVE AND ON THE REVERSE SIDE OF RENTAL AGREEMENT BEFORE SIGNING THE AGREEMENT.
-              </div>
-            </div>
-
-            {/* SECTION 4: UNDERTAKING & REGULATIONS (TRILINGUAL) */}
-            <div className="border border-black rounded p-2 bg-gray-50 text-[9.5px] leading-tight space-y-1">
-              <div className="flex justify-between items-center border-b border-gray-300 pb-1 font-bold text-[10px]">
-                <span className="text-red-700">NO SMOKING IN CAR / ممنوع التدخين في السيارة</span>
-                <span className="text-black">إقرار وتعهد من المستأجر</span>
-                <span className="text-blue-800">FASTEN YOUR SEAT BELT / أربط حزام الأمان</span>
-              </div>
-
-              <div className="text-justify text-gray-900 dir-rtl space-y-0.5">
-                <p>
-                  إقرار وتعهد بأنني قرأت الشروط والبنود الواردة خلف هذا العقد وأني موافق عليها وأتعهد بدفع جميع المخالفات المرورية وأتحمل مسؤولية السيارة التي استأجرتها حسب عقد الإيجار كاملاً، وإذا لاسمح الله ووقع حادث أو أصيبت عطل فني من جراء الاستخدام سأقوم بدفع قيمة التصليح + فترة وقوف السيارة في الجراج.
-                </p>
-                <p dir="ltr" className="text-left font-sans text-[8.5px] text-gray-700">
-                  I have read and agree to the terms and conditions on the back side of this agreement and I agree to pay all traffic violation fees. I am taking delivery of this car in good condition and depositing my ID / passport with my self according to my wish.
-                </p>
-                <p className="text-red-800 font-bold text-[9px] bg-red-100 p-0.5 rounded border border-red-200">
-                  سیگار کشیدن درون خودرو ممنوع می‌باشد و در صورت تصادف، کلیه خسارات بر عهده مقصر حادثه خواهد بود. سیگار کشیدن درون خودرو ممنوع بوده و ۵۰ ریال عمان جریمه دارد.
-                </p>
-              </div>
-            </div>
-
-            {/* SECTION 5: SIGNATURES BLOCK & PAYMENT SUMMARY TABLE */}
-            <div className="grid grid-cols-12 gap-2 text-[10px]">
-              {/* Left Side: Signatures & Dates */}
-              <div className="col-span-7 border border-black rounded p-2 flex flex-col justify-between space-y-3 bg-white">
-                <div className="grid grid-cols-2 gap-2 text-center">
-                  <div className="border border-dashed border-gray-400 p-2 rounded">
-                    <div className="font-bold text-gray-800 text-[10px]">توقيع المستأجر</div>
-                    <div className="text-[8.5px] text-gray-500 font-sans">Renter's Signature</div>
-                    <div className="h-10 flex items-center justify-center font-serif text-gray-400 text-xs italic">
-                      [ Ali Noei ]
+              <div className="col-span-7 space-y-1.5">
+                <div className="grid grid-cols-3 gap-1.5 text-center">
+                  {[
+                    { ar: 'رقم اللوحة', en: 'Plate No.', value: toEng(contract.plateNumber), mono: true },
+                    { ar: 'اللون', en: 'Colour', value: contract.color || '' },
+                    { ar: 'نوع السيارة', en: 'Type of Car', value: contract.carTitleEn || contract.carTitle },
+                    { ar: 'المبلغ المدفوع', en: 'Paid Amount', value: contract.depositPaid ? toEng(contract.depositPaid) : '', mono: true },
+                    { ar: 'قيمة الأجرة في اليوم', en: 'Daily Rent Amount', value: dailyRate ? toEng(dailyRate) : '', mono: true },
+                    { ar: 'تاريخ يوم المغادرة', en: 'Departure Date', value: toEng(contract.startDate), mono: true },
+                    { ar: 'الكيلومتر عند الخروج', en: 'KM at exit', value: initialKm ? toEng(initialKm) : '', mono: true },
+                    { ar: 'وقت الخروج', en: 'Departure Time', value: toEng(contract.departureTime || ''), mono: true },
+                    { ar: 'مدة الإيجار', en: 'Rent Duration', value: contract.rentalDays ? `${toEng(contract.rentalDays)} DAYS` : '', mono: true },
+                    { ar: 'الكيلومتر عند العودة', en: 'KM on Return', value: returnKm ? toEng(returnKm) : '', mono: true },
+                    { ar: 'وقت العودة', en: 'Return Time', value: toEng(contract.returnTime || ''), mono: true },
+                    { ar: 'تاريخ يوم العودة', en: 'Return Date', value: toEng(contract.endDate), mono: true },
+                  ].map(f => (
+                    <div key={f.en} className="border border-gray-700 rounded-lg overflow-hidden">
+                      <div className="text-[8px] leading-tight text-gray-700 border-b border-gray-400 py-0.5 px-2">
+                        <div dir="rtl">{f.ar}</div>
+                        <div>{f.en}</div>
+                      </div>
+                      <div className={`h-6 flex items-center justify-center font-bold text-[12px] text-blue-900 uppercase ${f.mono ? 'font-mono' : ''}`}>{f.value}</div>
                     </div>
+                  ))}
+                </div>
+                <div className="ml-auto w-1/3 border border-gray-700 rounded-lg overflow-hidden text-center">
+                  <div className="text-[8px] leading-tight text-gray-700 border-b border-gray-400 py-0.5 px-2">
+                    <div dir="rtl">الكيلومترات زائدة</div>
+                    <div>Extra KM</div>
                   </div>
-
-                  <div className="border border-dashed border-gray-400 p-2 rounded">
-                    <div className="font-bold text-gray-800 text-[10px]">توقيع المسؤول</div>
-                    <div className="text-[8.5px] text-gray-500 font-sans">In Charge Signature</div>
-                    <div className="h-10 flex items-center justify-center font-serif text-gray-400 text-xs italic">
-                      [ Arsam Admin ]
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center text-[9.5px] border-t border-gray-300 pt-1 font-mono">
-                  <span>اليوم / Day: <strong>{new Date().toLocaleDateString('ar-OM', { weekday: 'long' })}</strong></span>
-                  <span>التاريخ / Date: <strong>{contractDate}</strong></span>
-                </div>
-              </div>
-
-              {/* Right Side: Financial Payment Summary Table */}
-              <div className="col-span-5 border border-black rounded overflow-hidden divide-y divide-black bg-gray-50 text-[9.5px]">
-                <div className="p-1 flex justify-between items-center bg-gray-100 font-bold">
-                  <span>المبلغ المستحق لمدة الإيجار</span>
-                  <span className="font-mono">{toEng(contract.totalPrice)} OMR</span>
-                </div>
-                <div className="p-1 flex justify-between items-center">
-                  <span>المبلغ المستحق لكيلومترات الزائدة</span>
-                  <span className="font-mono">0.000 OMR</span>
-                </div>
-                <div className="p-1 flex justify-between items-center">
-                  <span>المبلغ المستحق لأي حادث</span>
-                  <span className="font-mono">{toEng(deductions)} OMR</span>
-                </div>
-                <div className="p-1 flex justify-between items-center bg-yellow-100 font-black text-black text-[10.5px]">
-                  <span>المبلغ الإجمالي / Total</span>
-                  <span className="font-mono text-red-700">{toEng(contract.totalPrice + deductions)} OMR</span>
-                </div>
-                <div className="p-1 text-[8.5px] text-gray-600">
-                  <span className="font-bold text-gray-800 block">ملاحظات / Remarks:</span>
-                  {contract.notes || 'تسویه‌شده با موفقیت'}
+                  <div className="h-6 flex items-center justify-center font-bold text-[12px] text-blue-900 font-mono">{toEng(contract.extraKm)}</div>
                 </div>
               </div>
             </div>
 
-            {/* SECTION 6: FOOTER WITH STAMP ADDRESS & QR CODE */}
-            <div className="border-t border-black pt-1.5 flex items-center justify-between text-[8.5px] text-gray-800">
-              <div className="flex items-center gap-2">
-                {/* SVG QR Code */}
-                <div className="w-9 h-9 border border-black p-0.5 bg-white">
-                  <svg viewBox="0 0 100 100" className="w-full h-full fill-black">
-                    <rect x="0" y="0" width="30" height="30" />
-                    <rect x="5" y="5" width="20" height="20" fill="white" />
-                    <rect x="10" y="10" width="10" height="10" />
-                    
-                    <rect x="70" y="0" width="30" height="30" />
-                    <rect x="75" y="5" width="20" height="20" fill="white" />
-                    <rect x="80" y="10" width="10" height="10" />
-
-                    <rect x="0" y="70" width="30" height="30" />
-                    <rect x="5" y="75" width="20" height="20" fill="white" />
-                    <rect x="10" y="80" width="10" height="10" />
-
-                    <rect x="40" y="40" width="20" height="20" />
-                    <rect x="70" y="70" width="15" height="15" />
-                    <rect x="50" y="70" width="10" height="20" />
-                  </svg>
-                </div>
-
-                <div className="leading-tight dir-rtl">
-                  <div className="font-bold text-black text-[9.5px]">أبو أرسام للتجارة ش ش و | س.ت: ١٤٢٦٠٤٦ | 📞 ٩٤٥٢١٧٤٦</div>
-                  <div className="text-gray-600">📍 مسقط، سلطنة عُمان - مرتفعات المطار، داخل محطة شل بترول، مكتب سند مسقط للاعمال</div>
-                </div>
+            {/* IMPORTANT NOTICE */}
+            <div className="border-2 border-red-500 rounded-2xl overflow-hidden">
+              <div className="bg-red-500 text-white text-center font-black text-[12px] tracking-wide py-0.5">
+                IMPORTANT NOTICE <span dir="rtl">تنبيه هام</span>
               </div>
-
-              <div className="text-left font-mono text-[8px] text-gray-500 dir-ltr">
-                Abu Arsam Services - Oman
-                <br />
-                Official Printed Copy - {contractNumber}
+              <div className="text-center text-[8.5px] leading-tight py-1 px-2 font-semibold text-gray-900">
+                <div dir="rtl">يجب على المستأجر أن يقرأ بعناية ويفهم جيدا جميع الشروط الواردة أعلاه وعلى ظهر عقد الإيجار هذا قبل التوقيع عليه</div>
+                <div>THE RENTER SHOULD READ AND UNDERSTAND OUR TERMS &amp; CONDITIONS WHICH ARE PRINTED AT</div>
+                <div>ABOVE AND ON THE REVERSE SIDE OF RENTAL AGREEMENT BEFORE SIGNING THE RENT AGREEMENT</div>
               </div>
             </div>
+
+            {/* UNDERTAKING: bilingual, with 50 OMR smoking fine clause */}
+            <div className="text-[9px] leading-snug space-y-1">
+              <div className="grid grid-cols-3 items-center font-black text-[10px]">
+                <div className="text-left"><span dir="rtl">ممنوع التدخين في السيارة</span><br />NO SMOKING IN CAR</div>
+                <div className="text-center text-[13px]" dir="rtl">إقرار وتعهد من المستأجر</div>
+                <div className="text-right"><span dir="rtl">أربط حزام الأمان</span><br />FASTEN YOUR SEAT BELT</div>
+              </div>
+              <p dir="rtl" className="text-justify text-gray-900">
+                إقرار وأتعهد بأنني قرأت الشروط والبنود الواردة خلف هذا العقد كاملاً وأنني موافق عليها وأتعهد بدفع جميع المخالفات المرورية وأتحمل مسؤولية السيارة التي استأجرتها حسب عقد الإيجار كاملاً، وإذا لا سمح الله وقع على السيارة حادث أو أصيبت بعطل فني من جراء الاستخدام سأقوم بدفع قيمة التصليح + فترة وقوف السيارة في الكراج وعلى شرط أن يتم التصليح في وكالة السيارة ودفع مسامهة شركة التأمين التي تقرها الشركة وعليه أوقع.
+              </p>
+              <p className="text-gray-900 font-semibold text-[10px]">
+                I have read and agree to the terms and conditions on the back side of this agreement and I agree to pay all charges for traffic violation
+              </p>
+              <p dir="rtl" className="text-justify text-gray-900">
+                إقرار أنا مستأجر هذه السيارة بأنني تركت (بطاقتي الشخصية / جواز سفري) بمحض إرادتي وليس رغما عني لدى المؤجر، وأنني أوافق على جميع شروط هذا العقد بعدما قرأت وفهمت ما ورد به.
+              </p>
+              <p className="text-gray-900">
+                I am taking delivery of this car in good condition and depositing my identity car / passport with you my self according to my wish.
+                <br />I agree all the conditions of contract between me and the company after reading and understanding it's derails.
+              </p>
+              <p dir="rtl" className="text-justify text-gray-900">
+                السيارة غير مؤمنة ضد الأضرار، وفي حال وقوع حادث وكان المستأجر هو المخطئ، فإن جميع الأضرار تقع على عاتقه.
+              </p>
+              <p className="text-gray-900">
+                The car is not covered by comprehensive insurance, and in case of an accident where the renter is at fault, all damages will be the renter's responsibility.
+              </p>
+              <div className="flex items-center justify-between gap-3 font-black text-[10px]">
+                <span>Smoking in the car is prohibited and, if proven, carries a 50 OMR fine.</span>
+                <span dir="rtl">يمنع التدخين داخل السيارة ويُفرض غرامة قدرها ٥٠ ريالاً عند إثبات ذلك.</span>
+              </div>
+              <p dir="rtl" className="text-red-700 font-bold text-[9px]">
+                خودرو فاقد بیمه بدنه است و در صورت تصادف، کلیه خسارات بر عهده مقصر حادثه خواهد بود. سیگار کشیدن درون خودرو ممنوع می‌باشد و در صورت اثبات ۵۰ ریال جریمه در پی دارد.
+              </p>
+            </div>
+
+            {/* SIGNATURES + DAY / DATE */}
+            <div className="grid grid-cols-12 gap-2 text-[9px] font-bold">
+              <div className="col-span-5 border-2 border-gray-700 rounded-2xl h-[68px] px-2.5 py-1">
+                <div className="flex justify-between"><span>Renter's Signature</span><span dir="rtl">توقيع المستأجر</span></div>
+              </div>
+              <div className="col-span-2 flex flex-col gap-2">
+                <div className="border border-gray-700 rounded-lg overflow-hidden flex-1 p-0.5">
+                  <div className="flex justify-between"><span>Day</span><span dir="rtl">اليوم</span></div>
+                </div>
+                <div className="border border-gray-700 rounded-lg overflow-hidden flex-1 p-0.5">
+                  <div className="flex justify-between"><span>Date</span><span dir="rtl">التاريخ</span></div>
+                  <div className="text-center font-mono text-[11px] text-blue-900">{contractDate}</div>
+                </div>
+              </div>
+              <div className="col-span-5 border-2 border-gray-700 rounded-2xl h-[68px] px-2.5 py-1">
+                <div className="flex justify-between"><span>In charger Signature</span><span dir="rtl">توقيع المسؤول</span></div>
+              </div>
+            </div>
+
+            {/* NOTES + FINAL SETTLEMENT TABLE */}
+            <div className="grid grid-cols-12 gap-2 text-[9px] font-bold">
+              <div className="col-span-7 border-2 border-gray-700 rounded-2xl min-h-[60px] px-2.5 py-1">
+                <div className="text-right" dir="rtl">ملاحظات</div>
+                <div className="font-normal text-[10px] text-blue-900 whitespace-pre-wrap">{contract.notes || ''}</div>
+              </div>
+              <div className="col-span-5 space-y-1">
+                {[
+                  { ar: 'المبلغ المستحق لمدة الإيجار', v: contract.totalPrice },
+                  { ar: 'المبلغ المستحق للكيلومترات الزائدة', v: extraKmAmount || null },
+                  { ar: 'المبلغ المستحق لأي حادث', v: deductions || null },
+                  { ar: 'المبلغ الإجمالي', v: contract.totalPrice + deductions + extraKmAmount },
+                ].map(r => (
+                  <div key={r.ar} className="flex items-center justify-between border border-gray-700 rounded-lg overflow-hidden px-1.5 py-1">
+                    <span dir="rtl">ر.ع</span>
+                    <span className="flex-1 mx-2 text-center font-mono text-[11px] text-blue-900">{r.v !== null ? toEng(r.v) : ''}</span>
+                    <span dir="rtl" className="text-right">{r.ar}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FOOTER (template: lib/contract-template.ts) */}
+            <ContractFooter />
           </div>
         </div>
+        </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
