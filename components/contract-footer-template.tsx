@@ -13,20 +13,22 @@ function WhatsAppIcon({ className }: { className?: string }) {
 // address (left), gold calligraphy tagline (center, under the gold accent bar), company / register / WhatsApp (right).
 export default function ContractFooter({ template = DEFAULT_CONTRACT_FOOTER }: { template?: ContractFooterTemplate }) {
   return (
-    <div className="relative border-t border-[#8c8c8c] pt-1" dir="ltr" style={{ fontFamily: "'Noto Naskh Arabic', serif", color: '#1c1c1c' }}>
+    <div className="relative border-t border-[#8c8c8c] pt-1" dir="ltr" style={{ fontFamily: "'Amiri', serif", color: '#1c1c1c' }}>
       {/* gold accent on the rule */}
       <div
         className="absolute left-[41%] w-[17.5%] h-[4px] -top-[2px] rounded-full"
         style={{ background: 'linear-gradient(90deg, rgba(201,160,74,0.15), #c9a04a 20%, #c9a04a 80%, rgba(201,160,74,0.15))' }}
       />
       <div className="grid grid-cols-[41fr_17.5fr_41.5fr] items-end gap-1">
-        <div dir="rtl" className="text-left text-[10.5px] leading-tight pb-0.5" style={{ textAlign: 'left' }}>{template.addressAr}</div>
+        <div dir="rtl" className="text-left text-[11.5px] leading-tight pb-0.5" style={{ textAlign: 'left' }}>{template.addressAr}</div>
 
-        <div dir="rtl" className="text-center text-[15px] leading-none pb-0.5 whitespace-nowrap" style={{ fontFamily: "'Amiri', serif", color: '#c9b88f' }}>
-          {template.taglineAr}
+        {/* Gold calligraphy is a graphic taken from the paper form (public/contract/footer-tagline.png) */}
+        <div className="flex justify-center pb-0.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/contract/footer-tagline.png" alt={template.taglineAr} className="h-[22px] w-auto" />
         </div>
 
-        <div dir="rtl" className="flex items-center justify-start gap-1.5 text-[10.5px] leading-tight self-start pt-0.5">
+        <div dir="rtl" className="flex items-center justify-start gap-1.5 text-[11.5px] leading-tight self-start pt-0.5">
           <span>{template.companyAr}</span>
           <span>س.ت: {template.commercialRegisterAr}</span>
           <WhatsAppIcon className="h-3.5 w-3.5 text-black shrink-0" />

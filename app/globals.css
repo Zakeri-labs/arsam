@@ -41,15 +41,7 @@
   font-display: swap;
 }
 
-/* Contract footer: Naskh text + calligraphic gold line (matches the printed paper form) */
-@font-face {
-  font-family: 'Noto Naskh Arabic';
-  src: url('/fonts/NotoNaskhArabic-400.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: block;
-}
-
+/* Contract footer: Amiri text (matches the printed paper form) */
 @font-face {
   font-family: 'Amiri';
   src: url('/fonts/Amiri-Regular.woff2') format('woff2');
