@@ -140,6 +140,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       depositPaid: cnt.depositAmount || 50,
       initialOdometer: cnt.initialOdometer,
       fuelLevel: FUEL_LEVEL_LABELS[cnt.fuelLevel] || FUEL_LEVEL_LABELS.full,
+      departureTime: cnt.createdAt ? new Date(cnt.createdAt).toTimeString().slice(0, 5) : undefined,
+      returnOdometer: cnt.returnOdometer,
       notes: cnt.notes
     };
 
