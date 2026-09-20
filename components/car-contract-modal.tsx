@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import ContractHeader from './contract-header-template';
 import { motion } from 'framer-motion';
 import { X, Printer, FileText } from 'lucide-react';
 
@@ -309,24 +310,8 @@ export default function CarContractModal({ contract: initialContract, onClose }:
             dir="ltr"
             className="w-full bg-white text-black p-4 sm:p-6 shadow-2xl text-[11px] space-y-1.5 font-sans leading-tight border border-gray-400 font-medium"
           >
-            {/* HEADER: CAR RENTAL AGREEMENT | ARSAM RENT logo | Call & C.R */}
-            <div className="grid grid-cols-3 items-end">
-              <div className="text-left">
-                <div className="text-[11px] font-bold tracking-[0.25em] text-gray-800">CAR RENTAL AGREEMENT</div>
-                <div className="font-mono text-[10px] text-gray-700">No. {contractNumber}</div>
-              </div>
-              <div className="flex flex-col items-center leading-none">
-                {/* Company logo (public/logo.png) */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo.png" alt="Arsam" className="h-14 w-auto object-contain" />
-                <div className="mt-0.5 text-[10px] font-black text-[#0f2a5c]" dir="rtl">أبو أرسام لإستئجار السيارات</div>
-                <div className="text-[8.5px] font-bold tracking-wide text-red-600">ARSAM RENT A CAR</div>
-              </div>
-              <div className="text-right text-[10px] font-black text-gray-900">
-                <span>Call &amp; WhatsApp: 94521746</span>
-                <span className="ml-3">C.R: 1426046</span>
-              </div>
-            </div>
+            {/* HEADER (template: lib/contract-template.ts) */}
+            <ContractHeader contractNumber={contractNumber} />
 
             {/* CUSTOMER LINES: English (left) — value — Arabic (right) */}
             <div className="border border-gray-700 divide-y divide-gray-500 text-[10px]">
@@ -366,63 +351,21 @@ export default function CarContractModal({ contract: initialContract, onClose }:
             {/* VEHICLE SECTION: left = cleanliness / fuel / body diagrams, right = 3-col grid */}
             <div className="grid grid-cols-12 gap-2">
               <div className="col-span-5 space-y-1.5">
-                <div className="grid grid-cols-2 gap-1.5 items-center">
-                  <div className="border border-gray-700 text-[9px]">
-                    <div className="text-center bg-gray-100 border-b border-gray-500 font-bold leading-tight">Cleanliness level <span dir="rtl">مستوى النظافة</span></div>
-                    <div className="flex justify-between px-1 py-0.5"><span>inside</span><span className="font-mono text-blue-900 font-bold">{toEng(contract.cleanInside) || '__'} /10</span><span dir="rtl">داخل السيارة</span></div>
-                    <div className="flex justify-between px-1 py-0.5 border-t border-gray-400"><span>outside</span><span className="font-mono text-blue-900 font-bold">{toEng(contract.cleanOutside) || '__'} /10</span><span dir="rtl">خارج السيارة</span></div>
-                  </div>
-                  {/* Fuel gauge */}
-                  <div className="text-center">
-                    <div className="text-[8.5px] leading-tight text-gray-700"><span dir="rtl">مستوى الوقود</span> Fuel level</div>
-                    <svg viewBox="0 0 100 60" className="w-full h-12">
-                      <path d="M8 55 A 42 42 0 0 1 92 55" stroke="#1e3a8a" strokeWidth="4" fill="none" />
-                      <path d="M8 55 A 42 42 0 0 1 20 25" stroke="#dc2626" strokeWidth="4" fill="none" />
-                      {[0, 1, 2, 3, 4].map(i => {
-                        const a = Math.PI - (i * Math.PI) / 4;
-                        return <line key={i} x1={50 + 34 * Math.cos(a)} y1={55 - 34 * Math.sin(a)} x2={50 + 42 * Math.cos(a)} y2={55 - 42 * Math.sin(a)} stroke="#111827" strokeWidth="1.5" />;
-                      })}
-                      <rect x="42" y="38" width="16" height="14" rx="2" fill="#1e3a8a" />
-                      {fuelAngle !== null && (
-                        <line x1="50" y1="55" x2={50 + 30 * Math.cos(fuelAngle)} y2={55 - 30 * Math.sin(fuelAngle)} stroke="#000" strokeWidth="2.5" strokeLinecap="round" />
-                      )}
-                      <text x="4" y="59" fontSize="8" fontWeight="bold">E</text>
-                      <text x="90" y="59" fontSize="8" fontWeight="bold">F</text>
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Car body diagrams (borderless like the paper): top view + side view, then front / rear / side */}
-                <div className="space-y-1">
-                  <div className="grid grid-cols-5 gap-2 items-center">
-                    <svg viewBox="0 0 130 60" className="col-span-3 w-full h-14 stroke-gray-800 fill-none" strokeWidth="1.5">
-                      <path d="M8 30 Q8 12 24 10 L100 10 Q124 14 124 30 Q124 46 100 50 L24 50 Q8 48 8 30 Z" />
-                      <path d="M40 15 L84 15 L92 24 L92 36 L84 45 L40 45 L34 36 L34 24 Z" />
-                      <line x1="62" y1="15" x2="62" y2="45" />
-                      <rect x="24" y="4" width="14" height="6" rx="2" /><rect x="88" y="4" width="14" height="6" rx="2" />
-                      <rect x="24" y="50" width="14" height="6" rx="2" /><rect x="88" y="50" width="14" height="6" rx="2" />
-                    </svg>
-                    <svg viewBox="0 0 110 60" className="col-span-2 w-full h-14 stroke-gray-800 fill-none" strokeWidth="1.5">
-                      <path d="M4 42 L8 32 Q14 28 30 26 L44 12 H74 L90 26 Q104 28 106 38 L106 44 H4 Z" />
-                      <path d="M46 15 H72 L84 26 H40 Z" /><line x1="58" y1="15" x2="58" y2="26" />
-                      <circle cx="28" cy="46" r="8" /><circle cx="84" cy="46" r="8" />
-                    </svg>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 items-center">
-                    <svg viewBox="0 0 80 60" className="w-full h-12 stroke-gray-800 fill-none" strokeWidth="1.5">
-                      <path d="M12 46 L14 26 Q16 10 40 10 Q64 10 66 26 L68 46 Z" /><rect x="22" y="16" width="36" height="14" rx="3" />
-                      <circle cx="22" cy="46" r="6" /><circle cx="58" cy="46" r="6" /><line x1="30" y1="38" x2="50" y2="38" />
-                    </svg>
-                    <svg viewBox="0 0 80 60" className="w-full h-12 stroke-gray-800 fill-none" strokeWidth="1.5">
-                      <path d="M12 46 L14 26 Q16 10 40 10 Q64 10 66 26 L68 46 Z" /><rect x="24" y="16" width="32" height="12" rx="3" />
-                      <circle cx="22" cy="46" r="6" /><circle cx="58" cy="46" r="6" /><rect x="30" y="34" width="20" height="6" rx="2" />
-                    </svg>
-                    <svg viewBox="0 0 110 60" className="w-full h-12 stroke-gray-800 fill-none" strokeWidth="1.5">
-                      <path d="M4 42 L8 32 Q14 28 30 26 L44 12 H74 L90 26 Q104 28 106 38 L106 44 H4 Z" />
-                      <path d="M46 15 H72 L84 26 H40 Z" /><line x1="58" y1="15" x2="58" y2="26" />
-                      <circle cx="28" cy="46" r="8" /><circle cx="84" cy="46" r="8" />
-                    </svg>
-                  </div>
+                {/* Artwork: public/contract/contractimage.png (1585x992). Overlay uses the same coordinate space. */}
+                <div className="relative w-full" style={{ aspectRatio: '1585 / 992' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/contract/contractimage.png" alt="" className="absolute inset-0 w-full h-full object-contain" />
+                  <svg viewBox="0 0 1585 992" className="absolute inset-0 w-full h-full" fontFamily="monospace" fontWeight="bold">
+                    <text x="395" y="205" fontSize="54" textAnchor="end" fill="#1e3a8a">{toEng(contract.cleanInside)}</text>
+                    <text x="395" y="297" fontSize="54" textAnchor="end" fill="#1e3a8a">{toEng(contract.cleanOutside)}</text>
+                    {fuelAngle !== null && (
+                      <line
+                        x1={1181 + 292 * Math.cos(fuelAngle)} y1={348 - 292 * Math.sin(fuelAngle)}
+                        x2={1181 + 352 * Math.cos(fuelAngle)} y2={348 - 352 * Math.sin(fuelAngle)}
+                        stroke="#dc2626" strokeWidth="14" strokeLinecap="round"
+                      />
+                    )}
+                  </svg>
                 </div>
 
                 <div className="text-[8px] leading-tight text-gray-800 font-semibold text-center">
