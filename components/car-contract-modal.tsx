@@ -168,6 +168,13 @@ export default function CarContractModal({ contract: initialContract, onClose }:
             box-shadow: none !important;
             border: none !important;
           }
+          /* Force backgrounds (red notice banner, gold bar, ...) to print even when the "Background graphics" option is off */
+          .contract-print-root,
+          .contract-print-root * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
           .no-print {
             display: none !important;
           }
