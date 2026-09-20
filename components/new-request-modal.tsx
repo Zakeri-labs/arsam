@@ -145,6 +145,7 @@ export default function NewRequestModal({
               </label>
               <input
                 type="text"
+                inputMode="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+968 71713238"

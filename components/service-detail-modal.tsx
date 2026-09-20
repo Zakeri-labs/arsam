@@ -725,6 +725,7 @@ export function ServiceDetailModal({
                           {/* Local Phone Input */}
                           <input
                             type="tel"
+                            inputMode="tel"
                             value={phone}
                             onChange={(e) => {
                               setPhone(e.target.value);
