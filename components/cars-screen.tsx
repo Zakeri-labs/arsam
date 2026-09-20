@@ -14,6 +14,7 @@ import {
   Car, CarReservation, CarTransaction, CarContract, FuelLevel,
   FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate
 } from '@/lib/db-cars';
+import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
 import CarContractModal, { ContractData } from './car-contract-modal';
@@ -1620,12 +1621,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
                       نرخ روزانه <OMRIcon size="sm" /> *
                     </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       required
-                      value={carForm.dailyRate || ''}
-                      onChange={e => setCarForm({ ...carForm, dailyRate: parseFormattedNumber(e.target.value) })}
+                      value={carForm.dailyRate}
+                      onValueChange={v => setCarForm({ ...carForm, dailyRate: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-bold"
                     />
                   </div>
@@ -1634,11 +1633,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
                       مبلغ ودیعه <OMRIcon size="sm" />
                     </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={carForm.depositAmount || ''}
-                      onChange={e => setCarForm({ ...carForm, depositAmount: parseFormattedNumber(e.target.value) })}
+                    <NumericInput
+                      value={carForm.depositAmount}
+                      onValueChange={v => setCarForm({ ...carForm, depositAmount: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
@@ -1671,9 +1668,12 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <div>
                     <label className="block text-white/80 font-bold mb-1">سال ساخت</label>
                     <input
-                      type="text"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={4}
                       value={carForm.modelYear || ''}
-                      onChange={e => setCarForm({ ...carForm, modelYear: normalizeDigits(e.target.value) })}
+                      onChange={e => setCarForm({ ...carForm, modelYear: normalizeDigits(e.target.value).replace(/\D/g, '').slice(0, 4) })}
                       placeholder="2023"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
@@ -1928,6 +1928,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       />
                       <input
                         type="text"
+                        inputMode="tel"
                         required
                         value={resForm.customerPhone || ''}
                         onChange={e => setResForm(prev => ({ ...prev, customerPhone: normalizeDigits(e.target.value) }))}
@@ -1964,12 +1965,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
                   <div>
                     <label className="block text-white/80 font-bold text-[11px] mb-1">نرخ روزانه (OMR) *</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       required
-                      value={resForm.customDailyRate || ''}
-                      onChange={e => updateResFormPricing({ customDailyRate: parseFormattedNumber(e.target.value) })}
+                      value={resForm.customDailyRate}
+                      onValueChange={v => updateResFormPricing({ customDailyRate: v })}
                       className="w-full rounded-xl border border-gold/40 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-gold font-bold outline-none focus:border-gold"
                     />
                   </div>
@@ -1997,11 +1996,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         </button>
                       </div>
                     </div>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={resForm.discountValue || ''}
-                      onChange={e => updateResFormPricing({ discountValue: parseFormattedNumber(e.target.value) })}
+                    <NumericInput
+                      value={resForm.discountValue}
+                      onValueChange={v => updateResFormPricing({ discountValue: v })}
                       placeholder="0"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
@@ -2009,11 +2006,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
                   <div>
                     <label className="block text-white/80 font-bold text-[11px] mb-1">مبلغ ودیعه (پیش‌فرض: ۰ OMR)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={resForm.depositPaid || ''}
-                      onChange={e => updateResFormPricing({ depositPaid: parseFormattedNumber(e.target.value) })}
+                    <NumericInput
+                      value={resForm.depositPaid}
+                      onValueChange={v => updateResFormPricing({ depositPaid: v })}
                       placeholder="0"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
                     />
@@ -2168,12 +2163,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
                     مبلغ <OMRIcon size="sm" /> *
                   </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
+                  <NumericInput
                     required
-                    value={txForm.amount || ''}
-                    onChange={e => setTxForm({ ...txForm, amount: parseFormattedNumber(e.target.value) })}
+                    value={txForm.amount}
+                    onValueChange={v => setTxForm({ ...txForm, amount: v })}
                     placeholder="مثال: 1500"
                     className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold text-sm"
                   />
@@ -2363,23 +2356,19 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-white/80 font-bold mb-1">کیلومتر تحویل (Initial KM) *</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       required
                       value={handoverForm.initialOdometer}
-                      onChange={e => setHandoverForm({ ...handoverForm, initialOdometer: parseFormattedNumber(e.target.value) })}
+                      onValueChange={v => setHandoverForm({ ...handoverForm, initialOdometer: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
                     />
                   </div>
 
                   <div>
                     <label className="block text-white/80 font-bold mb-1">کیلومتر عودت (Return KM)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       value={handoverForm.returnOdometer}
-                      onChange={e => setHandoverForm({ ...handoverForm, returnOdometer: parseFormattedNumber(e.target.value) })}
+                      onValueChange={v => setHandoverForm({ ...handoverForm, returnOdometer: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
                     />
                   </div>
