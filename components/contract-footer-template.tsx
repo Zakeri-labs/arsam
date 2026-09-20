@@ -25,7 +25,7 @@ export default function ContractFooter({ template = DEFAULT_CONTRACT_FOOTER }: {
         {/* Gold calligraphy is a graphic taken from the paper form (public/contract/footer-tagline.png) */}
         <div className="flex justify-center pb-0.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/contract/footer-tagline.png" alt={template.taglineAr} className="h-[22px] w-auto" />
+          <img src="/contract/footer-tagline.png" alt={template.taglineAr} className="h-[24px] w-auto" />
         </div>
 
         <div dir="rtl" className="flex items-center justify-start gap-1.5 text-[11.5px] leading-tight self-start pt-0.5">
