@@ -55,10 +55,29 @@ interface CarContractModalProps {
   onClose: () => void;
 }
 
+type FuelKey = 'full' | '3/4' | 'half' | '1/4' | 'empty';
+const FUEL_ANGLES: Record<FuelKey, number> = { full: 0.2, '3/4': Math.PI * 0.25, half: Math.PI / 2, '1/4': Math.PI * 0.75, empty: Math.PI - 0.2 };
+
+// Maps the handover labels (e.g. 'فول (Full)', '۳/۴', '۱/۲', 'خالی (Empty)') to a dial position
+function fuelKeyOf(text?: string): FuelKey | null {
+  const t = (text || '').toLowerCase().replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776));
+  if (/full|فول|پر/.test(t)) return 'full';
+  if (/3\/4|three/.test(t)) return '3/4';
+  if (/1\/2|half|نصف/.test(t)) return 'half';
+  if (/1\/4|quarter/.test(t)) return '1/4';
+  if (/empty|خالی/.test(t)) return 'empty';
+  return null;
+}
+
 export default function CarContractModal({ contract: initialContract, onClose }: CarContractModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
   // Editable copy: the form panel edits this and the printed sheet re-renders live
-  const [contract, setContract] = useState<ContractData>(initialContract);
+  const [contract, setContract] = useState<ContractData>(() => ({
+    ...initialContract,
+    customerNameEn: initialContract.customerNameEn || initialContract.customerName,
+    whatsapp: initialContract.whatsapp ?? initialContract.customerPhone,
+    carTitleEn: initialContract.carTitleEn || initialContract.carTitle,
+  }));
   const upd = (key: keyof ContractData, value: string | number | undefined) =>
     setContract(prev => ({ ...prev, [key]: value }));
   const updNum = (key: keyof ContractData, raw: string) => {
@@ -82,12 +101,9 @@ export default function CarContractModal({ contract: initialContract, onClose }:
   const dailyRate = contract.dailyRate || (contract.rentalDays ? contract.totalPrice / contract.rentalDays : 0);
   const initialKm = contract.initialOdometer || 0;
   const returnKm = contract.returnOdometer || 0;
-  const fuelText = (contract.fuelLevel || '').toLowerCase();
+  const fuelKey = fuelKeyOf(contract.fuelLevel);
   // Needle angle in radians (PI = Empty, 0 = Full); null leaves the dial blank for hand marking
-  const fuelAngle: number | null = /full|فول|پر/.test(fuelText) ? 0.2
-    : /half|نصف|نیم/.test(fuelText) ? Math.PI / 2
-    : /empty|خالی/.test(fuelText) ? Math.PI - 0.2
-    : null;
+  const fuelAngle: number | null = fuelKey ? FUEL_ANGLES[fuelKey] : null;
   const deductions = contract.deductionsAmount || 0;
   const extraKmAmount = contract.extraKmAmount || 0;
   const netRefund = (contract.netRefundable !== undefined) 
@@ -258,13 +274,15 @@ export default function CarContractModal({ contract: initialContract, onClose }:
               <span className="block text-[10.5px] text-white/60 mb-0.5">سطح سوخت</span>
               <select
                 className="w-full rounded-lg bg-[#0b172a] border border-white/10 px-2.5 py-1.5 text-xs text-white"
-                value={/full|فول|پر/i.test(contract.fuelLevel || '') ? 'Full' : /half|نصف|نیم/i.test(contract.fuelLevel || '') ? 'Half' : /empty|خالی/i.test(contract.fuelLevel || '') ? 'Empty' : ''}
+                value={fuelKey || ''}
                 onChange={e => upd('fuelLevel', e.target.value)}
               >
                 <option value="">— خالی (با دست علامت زده شود) —</option>
-                <option value="Full">پر (Full)</option>
-                <option value="Half">نصف (Half)</option>
-                <option value="Empty">خالی (Empty)</option>
+                <option value="full">پر (Full)</option>
+                <option value="3/4">۳/۴</option>
+                <option value="half">نصف (۱/۲)</option>
+                <option value="1/4">۱/۴</option>
+                <option value="empty">خالی (Empty)</option>
               </select>
             </label>
           </fieldset>
