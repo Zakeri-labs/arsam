@@ -144,8 +144,10 @@ export default function CarContractModal({ contract: initialContract, onClose }:
             width: 100% !important;
             background: #ffffff !important;
             color: #000000 !important;
-            padding: 4mm !important;
+            padding: 2mm !important;
             margin: 0 !important;
+            break-inside: avoid;
+            page-break-after: avoid;
             box-shadow: none !important;
             border: none !important;
           }
@@ -294,7 +296,7 @@ export default function CarContractModal({ contract: initialContract, onClose }:
             id="printable-contract-container"
             ref={printRef}
             dir="ltr"
-            className="w-full bg-white text-black p-4 sm:p-6 shadow-2xl text-[11px] space-y-2 font-sans leading-tight border border-gray-400 font-medium"
+            className="w-full bg-white text-black p-4 sm:p-6 shadow-2xl text-[11px] space-y-1.5 font-sans leading-tight border border-gray-400 font-medium"
           >
             {/* HEADER: CAR RENTAL AGREEMENT | ARSAM RENT logo | Call & C.R */}
             <div className="grid grid-cols-3 items-end">
@@ -302,9 +304,12 @@ export default function CarContractModal({ contract: initialContract, onClose }:
                 <div className="text-[11px] font-bold tracking-[0.25em] text-gray-800">CAR RENTAL AGREEMENT</div>
                 <div className="font-mono text-[10px] text-gray-700">No. {contractNumber}</div>
               </div>
-              <div className="text-center">
-                <div className="text-red-600 font-black text-xl italic tracking-tight leading-none">ARSAM RENT</div>
-                <div className="text-red-600 font-black text-sm leading-none mt-0.5" dir="rtl">أرسام رنت</div>
+              <div className="flex flex-col items-center leading-none">
+                {/* Company logo (public/logo.png) */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="Arsam" className="h-14 w-auto object-contain" />
+                <div className="mt-0.5 text-[10px] font-black text-[#0f2a5c]" dir="rtl">أبو أرسام لإستئجار السيارات</div>
+                <div className="text-[8.5px] font-bold tracking-wide text-red-600">ARSAM RENT A CAR</div>
               </div>
               <div className="text-right text-[10px] font-black text-gray-900">
                 <span>Call &amp; WhatsApp: 94521746</span>
@@ -337,8 +342,8 @@ export default function CarContractModal({ contract: initialContract, onClose }:
                 { ar: 'رخصة قيادة رقم', en: 'Driving Licence No.', value: toEng(contract.licenceNo || ''), mono: true },
                 { ar: 'بطاقة شخصية / جواز السفر رقم', en: 'ID Card / Passport No.', value: toEng(contract.customerNationalId || contract.customerPassport || ''), mono: true },
               ].map(f => (
-                <div key={f.en} className="border border-gray-700 rounded-sm">
-                  <div className="text-[8.5px] leading-tight text-gray-700 border-b border-gray-400 py-0.5">
+                <div key={f.en} className="border border-gray-700 rounded-lg overflow-hidden">
+                  <div className="text-[8.5px] leading-tight text-gray-700 border-b border-gray-400 py-0.5 px-2">
                     <div dir="rtl">{f.ar}</div>
                     <div>{f.en}</div>
                   </div>
@@ -376,20 +381,41 @@ export default function CarContractModal({ contract: initialContract, onClose }:
                   </div>
                 </div>
 
-                {/* Car body diagrams: top view + 3 side/front views for damage marking */}
-                <div className="border border-gray-700 p-1 grid grid-cols-2 gap-1">
-                  {[
-                    <><rect x="8" y="6" width="34" height="68" rx="14" /><rect x="14" y="20" width="22" height="16" rx="3" /><rect x="14" y="46" width="22" height="14" rx="3" /></>,
-                    <><path d="M4 50 Q6 34 24 30 L38 18 H66 L82 30 Q96 32 96 50 Z" /><circle cx="28" cy="52" r="7" /><circle cx="74" cy="52" r="7" /></>,
-                    <><path d="M12 62 L16 30 Q18 14 50 14 Q82 14 84 30 L88 62 Z" /><rect x="24" y="22" width="48" height="16" rx="3" /><circle cx="26" cy="62" r="6" /><circle cx="74" cy="62" r="6" /></>,
-                    <><path d="M4 50 Q6 34 24 30 L38 18 H66 L82 30 Q96 32 96 50 Z" /><line x1="36" y1="20" x2="36" y2="30" /><line x1="64" y1="20" x2="64" y2="30" /><circle cx="28" cy="52" r="7" /><circle cx="74" cy="52" r="7" /></>,
-                  ].map((shape, i) => (
-                    <svg key={i} viewBox={i === 0 ? '0 0 50 80' : '0 0 100 80'} className="w-full h-14 stroke-gray-800 fill-none" strokeWidth="1.6">{shape}</svg>
-                  ))}
+                {/* Car body diagrams (borderless like the paper): top view + side view, then front / rear / side */}
+                <div className="space-y-1">
+                  <div className="grid grid-cols-5 gap-2 items-center">
+                    <svg viewBox="0 0 130 60" className="col-span-3 w-full h-14 stroke-gray-800 fill-none" strokeWidth="1.5">
+                      <path d="M8 30 Q8 12 24 10 L100 10 Q124 14 124 30 Q124 46 100 50 L24 50 Q8 48 8 30 Z" />
+                      <path d="M40 15 L84 15 L92 24 L92 36 L84 45 L40 45 L34 36 L34 24 Z" />
+                      <line x1="62" y1="15" x2="62" y2="45" />
+                      <rect x="24" y="4" width="14" height="6" rx="2" /><rect x="88" y="4" width="14" height="6" rx="2" />
+                      <rect x="24" y="50" width="14" height="6" rx="2" /><rect x="88" y="50" width="14" height="6" rx="2" />
+                    </svg>
+                    <svg viewBox="0 0 110 60" className="col-span-2 w-full h-14 stroke-gray-800 fill-none" strokeWidth="1.5">
+                      <path d="M4 42 L8 32 Q14 28 30 26 L44 12 H74 L90 26 Q104 28 106 38 L106 44 H4 Z" />
+                      <path d="M46 15 H72 L84 26 H40 Z" /><line x1="58" y1="15" x2="58" y2="26" />
+                      <circle cx="28" cy="46" r="8" /><circle cx="84" cy="46" r="8" />
+                    </svg>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 items-center">
+                    <svg viewBox="0 0 80 60" className="w-full h-12 stroke-gray-800 fill-none" strokeWidth="1.5">
+                      <path d="M12 46 L14 26 Q16 10 40 10 Q64 10 66 26 L68 46 Z" /><rect x="22" y="16" width="36" height="14" rx="3" />
+                      <circle cx="22" cy="46" r="6" /><circle cx="58" cy="46" r="6" /><line x1="30" y1="38" x2="50" y2="38" />
+                    </svg>
+                    <svg viewBox="0 0 80 60" className="w-full h-12 stroke-gray-800 fill-none" strokeWidth="1.5">
+                      <path d="M12 46 L14 26 Q16 10 40 10 Q64 10 66 26 L68 46 Z" /><rect x="24" y="16" width="32" height="12" rx="3" />
+                      <circle cx="22" cy="46" r="6" /><circle cx="58" cy="46" r="6" /><rect x="30" y="34" width="20" height="6" rx="2" />
+                    </svg>
+                    <svg viewBox="0 0 110 60" className="w-full h-12 stroke-gray-800 fill-none" strokeWidth="1.5">
+                      <path d="M4 42 L8 32 Q14 28 30 26 L44 12 H74 L90 26 Q104 28 106 38 L106 44 H4 Z" />
+                      <path d="M46 15 H72 L84 26 H40 Z" /><line x1="58" y1="15" x2="58" y2="26" />
+                      <circle cx="28" cy="46" r="8" /><circle cx="84" cy="46" r="8" />
+                    </svg>
+                  </div>
                 </div>
 
                 <div className="text-[8px] leading-tight text-gray-800 font-semibold text-center">
-                  <div dir="rtl">خاص بالإيجار قصير الأجل فقط ما يزيد عن ٢٠٠ كم يحسب بواقع ٠٥٠ بيسة لكل كم</div>
+                  <div dir="rtl">خاص بالإيجار قصير الأجل فقط ما يزيد عن ٢٠٠ كم يحسب بواقع ٥٠ بيسة لكل كم</div>
                   <div>EXCESS OF 200 KM 0.050 BZS PER KM WILL BE CHARGED APPLICABLE FOR SHORT TERM LEASE ONLY</div>
                 </div>
               </div>
@@ -410,33 +436,34 @@ export default function CarContractModal({ contract: initialContract, onClose }:
                     { ar: 'وقت العودة', en: 'Return Time', value: toEng(contract.returnTime || ''), mono: true },
                     { ar: 'تاريخ يوم العودة', en: 'Return Date', value: toEng(contract.endDate), mono: true },
                   ].map(f => (
-                    <div key={f.en} className="border border-gray-700 rounded-sm">
-                      <div className="text-[8px] leading-tight text-gray-700 border-b border-gray-400 py-0.5">
+                    <div key={f.en} className="border border-gray-700 rounded-lg overflow-hidden">
+                      <div className="text-[8px] leading-tight text-gray-700 border-b border-gray-400 py-0.5 px-2">
                         <div dir="rtl">{f.ar}</div>
                         <div>{f.en}</div>
                       </div>
-                      <div className={`h-7 flex items-center justify-center font-bold text-[12px] text-blue-900 uppercase ${f.mono ? 'font-mono' : ''}`}>{f.value}</div>
+                      <div className={`h-6 flex items-center justify-center font-bold text-[12px] text-blue-900 uppercase ${f.mono ? 'font-mono' : ''}`}>{f.value}</div>
                     </div>
                   ))}
                 </div>
-                <div className="ml-auto w-1/3 border border-gray-700 rounded-sm text-center">
-                  <div className="text-[8px] leading-tight text-gray-700 border-b border-gray-400 py-0.5">
+                <div className="ml-auto w-1/3 border border-gray-700 rounded-lg overflow-hidden text-center">
+                  <div className="text-[8px] leading-tight text-gray-700 border-b border-gray-400 py-0.5 px-2">
                     <div dir="rtl">الكيلومترات زائدة</div>
                     <div>Extra KM</div>
                   </div>
-                  <div className="h-7 flex items-center justify-center font-bold text-[12px] text-blue-900 font-mono">{toEng(contract.extraKm)}</div>
+                  <div className="h-6 flex items-center justify-center font-bold text-[12px] text-blue-900 font-mono">{toEng(contract.extraKm)}</div>
                 </div>
               </div>
             </div>
 
             {/* IMPORTANT NOTICE */}
-            <div className="border-2 border-red-600 rounded-sm overflow-hidden">
-              <div className="bg-red-600 text-white text-center font-black text-[11px] tracking-wide py-0.5">
+            <div className="border-2 border-red-500 rounded-2xl overflow-hidden">
+              <div className="bg-red-500 text-white text-center font-black text-[12px] tracking-wide py-0.5">
                 IMPORTANT NOTICE <span dir="rtl">تنبيه هام</span>
               </div>
               <div className="text-center text-[8.5px] leading-tight py-1 px-2 font-semibold text-gray-900">
                 <div dir="rtl">يجب على المستأجر أن يقرأ بعناية ويفهم جيدا جميع الشروط الواردة أعلاه وعلى ظهر عقد الإيجار هذا قبل التوقيع عليه</div>
-                <div>THE RENTER SHOULD READ AND UNDERSTAND OUR TERMS &amp; CONDITIONS WHICH ARE PRINTED AT ABOVE AND ON THE REVERSE SIDE OF RENTAL AGREEMENT BEFORE SIGNING THE RENT AGREEMENT</div>
+                <div>THE RENTER SHOULD READ AND UNDERSTAND OUR TERMS &amp; CONDITIONS WHICH ARE PRINTED AT</div>
+                <div>ABOVE AND ON THE REVERSE SIDE OF RENTAL AGREEMENT BEFORE SIGNING THE RENT AGREEMENT</div>
               </div>
             </div>
 
@@ -448,47 +475,55 @@ export default function CarContractModal({ contract: initialContract, onClose }:
                 <div className="text-right"><span dir="rtl">أربط حزام الأمان</span><br />FASTEN YOUR SEAT BELT</div>
               </div>
               <p dir="rtl" className="text-justify text-gray-900">
-                إقرار وأتعهد بأنني قرأت الشروط والبنود الواردة خلف هذا العقد وأنني موافق عليها وأتعهد بدفع جميع المخالفات المرورية وأتحمل مسؤولية السيارة التي استأجرتها حسب عقد الإيجار كاملاً، وإذا لا سمح الله وقع على السيارة حادث أو أصيبت بعطل فني من جراء الاستخدام سأقوم بدفع قيمة التصليح + فترة وقوف السيارة في الكراج وعلى شرط أن يتم التصليح في وكالة السيارة ودفع مسامهة شركة التأمين التي تقرها الشركة وعليه أوقع.
+                إقرار وأتعهد بأنني قرأت الشروط والبنود الواردة خلف هذا العقد كاملاً وأنني موافق عليها وأتعهد بدفع جميع المخالفات المرورية وأتحمل مسؤولية السيارة التي استأجرتها حسب عقد الإيجار كاملاً، وإذا لا سمح الله وقع على السيارة حادث أو أصيبت بعطل فني من جراء الاستخدام سأقوم بدفع قيمة التصليح + فترة وقوف السيارة في الكراج وعلى شرط أن يتم التصليح في وكالة السيارة ودفع مسامهة شركة التأمين التي تقرها الشركة وعليه أوقع.
               </p>
-              <p dir="rtl" className="text-justify text-gray-900 font-semibold">
-                إقرار أنا مستأجر هذه السيارة بأنني تركت (بطاقتي الشخصية / جواز سفري) بمحض إرادتي وليس رغما عني لدى المؤجر، وأنني أو افق على جميع شروط هذا العقد بعدما قرأت وفهمت ما ورد به. السيارة غير مؤمنة ضد الأضرار، وفي حال وقوع حادث وكان المستأجر هو المخطئ، فإن جميع الأضرار تقع على عاتقه.
+              <p className="text-gray-900 font-semibold text-[10px]">
+                I have read and agree to the terms and conditions on the back side of this agreement and I agree to pay all charges for traffic violation
+              </p>
+              <p dir="rtl" className="text-justify text-gray-900">
+                إقرار أنا مستأجر هذه السيارة بأنني تركت (بطاقتي الشخصية / جواز سفري) بمحض إرادتي وليس رغما عني لدى المؤجر، وأنني أوافق على جميع شروط هذا العقد بعدما قرأت وفهمت ما ورد به.
               </p>
               <p className="text-gray-900">
-                I have read and agree to the terms and conditions on the back side of this agreement and I agree to pay all charges for traffic violation. I am taking delivery of this car in good condition and depositing my identity car / passport with you my self according to my wish. I agree all the conditions of contract between me and the company after reading and understanding it's derails. The car is not covered by comprehensive insurance, and in case of an accident where the renter is at fault, all damages will be the renter's responsibility.
+                I am taking delivery of this car in good condition and depositing my identity car / passport with you my self according to my wish.
+                <br />I agree all the conditions of contract between me and the company after reading and understanding it's derails.
               </p>
-              <p dir="rtl" className="text-red-700 font-bold">
+              <p dir="rtl" className="text-justify text-gray-900">
+                السيارة غير مؤمنة ضد الأضرار، وفي حال وقوع حادث وكان المستأجر هو المخطئ، فإن جميع الأضرار تقع على عاتقه.
+              </p>
+              <p className="text-gray-900">
+                The car is not covered by comprehensive insurance, and in case of an accident where the renter is at fault, all damages will be the renter's responsibility.
+              </p>
+              <div className="flex items-center justify-between gap-3 font-black text-[10px]">
+                <span>Smoking in the car is prohibited and, if proven, carries a 50 OMR fine.</span>
+                <span dir="rtl">يمنع التدخين داخل السيارة ويُفرض غرامة قدرها ٥٠ ريالاً عند إثبات ذلك.</span>
+              </div>
+              <p dir="rtl" className="text-red-700 font-bold text-[9px]">
                 خودرو فاقد بیمه بدنه است و در صورت تصادف، کلیه خسارات بر عهده مقصر حادثه خواهد بود. سیگار کشیدن درون خودرو ممنوع می‌باشد و در صورت اثبات ۵۰ ریال جریمه در پی دارد.
-              </p>
-              <p dir="rtl" className="font-black text-[10px]">
-                يمنع التدخين داخل السيارة ويُفرض غرامة قدرها ٥٠ ريالاً عند إثبات ذلك.
-              </p>
-              <p className="font-black text-[10px]">
-                Smoking in the car is prohibited and, if proven, carries a 50 OMR fine.
               </p>
             </div>
 
             {/* SIGNATURES + DAY / DATE */}
             <div className="grid grid-cols-12 gap-2 text-[9px] font-bold">
-              <div className="col-span-5 border-2 border-gray-700 rounded-md h-24 p-1">
+              <div className="col-span-5 border-2 border-gray-700 rounded-2xl h-[68px] px-2.5 py-1">
                 <div className="flex justify-between"><span>Renter's Signature</span><span dir="rtl">توقيع المستأجر</span></div>
               </div>
               <div className="col-span-2 flex flex-col gap-2">
-                <div className="border border-gray-700 rounded-sm flex-1 p-0.5">
+                <div className="border border-gray-700 rounded-lg overflow-hidden flex-1 p-0.5">
                   <div className="flex justify-between"><span>Day</span><span dir="rtl">اليوم</span></div>
                 </div>
-                <div className="border border-gray-700 rounded-sm flex-1 p-0.5">
+                <div className="border border-gray-700 rounded-lg overflow-hidden flex-1 p-0.5">
                   <div className="flex justify-between"><span>Date</span><span dir="rtl">التاريخ</span></div>
                   <div className="text-center font-mono text-[11px] text-blue-900">{contractDate}</div>
                 </div>
               </div>
-              <div className="col-span-5 border-2 border-gray-700 rounded-md h-24 p-1">
+              <div className="col-span-5 border-2 border-gray-700 rounded-2xl h-[68px] px-2.5 py-1">
                 <div className="flex justify-between"><span>In charger Signature</span><span dir="rtl">توقيع المسؤول</span></div>
               </div>
             </div>
 
             {/* NOTES + FINAL SETTLEMENT TABLE */}
             <div className="grid grid-cols-12 gap-2 text-[9px] font-bold">
-              <div className="col-span-7 border-2 border-gray-700 rounded-md min-h-[80px] p-1">
+              <div className="col-span-7 border-2 border-gray-700 rounded-2xl min-h-[60px] px-2.5 py-1">
                 <div className="text-right" dir="rtl">ملاحظات</div>
                 <div className="font-normal text-[10px] text-blue-900 whitespace-pre-wrap">{contract.notes || ''}</div>
               </div>
@@ -499,20 +534,22 @@ export default function CarContractModal({ contract: initialContract, onClose }:
                   { ar: 'المبلغ المستحق لأي حادث', v: deductions || null },
                   { ar: 'المبلغ الإجمالي', v: contract.totalPrice + deductions + extraKmAmount },
                 ].map(r => (
-                  <div key={r.ar} className="flex items-center justify-between border border-gray-700 rounded-sm px-1.5 py-1">
-                    <span className="font-mono text-[11px] text-blue-900">{r.v !== null ? toEng(r.v) : ''}</span>
-                    <span dir="rtl" className="flex-1 mx-2 text-right">{r.ar}</span>
+                  <div key={r.ar} className="flex items-center justify-between border border-gray-700 rounded-lg overflow-hidden px-1.5 py-1">
                     <span dir="rtl">ر.ع</span>
+                    <span className="flex-1 mx-2 text-center font-mono text-[11px] text-blue-900">{r.v !== null ? toEng(r.v) : ''}</span>
+                    <span dir="rtl" className="text-right">{r.ar}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* FOOTER */}
-            <div className="border-t border-gray-500 pt-1 flex items-center justify-between text-[8.5px] text-gray-800" dir="rtl">
-              <div className="leading-tight">
-                <div className="font-bold text-[9.5px]">أبو أرسام للتجارة ش.ش.و س.ت: ١٤٢٦٠٤٦ | 94521746</div>
+            <div className="border-t border-gray-500 pt-1 flex items-center justify-between gap-2 text-[8.5px] text-gray-800">
+              <div className="leading-tight text-left" dir="rtl">
                 <div>مسقط، سلطنة عُمان — مرتفعات مطار، داخل محطة شل بترول، مكتب سند مسقط للاعمال</div>
+              </div>
+              <div className="leading-tight text-right font-bold text-[9.5px]" dir="rtl">
+                أبو أرسام للتجارة ش.ش.و س.ت: ١٤٢٦٠٤٦ &nbsp; 94521746
               </div>
               <div className="w-9 h-9 border border-black p-0.5 bg-white shrink-0">
                 <svg viewBox="0 0 100 100" className="w-full h-full fill-black">
