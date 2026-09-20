@@ -17,3 +17,20 @@ export const DEFAULT_CONTRACT_HEADER: ContractHeaderTemplate = {
   phone: '94521746',
   commercialRegister: '1426046',
 };
+
+// Footer strip printed at the bottom of the agreement (no QR code on the paper form).
+export interface ContractFooterTemplate {
+  companyAr: string;
+  commercialRegisterAr: string;
+  phoneAr: string;
+  addressAr: string;
+  taglineAr: string;
+}
+
+export const DEFAULT_CONTRACT_FOOTER: ContractFooterTemplate = {
+  companyAr: 'أبو أرسام للتجارة ش.ش.و',
+  commercialRegisterAr: '١٤٢٦٠٤٦',
+  phoneAr: '٩٤٥٢١٧٤٦',
+  addressAr: 'مرتفعات مطار، داخل محطه شل بترول، مكتب سند مسقط للاعمال',
+  taglineAr: 'مسقط، سلطنة عُمان',
+};

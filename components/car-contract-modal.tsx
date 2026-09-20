@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ContractHeader from './contract-header-template';
+import ContractFooter from './contract-footer-template';
 import { motion } from 'framer-motion';
 import { X, Printer, FileText } from 'lucide-react';
 
@@ -497,23 +498,8 @@ export default function CarContractModal({ contract: initialContract, onClose }:
               </div>
             </div>
 
-            {/* FOOTER */}
-            <div className="border-t border-gray-500 pt-1 flex items-center justify-between gap-2 text-[8.5px] text-gray-800">
-              <div className="leading-tight text-left" dir="rtl">
-                <div>مسقط، سلطنة عُمان — مرتفعات مطار، داخل محطة شل بترول، مكتب سند مسقط للاعمال</div>
-              </div>
-              <div className="leading-tight text-right font-bold text-[9.5px]" dir="rtl">
-                أبو أرسام للتجارة ش.ش.و س.ت: ١٤٢٦٠٤٦ &nbsp; 94521746
-              </div>
-              <div className="w-9 h-9 border border-black p-0.5 bg-white shrink-0">
-                <svg viewBox="0 0 100 100" className="w-full h-full fill-black">
-                  <rect x="0" y="0" width="30" height="30" /><rect x="5" y="5" width="20" height="20" fill="white" /><rect x="10" y="10" width="10" height="10" />
-                  <rect x="70" y="0" width="30" height="30" /><rect x="75" y="5" width="20" height="20" fill="white" /><rect x="80" y="10" width="10" height="10" />
-                  <rect x="0" y="70" width="30" height="30" /><rect x="5" y="75" width="20" height="20" fill="white" /><rect x="10" y="80" width="10" height="10" />
-                  <rect x="40" y="40" width="20" height="20" /><rect x="70" y="70" width="15" height="15" /><rect x="50" y="70" width="10" height="20" />
-                </svg>
-              </div>
-            </div>
+            {/* FOOTER (template: lib/contract-template.ts) */}
+            <ContractFooter />
           </div>
         </div>
         </div>
