@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { X, Printer, FileText } from 'lucide-react';
 
@@ -71,6 +72,9 @@ function fuelKeyOf(text?: string): FuelKey | null {
 
 export default function CarContractModal({ contract: initialContract, onClose }: CarContractModalProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  // Render into <body> so printing can hide every other page element (otherwise the admin layout pushes the contract onto page 2)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   // Editable copy: the form panel edits this and the printed sheet re-renders live
   const [contract, setContract] = useState<ContractData>(() => ({
     ...initialContract,
@@ -110,17 +114,28 @@ export default function CarContractModal({ contract: initialContract, onClose }:
     ? contract.netRefundable 
     : Math.max(0, contract.depositPaid - deductions);
 
-  return (
-    <div className="contract-print-shell fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto" dir="rtl">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="contract-print-root contract-print-shell fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto" dir="rtl">
       {/* CSS Print Styles for exact A4 physical contract layout matching Oman store form */}
       <style jsx global>{`
+        @page {
+          size: A4 portrait;
+          margin: 4mm;
+        }
         @media print {
-          body * {
-            visibility: hidden !important;
+          /* Only the contract is printed: every other element in <body> is removed from layout */
+          body > *:not(.contract-print-root) {
+            display: none !important;
           }
-          #printable-contract-container,
-          #printable-contract-container * {
-            visibility: visible !important;
+          html, body {
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
           /* Un-clip every modal wrapper so the whole contract flows onto the printed page */
           .contract-print-shell {
@@ -150,10 +165,6 @@ export default function CarContractModal({ contract: initialContract, onClose }:
             page-break-after: avoid;
             box-shadow: none !important;
             border: none !important;
-          }
-          @page {
-            size: A4 portrait;
-            margin: 4mm;
           }
           .no-print {
             display: none !important;
@@ -564,6 +575,7 @@ export default function CarContractModal({ contract: initialContract, onClose }:
         </div>
         </div>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
