@@ -383,8 +383,8 @@ export function resolveCarImageUrl(title: string, brand: string, imageUrl?: stri
 // --- SUPABASE PERSISTENCE ---
 // Supabase is the single source of truth. Every failure is thrown so callers never report a
 // save that did not happen.
-function ensureOk(operation: string, error: { message: string } | null) {
-  if (error) throw new Error(`${operation}: ${error.message}`);
+function ensureOk(operation: string, error: { message: string; details?: string; code?: string } | null) {
+  if (error) throw new Error(`${operation}: ${error.message}${error.code ? ` [${error.code}]` : ''}${error.details ? ` ${error.details}` : ''}`);
 }
 
 function carFromRow(item: any): Car {
