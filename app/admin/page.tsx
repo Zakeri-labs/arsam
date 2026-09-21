@@ -854,9 +854,9 @@ export default function AdminPage() {
     };
 
     return (
-      <div className="flex flex-col h-full bg-navy text-white text-right" dir="rtl">
+      <div className="flex flex-col h-full overflow-y-auto bg-navy text-white text-right" dir="rtl">
         {/* Brand Header & User Badge */}
-        <div className="p-5 border-b border-white/10 flex flex-col items-center select-none space-y-1 text-center">
+        <div className="shrink-0 p-5 border-b border-white/10 flex flex-col items-center select-none space-y-1 text-center">
           <h2 className="text-base font-extrabold text-gold leading-none">ابوآرسام</h2>
           <span className="text-[9px] font-bold text-white/40 uppercase tracking-widest">پنل مدیریت ادمین</span>
           {currentUser && (
@@ -868,7 +868,7 @@ export default function AdminPage() {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="shrink-0 px-4 py-6 space-y-2">
           {isAllowed('services') && (
             <button
               onClick={() => {
@@ -1047,7 +1047,7 @@ export default function AdminPage() {
         </nav>
 
         {/* Sidebar Footer / Action buttons */}
-        <div className="p-4 border-t border-white/10 space-y-2 select-none">
+        <div className="shrink-0 p-4 border-t border-white/10 space-y-2 select-none">
           <button
             onClick={() => {
               handleInstallPWA();
@@ -1945,10 +1945,10 @@ export default function AdminPage() {
       </AnimatePresence>
 
       {/* Main Responsive Grid Layout */}
-      <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
-        
+      <div className="flex min-h-dvh w-full max-w-full overflow-x-hidden">
+
         {/* DESKTOP SIDEBAR PANEL */}
-        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:right-0 lg:top-0 lg:h-screen lg:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:right-0 lg:top-0 lg:h-dvh lg:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
           <SidebarContent />
         </aside>
 
@@ -1977,7 +1977,7 @@ export default function AdminPage() {
         </AnimatePresence>
 
         {/* MAIN DISPLAY AREA */}
-        <div className="flex-1 min-w-0 w-full max-w-full lg:mr-64 min-h-screen flex flex-col bg-[#07111f] overflow-x-hidden">
+        <div className="flex-1 min-w-0 w-full max-w-full lg:mr-64 min-h-dvh flex flex-col bg-[#07111f] overflow-x-hidden">
           
           {/* MOBILE ONLY TOP HEADER */}
           <header className="lg:hidden sticky top-0 z-30 w-full border-b border-white/10 bg-[#0b172a]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">

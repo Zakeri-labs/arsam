@@ -41,6 +41,15 @@
   font-display: swap;
 }
 
+/* Contract footer: Amiri text (matches the printed paper form) */
+@font-face {
+  font-family: 'Amiri';
+  src: url('/fonts/Amiri-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -149,6 +158,13 @@
 [dir="rtl"] {
   text-align: right;
   font-family: var(--font-persian) !important;
+}
+
+/* Contract footer must keep Amiri: this beats the global [dir="rtl"] Vazirmatn rule above */
+.contract-footer-font,
+.contract-footer-font [dir="rtl"],
+.contract-footer-font * {
+  font-family: 'Amiri', serif !important;
 }
 
 [lang="ar"][dir="rtl"], [lang="ar"][dir="rtl"] * {

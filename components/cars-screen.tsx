@@ -14,6 +14,7 @@ import {
   Car, CarReservation, CarTransaction, CarContract, FuelLevel,
   FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate
 } from '@/lib/db-cars';
+import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
 import CarContractModal, { ContractData } from './car-contract-modal';
@@ -140,6 +141,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       depositPaid: cnt.depositAmount || 50,
       initialOdometer: cnt.initialOdometer,
       fuelLevel: FUEL_LEVEL_LABELS[cnt.fuelLevel] || FUEL_LEVEL_LABELS.full,
+      departureTime: cnt.createdAt ? new Date(cnt.createdAt).toTimeString().slice(0, 5) : undefined,
+      returnOdometer: cnt.returnOdometer,
       notes: cnt.notes
     };
 
@@ -331,7 +334,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       if (res.ok && data.success) {
         toast.success(editingCar ? 'مشخصات خودرو با موفقیت ویرایش شد' : 'خودرو جدید با موفقیت ثبت شد');
         setIsCarModalOpen(false);
-        fetchAllData();
+        await fetchAllData();
       } else {
         toast.error(data.error || 'خطا در ذخیره‌سازی');
       }
@@ -383,14 +386,14 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
     for (const c of crmClients) {
       if (c.phone && c.name) {
-        const clean = c.phone.replace(/[^0-9+]/g, '');
+        const clean = normalizeDigits(c.phone).replace(/[^0-9+]/g, '');
         if (clean) clientMap.set(clean, { name: c.name.trim(), phone: c.phone.trim() });
       }
     }
 
     for (const r of reservations) {
       if (r.customerPhone && r.customerName) {
-        const clean = r.customerPhone.replace(/[^0-9+]/g, '');
+        const clean = normalizeDigits(r.customerPhone).replace(/[^0-9+]/g, '');
         if (clean && !clientMap.has(clean)) {
           clientMap.set(clean, { name: r.customerName.trim(), phone: r.customerPhone.trim() });
         }
@@ -403,9 +406,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   // Live Phone Match Check
   const matchedExistingClient = useMemo(() => {
     if (customerSelectMode !== 'new' || !resForm.customerPhone) return null;
-    const clean = resForm.customerPhone.replace(/[^0-9+]/g, '');
+    const clean = normalizeDigits(resForm.customerPhone).replace(/[^0-9+]/g, '');
     if (!clean || clean.length < 4) return null;
-    return allClients.find(c => c.phone.replace(/[^0-9+]/g, '') === clean) || null;
+    return allClients.find(c => normalizeDigits(c.phone).replace(/[^0-9+]/g, '') === clean) || null;
   }, [customerSelectMode, resForm.customerPhone, allClients]);
 
   // --- RESERVATION HANDLERS & PRICING CALCULATOR ---
@@ -431,13 +434,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       } catch (err) {}
     }
 
-    const grossTotal = rate * days;
-    const rawDiscount = discType === 'percent'
-      ? (grossTotal * (Math.min(100, Math.max(0, discVal)) / 100))
-      : Math.min(grossTotal, Math.max(0, discVal));
-    const discountAmount = parseFloat(rawDiscount.toFixed(3));
+    // Work in integer baisa (1 OMR = 1000 baisa) so percent discounts are exact to 3 decimals
+    const grossBaisa = Math.round(rate * days * 1000);
+    const discountBaisa = discType === 'percent'
+      ? Math.round(Number((grossBaisa * Math.min(100, Math.max(0, discVal)) / 100).toPrecision(12)))
+      : Math.min(grossBaisa, Math.round(Math.max(0, discVal) * 1000));
 
-    const finalTotal = Math.max(0, parseFloat((grossTotal - discountAmount).toFixed(3)));
+    const grossTotal = grossBaisa / 1000;
+    const discountAmount = discountBaisa / 1000;
+    const finalTotal = Math.max(0, grossBaisa - discountBaisa) / 1000;
 
     return {
       rate,
@@ -525,8 +530,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         return;
       }
 
-      const cleanPhone = resForm.customerPhone.replace(/[^0-9+]/g, '');
-      const existing = allClients.find(c => c.phone.replace(/[^0-9+]/g, '') === cleanPhone);
+      const cleanPhone = normalizeDigits(resForm.customerPhone).replace(/[^0-9+]/g, '');
+      const existing = allClients.find(c => normalizeDigits(c.phone).replace(/[^0-9+]/g, '') === cleanPhone);
       if (existing && existing.name !== resForm.customerName.trim()) {
         toast.error(`خطا: شماره تماس ${resForm.customerPhone} متعلق به «${existing.name}» است. لطفاً از پرونده مشتری استفاده نمایید.`);
         return;
@@ -557,16 +562,16 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           setCalendarAnchorDate(d);
         }
 
-        const car = cars.find(c => c.id === resForm.carId);
+        const sideEffects: Promise<unknown>[] = [];
 
         // Update car status to rented if reservation is active today
         const todayStr = new Date().toISOString().split('T')[0];
         if (resForm.startDate! <= todayStr && resForm.endDate! >= todayStr) {
-          fetch('/api/cars', {
+          sideEffects.push(fetch('/api/cars', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: resForm.carId, status: 'rented' })
-          });
+          }));
           setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
         }
 
@@ -581,7 +586,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           toast.success(`قرارداد ${data.contract.id} صادر و درآمد اجاره ثبت شد`);
         }
 
-        fetchAllData();
+        // Wait for the follow-up writes so the refresh below can't overwrite them with stale data
+        await Promise.allSettled(sideEffects);
+        await fetchAllData();
       } else {
         toast.error(data.error || 'خطا در ثبت رزرو');
       }
@@ -651,7 +658,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       if (res.ok && data.success) {
         toast.success('تراکنش مالی جدید با موفقیت ثبت شد');
         setIsTransactionModalOpen(false);
-        fetchAllData();
+        await fetchAllData();
       } else {
         toast.error(data.error || 'خطا در ثبت تراکنش');
       }
@@ -1583,7 +1590,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       type="text"
                       required
                       value={carForm.plateNumber || ''}
-                      onChange={e => setCarForm({ ...carForm, plateNumber: e.target.value })}
+                      onChange={e => setCarForm({ ...carForm, plateNumber: normalizeDigits(e.target.value) })}
                       placeholder="مثال: 12301"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-mono"
                     />
@@ -1595,12 +1602,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
                       نرخ روزانه <OMRIcon size="sm" /> *
                     </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       required
-                      value={carForm.dailyRate || ''}
-                      onChange={e => setCarForm({ ...carForm, dailyRate: parseFormattedNumber(e.target.value) })}
+                      value={carForm.dailyRate}
+                      onValueChange={v => setCarForm({ ...carForm, dailyRate: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-bold"
                     />
                   </div>
@@ -1609,11 +1614,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                     <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
                       مبلغ ودیعه <OMRIcon size="sm" />
                     </label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={carForm.depositAmount || ''}
-                      onChange={e => setCarForm({ ...carForm, depositAmount: parseFormattedNumber(e.target.value) })}
+                    <NumericInput
+                      value={carForm.depositAmount}
+                      onValueChange={v => setCarForm({ ...carForm, depositAmount: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
                   </div>
@@ -1646,9 +1649,12 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <div>
                     <label className="block text-white/80 font-bold mb-1">سال ساخت</label>
                     <input
-                      type="text"
+                      type="tel"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={4}
                       value={carForm.modelYear || ''}
-                      onChange={e => setCarForm({ ...carForm, modelYear: e.target.value })}
+                      onChange={e => setCarForm({ ...carForm, modelYear: normalizeDigits(e.target.value).replace(/\D/g, '').slice(0, 4) })}
                       placeholder="2023"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
@@ -1903,9 +1909,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                       />
                       <input
                         type="text"
+                        inputMode="tel"
                         required
                         value={resForm.customerPhone || ''}
-                        onChange={e => setResForm(prev => ({ ...prev, customerPhone: e.target.value }))}
+                        onChange={e => setResForm(prev => ({ ...prev, customerPhone: normalizeDigits(e.target.value) }))}
                         placeholder="شماره تماس (+968 91234567) *"
                         className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold dir-ltr"
                       />
@@ -1939,12 +1946,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
                   <div>
                     <label className="block text-white/80 font-bold text-[11px] mb-1">نرخ روزانه (OMR) *</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       required
-                      value={resForm.customDailyRate || ''}
-                      onChange={e => updateResFormPricing({ customDailyRate: parseFormattedNumber(e.target.value) })}
+                      value={resForm.customDailyRate}
+                      onValueChange={v => updateResFormPricing({ customDailyRate: v })}
                       className="w-full rounded-xl border border-gold/40 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-gold font-bold outline-none focus:border-gold"
                     />
                   </div>
@@ -1972,11 +1977,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                         </button>
                       </div>
                     </div>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={resForm.discountValue || ''}
-                      onChange={e => updateResFormPricing({ discountValue: parseFormattedNumber(e.target.value) })}
+                    <NumericInput
+                      value={resForm.discountValue}
+                      onValueChange={v => updateResFormPricing({ discountValue: v })}
                       placeholder="0"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />
@@ -1984,11 +1987,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
 
                   <div>
                     <label className="block text-white/80 font-bold text-[11px] mb-1">مبلغ ودیعه (پیش‌فرض: ۰ OMR)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={resForm.depositPaid || ''}
-                      onChange={e => updateResFormPricing({ depositPaid: parseFormattedNumber(e.target.value) })}
+                    <NumericInput
+                      value={resForm.depositPaid}
+                      onValueChange={v => updateResFormPricing({ depositPaid: v })}
                       placeholder="0"
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
                     />
@@ -2143,12 +2144,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">
                     مبلغ <OMRIcon size="sm" /> *
                   </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
+                  <NumericInput
                     required
-                    value={txForm.amount || ''}
-                    onChange={e => setTxForm({ ...txForm, amount: parseFormattedNumber(e.target.value) })}
+                    value={txForm.amount}
+                    onValueChange={v => setTxForm({ ...txForm, amount: v })}
                     placeholder="مثال: 1500"
                     className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold text-sm"
                   />
@@ -2338,23 +2337,19 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
                     <label className="block text-white/80 font-bold mb-1">کیلومتر تحویل (Initial KM) *</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       required
                       value={handoverForm.initialOdometer}
-                      onChange={e => setHandoverForm({ ...handoverForm, initialOdometer: parseFormattedNumber(e.target.value) })}
+                      onValueChange={v => setHandoverForm({ ...handoverForm, initialOdometer: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
                     />
                   </div>
 
                   <div>
                     <label className="block text-white/80 font-bold mb-1">کیلومتر عودت (Return KM)</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
+                    <NumericInput
                       value={handoverForm.returnOdometer}
-                      onChange={e => setHandoverForm({ ...handoverForm, returnOdometer: parseFormattedNumber(e.target.value) })}
+                      onValueChange={v => setHandoverForm({ ...handoverForm, returnOdometer: v })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
                     />
                   </div>
