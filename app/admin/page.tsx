@@ -843,7 +843,9 @@ export default function AdminPage() {
   }
 
   // --- 2. ADMIN SIDEBAR NAVIGATION ---
-  const SidebarContent = () => {
+  // Called as a plain function (not rendered as <Component />) so it is not remounted on every parent re-render,
+  // which reset the sidebar scroll position and replayed the submenu animation (buttons appeared to jump)
+  const renderSidebar = () => {
     const isAllowed = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars') => {
       if (!currentUser || !currentUser.allowedScreens) return true;
       return currentUser.allowedScreens.includes(screen);
@@ -1949,7 +1951,7 @@ export default function AdminPage() {
 
         {/* DESKTOP SIDEBAR PANEL */}
         <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-dvh md:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
-          <SidebarContent />
+          {renderSidebar()}
         </aside>
 
         {/* MOBILE SLIDING DRAWER NAVIGATION */}
@@ -1970,7 +1972,7 @@ export default function AdminPage() {
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                 className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl md:hidden border-l border-white/10 bg-[#0b172a]"
               >
-                <SidebarContent />
+                {renderSidebar()}
               </motion.aside>
             </>
           )}
