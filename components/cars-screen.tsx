@@ -71,6 +71,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   // Contracts Mock Data & State
   const [contracts, setContracts] = useState<CarContract[]>([]);
   const [savingHandover, setSavingHandover] = useState(false);
+  const [savingCar, setSavingCar] = useState(false);
+  const [savingRes, setSavingRes] = useState(false);
+  // Synchronous locks: a state flag only updates on the next render, so a fast double-click could still slip through
+  const saveLocks = useRef({ car: false, res: false, tx: false });
 
   // Hover Tooltip State for Calendar Gantt Bar
   const [hoveredRes, setHoveredRes] = useState<{ res: CarReservation; car: Car; x: number; y: number } | null>(null);
@@ -323,6 +327,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       return;
     }
 
+    if (saveLocks.current.car) return;
+    saveLocks.current.car = true;
+    setSavingCar(true);
     try {
       const res = await fetch('/api/cars', {
         method: 'POST',
@@ -340,6 +347,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       }
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
+    } finally {
+      saveLocks.current.car = false;
+      setSavingCar(false);
     }
   };
 
@@ -543,6 +553,13 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       }
     }
 
+    if (saveLocks.current.res) return;
+    saveLocks.current.res = true;
+    setSavingRes(true);
+    // Close right away; the form state is kept so the modal can be reopened if saving fails
+    setIsReservationModalOpen(false);
+    const savingToast = toast.loading('در حال ثبت رزرو...');
+
     try {
       const res = await fetch('/api/cars/reservations', {
         method: 'POST',
@@ -551,9 +568,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       });
 
       const data = await res.json();
+      toast.dismiss(savingToast);
       if (res.ok && data.success) {
         toast.success('رزرو خودرو با موفقیت ثبت گردید');
-        setIsReservationModalOpen(false);
 
         const newRes = data.reservation || { id: 'res-' + Date.now(), ...resForm };
         setReservations(prev => [newRes, ...prev.filter(r => r.id !== newRes.id)]);
@@ -610,9 +627,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
         await fetchAllData();
       } else {
         toast.error(data.error || 'خطا در ثبت رزرو');
+        setIsReservationModalOpen(true);
       }
     } catch (err) {
+      toast.dismiss(savingToast);
       toast.error('خطای برقراری ارتباط با سرور');
+      setIsReservationModalOpen(true);
+    } finally {
+      saveLocks.current.res = false;
+      setSavingRes(false);
     }
   };
 
@@ -653,6 +676,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       return;
     }
 
+    if (saveLocks.current.tx) return;
+    saveLocks.current.tx = true;
     setUploadingTxFile(true);
     try {
       const formData = new FormData();
@@ -684,6 +709,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     } catch (err) {
       toast.error('خطا در ارتباط با سرور');
     } finally {
+      saveLocks.current.tx = false;
       setUploadingTxFile(false);
     }
   };
@@ -1733,9 +1759,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   </button>
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black shadow-lg shadow-gold/20 cursor-pointer"
+                    disabled={savingCar}
+                    className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black shadow-lg shadow-gold/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    ذخیره اطلاعات خودرو
+                    {savingCar ? 'در حال ذخیره...' : 'ذخیره اطلاعات خودرو'}
                   </button>
                 </div>
               </form>
@@ -2064,9 +2091,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   </button>
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-5 py-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer"
+                    disabled={savingRes}
+                    className="w-full sm:w-auto px-5 py-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    ثبت رزرو
+                    {savingRes ? 'در حال ثبت...' : 'ثبت رزرو'}
                   </button>
                 </div>
               </form>
