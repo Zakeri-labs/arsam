@@ -140,6 +140,8 @@ export default function AdminPage() {
 
   const changeActiveScreen = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars') => {
     setActiveScreen(screen);
+    setIsMobileMenuOpen(false);
+    window.scrollTo({ top: 0 });
     try {
       localStorage.setItem('admin_active_screen', screen);
     } catch (e) {}
@@ -147,6 +149,8 @@ export default function AdminPage() {
 
   const changeCarSubTab = (tab: 'calendar' | 'fleet' | 'contracts' | 'accounting') => {
     setCarSubTab(tab);
+    setIsMobileMenuOpen(false);
+    window.scrollTo({ top: 0 });
     try {
       localStorage.setItem('admin_car_sub_tab', tab);
     } catch (e) {}
@@ -869,7 +873,6 @@ export default function AdminPage() {
             <button
               onClick={() => {
                 changeActiveScreen('services');
-                setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeScreen === 'services'
@@ -886,7 +889,6 @@ export default function AdminPage() {
             <button
               onClick={() => {
                 changeActiveScreen('requests');
-                setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeScreen === 'requests'
@@ -912,7 +914,6 @@ export default function AdminPage() {
             <button
               onClick={() => {
                 changeActiveScreen('qms');
-                setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeScreen === 'qms'
@@ -931,7 +932,6 @@ export default function AdminPage() {
             <button
               onClick={() => {
                 changeActiveScreen('customers');
-                setIsMobileMenuOpen(false);
               }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                 activeScreen === 'customers'
@@ -951,8 +951,12 @@ export default function AdminPage() {
             <div className="space-y-1">
               <button
                 onClick={() => {
-                  changeActiveScreen('cars');
-                  setIsCarMenuOpen(!isCarMenuOpen);
+                  if (activeScreen === 'cars') {
+                    setIsCarMenuOpen(!isCarMenuOpen);
+                  } else {
+                    changeActiveScreen('cars');
+                    setIsCarMenuOpen(true);
+                  }
                 }}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                   activeScreen === 'cars'
@@ -980,7 +984,6 @@ export default function AdminPage() {
                       onClick={() => {
                         changeActiveScreen('cars');
                         changeCarSubTab('calendar');
-                        setIsMobileMenuOpen(false);
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                         activeScreen === 'cars' && carSubTab === 'calendar'
@@ -996,7 +999,6 @@ export default function AdminPage() {
                       onClick={() => {
                         changeActiveScreen('cars');
                         changeCarSubTab('contracts');
-                        setIsMobileMenuOpen(false);
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                         activeScreen === 'cars' && carSubTab === 'contracts'
@@ -1012,7 +1014,6 @@ export default function AdminPage() {
                       onClick={() => {
                         changeActiveScreen('cars');
                         changeCarSubTab('accounting');
-                        setIsMobileMenuOpen(false);
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                         activeScreen === 'cars' && carSubTab === 'accounting'
@@ -1028,7 +1029,6 @@ export default function AdminPage() {
                       onClick={() => {
                         changeActiveScreen('cars');
                         changeCarSubTab('fleet');
-                        setIsMobileMenuOpen(false);
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer ${
                         activeScreen === 'cars' && carSubTab === 'fleet'
@@ -1948,7 +1948,7 @@ export default function AdminPage() {
       <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
         
         {/* DESKTOP SIDEBAR PANEL */}
-        <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:right-0 md:top-0 md:h-screen md:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:right-0 lg:top-0 lg:h-screen lg:z-20 border-l border-white/10 bg-[#0b172a] shadow-2xl">
           <SidebarContent />
         </aside>
 
@@ -1961,14 +1961,14 @@ export default function AdminPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
+                className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden"
               />
               <motion.aside
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl md:hidden border-l border-white/10 bg-[#0b172a]"
+                className="fixed top-0 right-0 bottom-0 z-50 w-64 shadow-2xl lg:hidden border-l border-white/10 bg-[#0b172a]"
               >
                 <SidebarContent />
               </motion.aside>
@@ -1977,10 +1977,10 @@ export default function AdminPage() {
         </AnimatePresence>
 
         {/* MAIN DISPLAY AREA */}
-        <div className="flex-1 min-w-0 w-full max-w-full md:mr-64 min-h-screen flex flex-col bg-[#07111f] overflow-x-hidden">
+        <div className="flex-1 min-w-0 w-full max-w-full lg:mr-64 min-h-screen flex flex-col bg-[#07111f] overflow-x-hidden">
           
           {/* MOBILE ONLY TOP HEADER */}
-          <header className="md:hidden sticky top-0 z-30 w-full border-b border-white/10 bg-[#0b172a]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
+          <header className="lg:hidden sticky top-0 z-30 w-full border-b border-white/10 bg-[#0b172a]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
               className="p-2 rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 transition-colors shadow-sm cursor-pointer"
