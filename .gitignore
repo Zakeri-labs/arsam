@@ -15,3 +15,7 @@ node_modules
 .DS_Store
 .vercel
 .env*
+
+# local JSON store is no longer used; Supabase is the only datastore
+/data/cars-db.json
+/data/cars-db.bak

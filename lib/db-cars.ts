@@ -106,8 +106,8 @@ export function cleanCarPlate(plate: string): string {
   return plate.replace(/^.*?\s*-\s*/, '').trim();
 }
 
-// In-Memory Fallback Stores
-let memoryCars: Car[] = [
+// Starter fleet shown (never persisted) while the cars table is empty
+const seedCars: Car[] = [
   // 1. MG GT (3 units - All Model Year 2026, All White)
   {
     id: 'car-mg-gt-1',
@@ -366,50 +366,6 @@ let memoryCars: Car[] = [
   }
 ];
 
-let memoryReservations: CarReservation[] = [
-  {
-    id: 'res-1',
-    carId: 'car-mg-gt-1',
-    carTitle: 'ام‌جی GT 2026 (#1)',
-    customerName: 'رضا علوی',
-    customerPhone: '+96891234567',
-    startDate: new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
-    totalPrice: 175,
-    depositPaid: 120,
-    status: 'active',
-    notes: 'تحویل در فرودگاه مسقط',
-    createdAt: new Date().toISOString()
-  }
-];
-
-let memoryTransactions: CarTransaction[] = [
-  {
-    id: 'tx-1',
-    reservationId: 'res-1',
-    carId: 'car-mg-gt-1',
-    customerName: 'رضا علوی',
-    amount: 175,
-    type: 'rent_fee',
-    paymentMethod: 'bank_reza',
-    description: 'دریافت کرایه کامل ام‌جی GT 2026 (#1)',
-    transactionDate: new Date().toISOString().split('T')[0],
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 'tx-2',
-    reservationId: 'res-1',
-    carId: 'car-mg-gt-1',
-    customerName: 'رضا علوی',
-    amount: 120,
-    type: 'deposit_in',
-    paymentMethod: 'cash_mohammadi',
-    description: 'ودیعه نقد دریافتی ام‌جی GT 2026 (#1)',
-    transactionDate: new Date().toISOString().split('T')[0],
-    createdAt: new Date().toISOString()
-  }
-];
-
 export function resolveCarImageUrl(title: string, brand: string, imageUrl?: string): string {
   if (imageUrl && (imageUrl.startsWith('data:') || imageUrl.startsWith('http://') || imageUrl.startsWith('https://'))) {
     return imageUrl;
@@ -424,127 +380,110 @@ export function resolveCarImageUrl(title: string, brand: string, imageUrl?: stri
   return imageUrl || '/cars/nissan-sunny-v2.png';
 }
 
-// --- DISK PERSISTENCE HELPERS ---
-function getFsAndPath() {
-  if (typeof window !== 'undefined') return { fs: null, path: null };
-  try {
-    const _req = eval('require');
-    const fs = _req('fs');
-    const path = _req('path');
-    return { fs, path };
-  } catch (e) {
-    return { fs: null, path: null };
-  }
+// --- SUPABASE PERSISTENCE ---
+// Supabase is the single source of truth. Every failure is thrown so callers never report a
+// save that did not happen.
+function ensureOk(operation: string, error: { message: string; details?: string; code?: string } | null) {
+  if (error) throw new Error(`${operation}: ${error.message}${error.code ? ` [${error.code}]` : ''}${error.details ? ` ${error.details}` : ''}`);
 }
 
-function getDataFilePath() {
-  const { path } = getFsAndPath();
-  if (!path) return '';
-  return path.join(process.cwd(), 'data', 'cars-db.json');
-}
-
-function ensureDataDirExists() {
-  try {
-    const { fs, path } = getFsAndPath();
-    if (!fs || !path) return;
-    const dir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-  } catch (err) {}
-}
-
-type DiskStore = { cars: Car[]; reservations: CarReservation[]; transactions: CarTransaction[]; contracts: CarContract[] };
-
-function loadDiskStore(): DiskStore {
-  try {
-    const { fs } = getFsAndPath();
-    const dataFile = getDataFilePath();
-    ensureDataDirExists();
-    if (fs && dataFile && fs.existsSync(dataFile)) {
-      const raw = fs.readFileSync(dataFile, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.cars) && parsed.cars.length > 0) {
-        const resolvedCars = parsed.cars.map((c: Car) => ({
-          ...c,
-          title: cleanCarTitle(c.title),
-          plateNumber: cleanCarPlate(c.plateNumber),
-          imageUrl: resolveCarImageUrl(c.title, c.brand, c.imageUrl)
-        }));
-        return {
-          cars: resolvedCars,
-          reservations: Array.isArray(parsed.reservations) ? parsed.reservations : memoryReservations,
-          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : memoryTransactions,
-          contracts: Array.isArray(parsed.contracts) ? parsed.contracts : [],
-        };
-      }
-    }
-  } catch (err) {
-    console.warn('Error reading cars-db.json:', err);
-  }
-
-  const initial = {
-    cars: memoryCars,
-    reservations: memoryReservations,
-    transactions: memoryTransactions,
-    contracts: [],
+function carFromRow(item: any): Car {
+  return {
+    id: item.id,
+    title: item.title,
+    brand: item.brand,
+    modelYear: item.model_year,
+    plateNumber: item.plate_number,
+    color: item.color,
+    dailyRate: Number(item.daily_rate),
+    depositAmount: Number(item.deposit_amount),
+    transmission: item.transmission || 'automatic',
+    fuelType: item.fuel_type,
+    capacity: item.capacity,
+    status: item.status,
+    imageUrl: resolveCarImageUrl(item.title, item.brand, item.image_url),
+    features: item.features || [],
+    notes: item.notes,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
   };
-  saveDiskStore(initial);
-  return initial;
 }
 
-function saveDiskStore(store: DiskStore) {
-  try {
-    const { fs } = getFsAndPath();
-    const dataFile = getDataFilePath();
-    if (!fs || !dataFile) return;
-    ensureDataDirExists();
-    fs.writeFileSync(dataFile, JSON.stringify(store, null, 2), 'utf8');
-  } catch (err) {
-    console.warn('Error writing cars-db.json:', err);
-  }
+function reservationFromRow(item: any): CarReservation {
+  return {
+    id: item.id,
+    carId: item.car_id,
+    carTitle: item.car_title,
+    customerName: item.customer_name,
+    customerPhone: item.customer_phone,
+    customerNationalId: item.customer_national_id,
+    startDate: item.start_date,
+    endDate: item.end_date,
+    totalPrice: Number(item.total_price),
+    depositPaid: Number(item.deposit_paid),
+    status: item.status,
+    notes: item.notes,
+    createdAt: item.created_at,
+  };
+}
+
+function transactionFromRow(item: any): CarTransaction {
+  return {
+    id: item.id,
+    reservationId: item.reservation_id,
+    carId: item.car_id,
+    customerName: item.customer_name,
+    amount: Number(item.amount),
+    type: item.type,
+    paymentMethod: item.payment_method,
+    description: item.description,
+    receiptFileUrl: item.receipt_file_url,
+    receiptFileName: item.receipt_file_name,
+    transactionDate: item.transaction_date,
+    createdAt: item.created_at,
+  };
+}
+
+function contractFromRow(item: any): CarContract {
+  return {
+    id: item.id,
+    reservationId: item.reservation_id,
+    carTitle: item.car_title,
+    plateNumber: item.plate_number,
+    customerName: item.customer_name,
+    customerPhone: item.customer_phone,
+    initialOdometer: Number(item.initial_odometer),
+    returnOdometer: item.return_odometer != null ? Number(item.return_odometer) : undefined,
+    fuelLevel: item.fuel_level,
+    depositAmount: Number(item.deposit_amount),
+    depositStatus: item.deposit_status,
+    handoverStatus: item.handover_status,
+    checklist: item.checklist || {},
+    notes: item.notes,
+    createdAt: item.created_at,
+  };
 }
 
 // --- CARS CRUD ---
 export async function getCars(): Promise<Car[]> {
-  const store = loadDiskStore();
-  try {
-    const { data, error } = await supabase.from('cars').select('*').order('created_at', { ascending: false });
-    if (!error && data && data.length > 0) {
-      const dbCars = data.map((item: any) => ({
-        id: item.id,
-        title: item.title,
-        brand: item.brand,
-        modelYear: item.model_year,
-        plateNumber: item.plate_number,
-        color: item.color,
-        dailyRate: Number(item.daily_rate),
-        depositAmount: Number(item.deposit_amount),
-        transmission: item.transmission || 'automatic',
-        fuelType: item.fuel_type,
-        capacity: item.capacity,
-        status: item.status,
-        imageUrl: resolveCarImageUrl(item.title, item.brand, item.image_url),
-        features: item.features || [],
-        notes: item.notes,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-      }));
-      store.cars = dbCars;
-      saveDiskStore(store);
-      return dbCars;
-    }
-  } catch (err) {}
-  return store.cars;
+  const { data, error } = await supabase.from('cars').select('*').order('created_at', { ascending: false });
+  ensureOk('cars select', error);
+  // Empty table: show the starter fleet without persisting it anywhere
+  if (!data || data.length === 0) return seedCars;
+  return data.map(carFromRow);
+}
+
+async function getCarById(id: string): Promise<Car | undefined> {
+  const { data, error } = await supabase.from('cars').select('*').eq('id', id).maybeSingle();
+  ensureOk('cars select', error);
+  if (data) return carFromRow(data);
+  return seedCars.find(c => c.id === id);
 }
 
 export async function saveCar(carData: Partial<Car>): Promise<Car> {
-  const store = loadDiskStore();
-  const isEdit = Boolean(carData.id);
   const id = carData.id || 'car-' + Math.random().toString(36).substring(2, 9);
   const now = new Date().toISOString();
-
-  const existing = store.cars.find(c => c.id === id);
+  const existing = carData.id ? await getCarById(id) : undefined;
 
   const car: Car = {
     id,
@@ -566,84 +505,52 @@ export async function saveCar(carData: Partial<Car>): Promise<Car> {
     updatedAt: now
   };
 
-  if (isEdit && store.cars.some(c => c.id === id)) {
-    store.cars = store.cars.map(c => c.id === id ? car : c);
-  } else {
-    store.cars.unshift(car);
-  }
-  saveDiskStore(store);
-
-  try {
-    const dbRow = {
-      id: car.id,
-      title: car.title,
-      brand: car.brand,
-      model_year: car.modelYear,
-      plate_number: car.plateNumber,
-      color: car.color,
-      daily_rate: car.dailyRate,
-      deposit_amount: car.depositAmount,
-      transmission: car.transmission,
-      fuel_type: car.fuelType,
-      capacity: car.capacity,
-      status: car.status,
-      image_url: car.imageUrl,
-      features: car.features,
-      notes: car.notes,
-      updated_at: now
-    };
-    await supabase.from('cars').upsert(dbRow, { onConflict: 'id' });
-  } catch (err) {}
+  const { error } = await supabase.from('cars').upsert({
+    id: car.id,
+    title: car.title,
+    brand: car.brand,
+    model_year: car.modelYear,
+    plate_number: car.plateNumber,
+    color: car.color,
+    daily_rate: car.dailyRate,
+    deposit_amount: car.depositAmount,
+    transmission: car.transmission,
+    fuel_type: car.fuelType,
+    capacity: car.capacity,
+    status: car.status,
+    image_url: car.imageUrl,
+    features: car.features,
+    notes: car.notes,
+    updated_at: now
+  }, { onConflict: 'id' });
+  ensureOk('cars upsert', error);
 
   return car;
 }
 
 export async function deleteCar(id: string): Promise<boolean> {
-  const store = loadDiskStore();
-  store.cars = store.cars.filter(c => c.id !== id);
-  saveDiskStore(store);
-  try {
-    await supabase.from('cars').delete().eq('id', id);
-  } catch (err) {}
+  const { error } = await supabase.from('cars').delete().eq('id', id);
+  ensureOk('cars delete', error);
   return true;
 }
 
 // --- RESERVATIONS CRUD ---
 export async function getReservations(): Promise<CarReservation[]> {
-  const store = loadDiskStore();
-  try {
-    const { data, error } = await supabase.from('car_reservations').select('*').order('created_at', { ascending: false });
-    if (!error && data && data.length > 0) {
-      const dbRes = data.map((item: any) => ({
-        id: item.id,
-        carId: item.car_id,
-        carTitle: item.car_title,
-        customerName: item.customer_name,
-        customerPhone: item.customer_phone,
-        customerNationalId: item.customer_national_id,
-        startDate: item.start_date,
-        endDate: item.end_date,
-        totalPrice: Number(item.total_price),
-        depositPaid: Number(item.deposit_paid),
-        status: item.status,
-        notes: item.notes,
-        createdAt: item.created_at,
-      }));
-      store.reservations = dbRes;
-      saveDiskStore(store);
-      return dbRes;
-    }
-  } catch (err) {}
-  return store.reservations;
+  const { data, error } = await supabase.from('car_reservations').select('*').order('created_at', { ascending: false });
+  ensureOk('car_reservations select', error);
+  return (data || []).map(reservationFromRow);
 }
 
 export async function saveReservation(resData: Partial<CarReservation>): Promise<CarReservation> {
-  const store = loadDiskStore();
-  const isEdit = Boolean(resData.id);
   const id = resData.id || 'res-' + Math.random().toString(36).substring(2, 9);
   const now = new Date().toISOString();
 
-  const existing = store.reservations.find(r => r.id === id);
+  let existing: CarReservation | undefined;
+  if (resData.id) {
+    const { data, error } = await supabase.from('car_reservations').select('*').eq('id', id).maybeSingle();
+    ensureOk('car_reservations select', error);
+    existing = data ? reservationFromRow(data) : undefined;
+  }
 
   const reservation: CarReservation = {
     id,
@@ -661,79 +568,48 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     createdAt: existing?.createdAt || resData.createdAt || now,
   };
 
-  if (isEdit && store.reservations.some(r => r.id === id)) {
-    store.reservations = store.reservations.map(r => r.id === id ? reservation : r);
-  } else {
-    store.reservations.unshift(reservation);
-  }
-  saveDiskStore(store);
-
-  try {
-    const dbRow = {
-      id: reservation.id,
-      car_id: reservation.carId,
-      car_title: reservation.carTitle,
-      customer_name: reservation.customerName,
-      customer_phone: reservation.customerPhone,
-      customer_national_id: reservation.customerNationalId,
-      start_date: reservation.startDate,
-      end_date: reservation.endDate,
-      total_price: reservation.totalPrice,
-      deposit_paid: reservation.depositPaid,
-      status: reservation.status,
-      notes: reservation.notes,
-    };
-    await supabase.from('car_reservations').upsert(dbRow, { onConflict: 'id' });
-  } catch (err) {}
+  const { error } = await supabase.from('car_reservations').upsert({
+    id: reservation.id,
+    car_id: reservation.carId,
+    car_title: reservation.carTitle,
+    customer_name: reservation.customerName,
+    customer_phone: reservation.customerPhone,
+    customer_national_id: reservation.customerNationalId,
+    start_date: reservation.startDate,
+    end_date: reservation.endDate,
+    total_price: reservation.totalPrice,
+    deposit_paid: reservation.depositPaid,
+    status: reservation.status,
+    notes: reservation.notes,
+  }, { onConflict: 'id' });
+  ensureOk('car_reservations upsert', error);
 
   return reservation;
 }
 
 export async function deleteReservation(id: string): Promise<boolean> {
-  const store = loadDiskStore();
-  store.reservations = store.reservations.filter(r => r.id !== id);
-  saveDiskStore(store);
-  try {
-    await supabase.from('car_reservations').delete().eq('id', id);
-  } catch (err) {}
+  const { error } = await supabase.from('car_reservations').delete().eq('id', id);
+  ensureOk('car_reservations delete', error);
   return true;
 }
 
 // --- TRANSACTIONS CRUD ---
 export async function getTransactions(): Promise<CarTransaction[]> {
-  const store = loadDiskStore();
-  try {
-    const { data, error } = await supabase.from('car_transactions').select('*').order('created_at', { ascending: false });
-    if (!error && data && data.length > 0) {
-      const dbTx = data.map((item: any) => ({
-        id: item.id,
-        reservationId: item.reservation_id,
-        carId: item.car_id,
-        customerName: item.customer_name,
-        amount: Number(item.amount),
-        type: item.type,
-        paymentMethod: item.payment_method,
-        description: item.description,
-        receiptFileUrl: item.receipt_file_url,
-        receiptFileName: item.receipt_file_name,
-        transactionDate: item.transaction_date,
-        createdAt: item.created_at,
-      }));
-      store.transactions = dbTx;
-      saveDiskStore(store);
-      return dbTx;
-    }
-  } catch (err) {}
-  return store.transactions;
+  const { data, error } = await supabase.from('car_transactions').select('*').order('created_at', { ascending: false });
+  ensureOk('car_transactions select', error);
+  return (data || []).map(transactionFromRow);
 }
 
 export async function saveTransaction(txData: Partial<CarTransaction>): Promise<CarTransaction> {
-  const store = loadDiskStore();
-  const isEdit = Boolean(txData.id);
   const id = txData.id || 'tx-' + Math.random().toString(36).substring(2, 9);
   const now = new Date().toISOString();
 
-  const existing = store.transactions.find(t => t.id === id);
+  let existing: CarTransaction | undefined;
+  if (txData.id) {
+    const { data, error } = await supabase.from('car_transactions').select('*').eq('id', id).maybeSingle();
+    ensureOk('car_transactions select', error);
+    existing = data ? transactionFromRow(data) : undefined;
+  }
 
   const transaction: CarTransaction = {
     id,
@@ -750,78 +626,46 @@ export async function saveTransaction(txData: Partial<CarTransaction>): Promise<
     createdAt: existing?.createdAt || txData.createdAt || now,
   };
 
-  if (isEdit && store.transactions.some(t => t.id === id)) {
-    store.transactions = store.transactions.map(t => t.id === id ? transaction : t);
-  } else {
-    store.transactions.unshift(transaction);
-  }
-  saveDiskStore(store);
-
-  try {
-    const dbRow = {
-      id: transaction.id,
-      reservation_id: transaction.reservationId,
-      car_id: transaction.carId,
-      customer_name: transaction.customerName,
-      amount: transaction.amount,
-      type: transaction.type,
-      payment_method: transaction.paymentMethod,
-      description: transaction.description,
-      receipt_file_url: transaction.receiptFileUrl,
-      receipt_file_name: transaction.receiptFileName,
-      transaction_date: transaction.transactionDate,
-    };
-    await supabase.from('car_transactions').upsert(dbRow, { onConflict: 'id' });
-  } catch (err) {}
+  const { error } = await supabase.from('car_transactions').upsert({
+    id: transaction.id,
+    reservation_id: transaction.reservationId,
+    car_id: transaction.carId,
+    customer_name: transaction.customerName,
+    amount: transaction.amount,
+    type: transaction.type,
+    payment_method: transaction.paymentMethod,
+    description: transaction.description,
+    receipt_file_url: transaction.receiptFileUrl,
+    receipt_file_name: transaction.receiptFileName,
+    transaction_date: transaction.transactionDate,
+  }, { onConflict: 'id' });
+  ensureOk('car_transactions upsert', error);
 
   return transaction;
 }
 
 export async function deleteTransaction(id: string): Promise<boolean> {
-  const store = loadDiskStore();
-  store.transactions = store.transactions.filter(t => t.id !== id);
-  saveDiskStore(store);
-  try {
-    await supabase.from('car_transactions').delete().eq('id', id);
-  } catch (err) {}
+  const { error } = await supabase.from('car_transactions').delete().eq('id', id);
+  ensureOk('car_transactions delete', error);
   return true;
 }
 
 // --- CONTRACTS / HANDOVER CRUD ---
 export async function getContracts(): Promise<CarContract[]> {
-  const store = loadDiskStore();
-  try {
-    const { data, error } = await supabase.from('car_contracts').select('*').order('created_at', { ascending: false });
-    if (!error && data && data.length > 0) {
-      const dbContracts: CarContract[] = data.map((item: any) => ({
-        id: item.id,
-        reservationId: item.reservation_id,
-        carTitle: item.car_title,
-        plateNumber: item.plate_number,
-        customerName: item.customer_name,
-        customerPhone: item.customer_phone,
-        initialOdometer: Number(item.initial_odometer),
-        returnOdometer: item.return_odometer != null ? Number(item.return_odometer) : undefined,
-        fuelLevel: item.fuel_level,
-        depositAmount: Number(item.deposit_amount),
-        depositStatus: item.deposit_status,
-        handoverStatus: item.handover_status,
-        checklist: item.checklist || {},
-        notes: item.notes,
-        createdAt: item.created_at,
-      }));
-      store.contracts = dbContracts;
-      saveDiskStore(store);
-      return dbContracts;
-    }
-  } catch (err) {}
-  return store.contracts;
+  const { data, error } = await supabase.from('car_contracts').select('*').order('created_at', { ascending: false });
+  ensureOk('car_contracts select', error);
+  return (data || []).map(contractFromRow);
 }
 
 export async function saveContract(data: Partial<CarContract>): Promise<CarContract> {
-  const store = loadDiskStore();
   const id = data.id || 'CNT-' + Date.now().toString().slice(-6);
-  const existing = store.contracts.find(c => c.id === id);
+
+  let existing: CarContract | undefined;
+  if (data.id) {
+    const { data: row, error: selectError } = await supabase.from('car_contracts').select('*').eq('id', id).maybeSingle();
+    ensureOk('car_contracts select', selectError);
+    existing = row ? contractFromRow(row) : undefined;
+  }
 
   const contract: CarContract = {
     id,
@@ -841,42 +685,30 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
     createdAt: existing?.createdAt || data.createdAt || new Date().toISOString(),
   };
 
-  if (existing) {
-    store.contracts = store.contracts.map(c => c.id === id ? contract : c);
-  } else {
-    store.contracts.unshift(contract);
-  }
-  saveDiskStore(store);
-
-  try {
-    await supabase.from('car_contracts').upsert({
-      id: contract.id,
-      reservation_id: contract.reservationId,
-      car_title: contract.carTitle,
-      plate_number: contract.plateNumber,
-      customer_name: contract.customerName,
-      customer_phone: contract.customerPhone,
-      initial_odometer: contract.initialOdometer,
-      return_odometer: contract.returnOdometer ?? null,
-      fuel_level: contract.fuelLevel,
-      deposit_amount: contract.depositAmount,
-      deposit_status: contract.depositStatus,
-      handover_status: contract.handoverStatus,
-      checklist: contract.checklist,
-      notes: contract.notes,
-    }, { onConflict: 'id' });
-  } catch (err) {}
+  const { error } = await supabase.from('car_contracts').upsert({
+    id: contract.id,
+    reservation_id: contract.reservationId,
+    car_title: contract.carTitle,
+    plate_number: contract.plateNumber,
+    customer_name: contract.customerName,
+    customer_phone: contract.customerPhone,
+    initial_odometer: contract.initialOdometer,
+    return_odometer: contract.returnOdometer ?? null,
+    fuel_level: contract.fuelLevel,
+    deposit_amount: contract.depositAmount,
+    deposit_status: contract.depositStatus,
+    handover_status: contract.handoverStatus,
+    checklist: contract.checklist,
+    notes: contract.notes,
+  }, { onConflict: 'id' });
+  ensureOk('car_contracts upsert', error);
 
   return contract;
 }
 
 export async function deleteContract(id: string): Promise<boolean> {
-  const store = loadDiskStore();
-  store.contracts = store.contracts.filter(c => c.id !== id);
-  saveDiskStore(store);
-  try {
-    await supabase.from('car_contracts').delete().eq('id', id);
-  } catch (err) {}
+  const { error } = await supabase.from('car_contracts').delete().eq('id', id);
+  ensureOk('car_contracts delete', error);
   return true;
 }
 
@@ -897,7 +729,7 @@ async function nextContractSerial(): Promise<string> {
 export async function issueContractAndRevenue(
   reservation: CarReservation,
   paymentMethod: CarTransaction['paymentMethod'] = 'bank_reza'
-): Promise<{ contract: CarContract; transaction?: CarTransaction }> {
+): Promise<{ contract: CarContract; transaction?: CarTransaction; depositTransaction?: CarTransaction }> {
   const contracts = await getContracts();
   let contract = contracts.find(c => c.reservationId === reservation.id);
 
@@ -936,5 +768,26 @@ export async function issueContractAndRevenue(
     }
   }
 
-  return { contract, transaction };
+  // Customer deposit is a liability, kept as its own deposit_in row so it never counts as rent revenue
+  let depositTransaction: CarTransaction | undefined;
+  if (reservation.depositPaid > 0) {
+    const depId = `tx-dep-${reservation.id}`;
+    const transactions = await getTransactions();
+    depositTransaction = transactions.find(t => t.id === depId);
+    if (!depositTransaction) {
+      depositTransaction = await saveTransaction({
+        id: depId,
+        reservationId: reservation.id,
+        carId: reservation.carId,
+        customerName: reservation.customerName,
+        amount: reservation.depositPaid,
+        type: 'deposit_in',
+        paymentMethod: 'cash_mohammadi',
+        description: `ودیعه نقد اجاره ${reservation.carTitle || 'خودرو'} (${reservation.customerName})`,
+        transactionDate: reservation.startDate,
+      });
+    }
+  }
+
+  return { contract, transaction, depositTransaction };
 }
