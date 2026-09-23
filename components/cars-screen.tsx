@@ -575,34 +575,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
         }
 
-        // Contract and rent-fee revenue are issued server-side; reflect them locally
-        if (data.transaction) {
-          setTransactions(prev => [data.transaction, ...prev.filter(t => t.id !== data.transaction.id)]);
+        // Contract, rent revenue and deposit are all issued and stored server-side
+        const issued: CarTransaction[] = [data.transaction, data.depositTransaction].filter(Boolean);
+        if (issued.length > 0) {
+          setTransactions(prev => [...issued, ...prev.filter(t => !issued.some(i => i.id === t.id))]);
         }
-        if (data.contract) {
+        if (data.chainError) {
+          toast.error('رزرو ثبت شد اما صدور قرارداد و ثبت درآمد ناموفق بود');
+        } else if (data.contract) {
           toast.success(`قرارداد ${data.contract.id} صادر و درآمد اجاره ثبت شد`);
-        }
-
-        // Also add automatic transaction record for Deposit
-        if (resForm.depositPaid && resForm.depositPaid > 0) {
-          const depTx: CarTransaction = {
-            id: 'tx-dep-' + Date.now(),
-            reservationId: newRes.id,
-            carId: resForm.carId,
-            customerName: resForm.customerName,
-            amount: resForm.depositPaid,
-            type: 'deposit_in',
-            paymentMethod: 'cash_mohammadi',
-            description: `ودیعه نقد اجاره ${resForm.carTitle || ''} (${resForm.customerName})`,
-            transactionDate: resForm.startDate || todayStr,
-            createdAt: new Date().toISOString()
-          };
-          setTransactions(prev => [depTx, ...prev]);
-          sideEffects.push(fetch('/api/cars/transactions', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(depTx)
-          }));
         }
 
         // Wait for the follow-up writes so the refresh below can't overwrite them with stale data
