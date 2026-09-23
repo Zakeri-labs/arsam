@@ -7,7 +7,7 @@ import {
   Edit3, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Clock,
   AlertTriangle, Upload, FileText, UserCheck, Phone, ShieldCheck,
   CreditCard, Landmark, Wallet, Check, X, Info, ExternalLink, Image as ImageIcon,
-  ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge
+  Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -71,6 +71,10 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   // Contracts Mock Data & State
   const [contracts, setContracts] = useState<CarContract[]>([]);
   const [savingHandover, setSavingHandover] = useState(false);
+  const [savingCar, setSavingCar] = useState(false);
+  const [savingRes, setSavingRes] = useState(false);
+  // Synchronous locks: a state flag only updates on the next render, so a fast double-click could still slip through
+  const saveLocks = useRef({ car: false, res: false, tx: false });
 
   // Hover Tooltip State for Calendar Gantt Bar
   const [hoveredRes, setHoveredRes] = useState<{ res: CarReservation; car: Car; x: number; y: number } | null>(null);
@@ -323,6 +327,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       return;
     }
 
+    if (saveLocks.current.car) return;
+    saveLocks.current.car = true;
+    setSavingCar(true);
     try {
       const res = await fetch('/api/cars', {
         method: 'POST',
@@ -340,6 +347,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       }
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
+    } finally {
+      saveLocks.current.car = false;
+      setSavingCar(false);
     }
   };
 
@@ -543,6 +553,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       }
     }
 
+    if (saveLocks.current.res) return;
+    saveLocks.current.res = true;
+    setSavingRes(true);
     try {
       const res = await fetch('/api/cars/reservations', {
         method: 'POST',
@@ -594,6 +607,9 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       }
     } catch (err) {
       toast.error('خطای برقراری ارتباط با سرور');
+    } finally {
+      saveLocks.current.res = false;
+      setSavingRes(false);
     }
   };
 
@@ -634,6 +650,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
       return;
     }
 
+    if (saveLocks.current.tx) return;
+    saveLocks.current.tx = true;
     setUploadingTxFile(true);
     try {
       const formData = new FormData();
@@ -665,6 +683,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     } catch (err) {
       toast.error('خطا در ارتباط با سرور');
     } finally {
+      saveLocks.current.tx = false;
       setUploadingTxFile(false);
     }
   };
@@ -1556,7 +1575,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <CarIcon className="text-gold" size={18} />
                   <span>{editingCar ? 'ویرایش اطلاعات خودرو' : 'تعریف خودرو جدید'}</span>
                 </h3>
-                <button onClick={() => setIsCarModalOpen(false)} className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors"><X size={18} /></button>
+                <button onClick={() => setIsCarModalOpen(false)} disabled={savingCar} className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"><X size={18} /></button>
               </div>
 
               <form onSubmit={handleSaveCar} className="space-y-3.5 text-xs">
@@ -1708,15 +1727,17 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <button
                     type="button"
                     onClick={() => setIsCarModalOpen(false)}
-                    className="w-full sm:w-auto px-4 py-3 sm:py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer"
+                    disabled={savingCar}
+                    className="w-full sm:w-auto px-4 py-3 sm:py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     انصراف
                   </button>
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black shadow-lg shadow-gold/20 cursor-pointer"
+                    disabled={savingCar}
+                    className="w-full sm:w-auto px-5 py-3 sm:py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black shadow-lg shadow-gold/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                   >
-                    ذخیره اطلاعات خودرو
+                    {savingCar ? (<><Loader2 size={16} className="animate-spin" /><span>در حال ذخیره...</span></>) : 'ذخیره اطلاعات خودرو'}
                   </button>
                 </div>
               </form>
@@ -1752,7 +1773,8 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                 <button
                   type="button"
                   onClick={() => setIsReservationModalOpen(false)}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
+                  disabled={savingRes}
+                  className="disabled:opacity-40 disabled:cursor-not-allowed flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -2039,15 +2061,17 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <button
                     type="button"
                     onClick={() => setIsReservationModalOpen(false)}
-                    className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer"
+                    disabled={savingRes}
+                    className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     انصراف
                   </button>
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-5 py-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer"
+                    disabled={savingRes}
+                    className="w-full sm:w-auto px-5 py-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                   >
-                    ثبت رزرو
+                    {savingRes ? (<><Loader2 size={16} className="animate-spin" /><span>در حال ثبت رزرو...</span></>) : 'ثبت رزرو'}
                   </button>
                 </div>
               </form>
@@ -2136,7 +2160,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <DollarSign className="text-gold" size={18} />
                   <span>ثبت تراکنش مالی جدید اجاره خودرو</span>
                 </h3>
-                <button onClick={() => setIsTransactionModalOpen(false)} className="text-white/40 hover:text-white"><X size={18} /></button>
+                <button onClick={() => setIsTransactionModalOpen(false)} disabled={uploadingTxFile} className="text-white/40 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed"><X size={18} /></button>
               </div>
 
               <form onSubmit={handleSaveTransaction} className="space-y-3.5 text-xs">
@@ -2231,16 +2255,17 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                   <button
                     type="button"
                     onClick={() => setIsTransactionModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold"
+                    disabled={uploadingTxFile}
+                    className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     انصراف
                   </button>
                   <button
                     type="submit"
                     disabled={uploadingTxFile}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black shadow-lg shadow-emerald-500/20"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black shadow-lg shadow-emerald-500/20 disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
                   >
-                    {uploadingTxFile ? 'در حال ثبت و آپلود...' : 'ثبت تراکنش'}
+                    {uploadingTxFile ? (<><Loader2 size={16} className="animate-spin" /><span>در حال ثبت و آپلود...</span></>) : 'ثبت تراکنش'}
                   </button>
                 </div>
               </form>
