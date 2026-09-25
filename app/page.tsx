@@ -9,6 +9,7 @@ import { ServiceList } from '@/components/service-card';
 import { ServiceDetailModal } from '@/components/service-detail-modal';
 import { BottomNav } from '@/components/bottom-nav';
 import { AboutModal } from '@/components/about-modal';
+import { Toaster } from 'sonner';
 import { type Language, type Country, type Service, content, convertToOmanServices, servicesListFA, servicesListEN, servicesListAR } from '@/lib/content';
 
 const categories = [
@@ -521,6 +522,8 @@ export default function Home() {
         language={selectedLanguage || 'en'}
         ctaButton={currentContent?.cta.button || 'Contact Us'}
       />
+
+      <Toaster position="top-center" toastOptions={{ style: { fontFamily: 'inherit' } }} />
     </div>
   );
 }

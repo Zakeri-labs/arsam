@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom';
 import ContractHeader from './contract-header-template';
 import ContractFooter from './contract-footer-template';
 import { motion } from 'framer-motion';
-import { X, Printer, FileText } from 'lucide-react';
+import { X, Printer, FileText, Save } from 'lucide-react';
+import { confirmDialog } from './confirm-dialog';
 
 export interface ContractData {
   id: string;
@@ -56,6 +57,7 @@ export interface ContractData {
 interface CarContractModalProps {
   contract: ContractData;
   onClose: () => void;
+  onSave?: (contract: ContractData) => Promise<boolean>;
 }
 
 type FuelKey = 'full' | '3/4' | 'half' | '1/4' | 'empty';
@@ -72,7 +74,9 @@ function fuelKeyOf(text?: string): FuelKey | null {
   return null;
 }
 
-export default function CarContractModal({ contract: initialContract, onClose }: CarContractModalProps) {
+export default function CarContractModal({ contract: initialContract, onClose, onSave }: CarContractModalProps) {
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
   // Render into <body> so printing can hide every other page element (otherwise the admin layout pushes the contract onto page 2)
   const [mounted, setMounted] = useState(false);
@@ -84,8 +88,29 @@ export default function CarContractModal({ contract: initialContract, onClose }:
     whatsapp: initialContract.whatsapp ?? initialContract.customerPhone,
     carTitleEn: initialContract.carTitleEn || initialContract.carTitle,
   }));
-  const upd = (key: keyof ContractData, value: string | number | undefined) =>
+  const upd = (key: keyof ContractData, value: string | number | undefined) => {
     setContract(prev => ({ ...prev, [key]: value }));
+    setDirty(true);
+  };
+
+  const handleSave = async () => {
+    if (!onSave || saving) return;
+    setSaving(true);
+    try {
+      if (await onSave(contract)) setDirty(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleClose = async () => {
+    if (dirty && onSave && !(await confirmDialog({
+      title: 'تغییرات ذخیره نشده',
+      message: 'اطلاعاتی که در فرم قرارداد وارد کرده‌اید هنوز ذخیره نشده است. بدون ذخیره بسته شود؟',
+      confirmText: 'بستن بدون ذخیره',
+    }))) return;
+    onClose();
+  };
   const updNum = (key: keyof ContractData, raw: string) => {
     const n = parseFloat(raw.replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 1776)).replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 1632)));
     upd(key, Number.isNaN(n) ? undefined : n);
@@ -200,6 +225,16 @@ export default function CarContractModal({ contract: initialContract, onClose }:
           </div>
 
           <div className="flex items-center gap-2">
+            {onSave && (
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-extrabold text-xs transition-all cursor-pointer disabled:opacity-60 ${dirty ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-900/30 hover:brightness-110' : 'bg-white/10 text-white/80 hover:bg-white/15'}`}
+              >
+                <Save size={16} />
+                <span>{saving ? 'در حال ذخیره...' : dirty ? 'ذخیره اطلاعات' : 'ذخیره شده'}</span>
+              </button>
+            )}
             <button
               onClick={handlePrint}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-black font-extrabold text-xs shadow-lg hover:brightness-110 active:scale-98 transition-all cursor-pointer"
@@ -208,7 +243,7 @@ export default function CarContractModal({ contract: initialContract, onClose }:
               <span>چاپ قرارداد (Print / PDF)</span>
             </button>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="p-2 rounded-xl bg-white/5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
             >
               <X size={20} />
@@ -241,17 +276,17 @@ export default function CarContractModal({ contract: initialContract, onClose }:
               { label: 'نظافت خارج (از ۱۰)', key: 'cleanOutside', ltr: true },
             ] },
             { title: 'زمان', fields: [
-              { label: 'تاریخ خروج', key: 'startDate', ltr: true },
-              { label: 'ساعت خروج', key: 'departureTime', ltr: true },
-              { label: 'تاریخ بازگشت', key: 'endDate', ltr: true },
-              { label: 'ساعت بازگشت', key: 'returnTime', ltr: true },
-              { label: 'تاریخ قرارداد', key: 'date', ltr: true },
+              { label: 'تاریخ خروج', key: 'startDate', ltr: true, type: 'date' },
+              { label: 'ساعت خروج', key: 'departureTime', ltr: true, type: 'time' },
+              { label: 'تاریخ بازگشت', key: 'endDate', ltr: true, type: 'date' },
+              { label: 'ساعت بازگشت', key: 'returnTime', ltr: true, type: 'time' },
+              { label: 'تاریخ قرارداد', key: 'date', ltr: true, type: 'date' },
             ] },
             { title: 'ملاحظات', fields: [{ label: 'ملاحظات', key: 'notes', area: true }] },
           ].map(group => (
             <fieldset key={group.title} className="space-y-2">
               <legend className="text-xs font-black text-amber-400 mb-1">{group.title}</legend>
-              {group.fields.map((f: { label: string; key: string; ltr?: boolean; ph?: string; area?: boolean }) => {
+              {group.fields.map((f: { label: string; key: string; ltr?: boolean; ph?: string; area?: boolean; type?: string }) => {
                 const cls = `w-full rounded-lg bg-white/5 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-amber-400 ${f.ltr ? 'text-left' : ''}`;
                 const val = String((contract as any)[f.key] ?? '');
                 return (
@@ -260,7 +295,7 @@ export default function CarContractModal({ contract: initialContract, onClose }:
                     {f.area ? (
                       <textarea rows={3} className={cls} value={val} onChange={e => upd(f.key as keyof ContractData, e.target.value)} />
                     ) : (
-                      <input className={cls} dir={f.ltr ? 'ltr' : 'auto'} value={val} placeholder={f.ph} onChange={e => upd(f.key as keyof ContractData, e.target.value)} />
+                      <input type={f.type || 'text'} className={`${cls} ${f.type ? '[color-scheme:dark]' : ''}`} dir={f.ltr ? 'ltr' : 'auto'} value={val} placeholder={f.ph} onChange={e => upd(f.key as keyof ContractData, e.target.value)} />
                     )}
                   </label>
                 );
