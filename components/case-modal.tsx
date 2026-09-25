@@ -75,42 +75,32 @@ export default function CaseModal({
   const cleanPhone = request.phone.replace(/[^0-9+]/g, '');
   const whatsappUrl = `https://wa.me/${cleanPhone}`;
 
-  // Handle Admin File Upload directly to Supabase storage
+  // Handle Admin File Upload through the authenticated admin upload API
   const handleAdminFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files;
     if (!selected || selected.length === 0) return;
 
     setUploading(true);
     try {
-      const { supabase } = await import('@/lib/supabase');
       const newUploaded: RequestFile[] = [];
+      let failureMsg = '';
 
       for (let i = 0; i < selected.length; i++) {
         const file = selected[i];
-        const buffer = await file.arrayBuffer();
-        const fileExt = file.name.split('.').pop() || '';
-        const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
-        const safeName = `admin_${uniqueId}.${fileExt}`;
-
-        const { data, error } = await supabase.storage
-          .from('uploads')
-          .upload(safeName, buffer, {
-            contentType: file.type || 'application/octet-stream',
-            upsert: false,
-          });
-
-        if (!error) {
-          const { data: publicData } = supabase.storage.from('uploads').getPublicUrl(safeName);
-          newUploaded.push({
-            name: file.name,
-            size: file.size,
-            url: publicData.publicUrl,
-          });
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/services/upload', { method: 'POST', body: formData });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.url) {
+          newUploaded.push({ name: file.name, size: file.size, url: data.url });
+        } else {
+          failureMsg = data.error || 'خطا در آپلود فایل';
+          setToastMsg(failureMsg);
         }
       }
 
       setFiles(prev => [...prev, ...newUploaded]);
-      setToastMsg('فایل جدید با موفقیت اضافه شد');
+      if (!failureMsg) setToastMsg('فایل جدید با موفقیت اضافه شد');
       setTimeout(() => setToastMsg(null), 3000);
     } catch (err) {
       console.error('Error uploading admin file:', err);

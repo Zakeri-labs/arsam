@@ -66,9 +66,9 @@ DROP POLICY IF EXISTS "Allow public all access on cars" ON public.cars;
 DROP POLICY IF EXISTS "Allow public all access on car_reservations" ON public.car_reservations;
 DROP POLICY IF EXISTS "Allow public all access on car_transactions" ON public.car_transactions;
 
-CREATE POLICY "Allow public all access on cars" ON public.cars FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public all access on car_reservations" ON public.car_reservations FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public all access on car_transactions" ON public.car_transactions FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on cars" ON public.cars FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on car_reservations" ON public.car_reservations FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on car_transactions" ON public.car_transactions FOR ALL USING (true) WITH CHECK (true);
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_car_reservations_dates ON public.car_reservations(start_date, end_date);

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { initializeDBIfNeeded, saveServicesDB } from '@/lib/db';
-import { cookies } from 'next/headers';
+import { requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
   try {
@@ -15,18 +15,11 @@ export async function GET() {
   }
 }
 
-import { verifyAdminAuth } from '@/lib/auth-check';
-
 export async function POST(request: Request) {
   try {
     // Security check
-    const auth = await verifyAdminAuth();
-    if (!auth.authenticated) {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
-        { status: 401 }
-      );
-    }
+    const denied = await requireAdmin(['services']);
+    if (denied) return denied;
 
     const body = await request.json();
 

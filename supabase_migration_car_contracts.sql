@@ -20,5 +20,5 @@ CREATE TABLE IF NOT EXISTS public.car_contracts (
 
 ALTER TABLE public.car_contracts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all access on car_contracts" ON public.car_contracts;
-CREATE POLICY "Allow public all access on car_contracts" ON public.car_contracts FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on car_contracts" ON public.car_contracts FOR ALL USING (true) WITH CHECK (true);
 CREATE INDEX IF NOT EXISTS idx_car_contracts_reservation ON public.car_contracts(reservation_id);

@@ -63,11 +63,17 @@ export async function getRequests(): Promise<ServiceRequest[]> {
  */
 export async function getRequestsByPhone(phone: string): Promise<ServiceRequest[]> {
   try {
+    // The value is spliced into a PostgREST filter string, so keep only phone
+    // characters — anything else (commas, parens, dots) could inject filters.
+    const safePhone = phone.replace(/[^0-9+ ]/g, '').trim();
+    const localPart = safePhone.replace(/^\+968\s?/, '').replace(/\+/g, '');
+    if (!localPart) return [];
+
     // Normalize phone: try exact match and also without country code prefix
     const { data, error } = await supabase
       .from('requests')
       .select('*')
-      .or(`phone.eq.${phone},phone.ilike.%${phone.replace(/^\+968\s?/, '')}%`)
+      .or(`phone.eq.${safePhone},phone.ilike.%${localPart}%`)
       .order('created_at', { ascending: false });
 
     if (error) {

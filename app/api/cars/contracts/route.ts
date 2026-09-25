@@ -1,17 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getContracts, saveContract, deleteContract } from '@/lib/db-cars';
-import { verifyAdminAuth } from '@/lib/auth-check';
-
-async function checkAuth() {
-  const auth = await verifyAdminAuth();
-  return auth.authenticated;
-}
+import { requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
   try {
-    if (!(await checkAuth())) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
     return NextResponse.json(await getContracts());
   } catch (error: any) {
     console.error('Error fetching contracts:', error);
@@ -21,9 +15,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (!(await checkAuth())) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const body = await request.json();
     if (!body.customerName || !body.carTitle || body.initialOdometer === undefined || body.initialOdometer === '') {
@@ -40,9 +33,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    if (!(await checkAuth())) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const id = new URL(request.url).searchParams.get('id');
     if (!id) {

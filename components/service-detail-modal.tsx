@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Service, Language } from '@/lib/content';
 import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock, UploadCloud, X, Paperclip, ChevronDown, Search } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 const categoryImages: Record<string, string> = {
   'Company Setup Services': 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=600&auto=format&fit=crop',
@@ -403,7 +402,7 @@ export function ServiceDetailModal({
             if (signData && signData.signedUrl) {
               const uploadRes = await fetch(signData.signedUrl, {
                 method: 'PUT',
-                headers: { 'Content-Type': file.type || 'application/octet-stream' },
+                headers: { 'Content-Type': signData.contentType || file.type || 'application/octet-stream' },
                 body: file
               });
 

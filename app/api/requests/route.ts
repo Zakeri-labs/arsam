@@ -1,76 +1,71 @@
 import { NextResponse } from 'next/server';
-import { getRequests, addRequest, deleteRequest } from '@/lib/db-requests';
-import { supabase } from '@/lib/supabase';
-import path from 'path';
-import { verifyAdminAuth } from '@/lib/auth-check';
+import { getRequests, addRequest, deleteRequest, updateRequestDetails, RequestFile } from '@/lib/db-requests';
+import { requireAdmin, verifyAdminAuth } from '@/lib/auth-check';
+import { isOwnUploadUrl, uploadFile, UploadRejected } from '@/lib/storage';
+import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
+
+const MAX_FILES = 20;
+const MAX_TEXT = 5000;
+
+// Keeps only file entries that point into our own storage bucket, so a public
+// submitter cannot plant arbitrary links in the admin panel.
+function sanitizeFiles(input: unknown): RequestFile[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .filter(f => f && isOwnUploadUrl(f.url))
+    .slice(0, MAX_FILES)
+    .map(f => ({
+      name: String(f.name || 'file').slice(0, 255),
+      size: Number(f.size) || 0,
+      url: f.url as string,
+    }));
+}
+
+const text = (value: unknown, max = MAX_TEXT) => (typeof value === 'string' ? value : '').trim().slice(0, max);
 
 // POST (Public) - Submit a new request from landing page form with physical file uploads or pre-uploaded metadata
 export async function POST(request: Request) {
   try {
+    if (!rateLimit(`request-submit:${clientIp(request)}`, 10, 10 * 60 * 1000)) {
+      return tooManyRequests();
+    }
+
     const contentType = request.headers.get('content-type') || '';
     let name = '';
     let phone = '';
     let description = '';
     let serviceTitle = '';
-    let uploadedFilesMetadata: { name: string; size: number; url: string }[] = [];
+    let uploadedFilesMetadata: RequestFile[] = [];
 
     if (contentType.includes('application/json')) {
       const body = await request.json();
-      name = (body.name || '').toString();
-      phone = (body.phone || '').toString();
-      description = (body.description || '').toString();
-      serviceTitle = (body.serviceTitle || '').toString();
-      if (Array.isArray(body.files)) {
-        uploadedFilesMetadata = body.files;
-      }
+      name = text(body.name, 200);
+      phone = text(body.phone, 50);
+      description = text(body.description);
+      serviceTitle = text(body.serviceTitle, 500);
+      uploadedFilesMetadata = sanitizeFiles(body.files);
     } else {
       const formData = await request.formData();
-      name = (formData.get('name') as string) || '';
-      phone = (formData.get('phone') as string) || '';
-      description = (formData.get('description') as string) || '';
-      serviceTitle = (formData.get('serviceTitle') as string) || '';
+      name = text(formData.get('name'), 200);
+      phone = text(formData.get('phone'), 50);
+      description = text(formData.get('description'));
+      serviceTitle = text(formData.get('serviceTitle'), 500);
 
-      // Process and save physical files to Supabase Storage
-      const fileObjects = formData.getAll('files') as File[];
-
+      const fileObjects = formData.getAll('files').slice(0, MAX_FILES);
       for (const file of fileObjects) {
         if (!file || typeof file === 'string' || !file.name || !file.size) continue;
-
         try {
-          const buffer = await file.arrayBuffer();
-          const fileExt = path.extname(file.name) || '';
-          const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
-          const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
-          const safeFileName = `${cleanBaseName}_${uniqueId}${fileExt}`;
-
-          const { data, error } = await supabase.storage
-            .from('uploads')
-            .upload(safeFileName, buffer, {
-              contentType: file.type || 'application/octet-stream',
-              upsert: false
-            });
-
-          if (error) {
-            console.error('Failed to upload file to Supabase:', file.name, error);
-            continue;
-          }
-
-          const { data: publicUrlData } = supabase.storage
-            .from('uploads')
-            .getPublicUrl(safeFileName);
-
-          uploadedFilesMetadata.push({
-            name: file.name,
-            size: file.size,
-            url: publicUrlData.publicUrl
-          });
+          uploadedFilesMetadata.push(await uploadFile(file, 'req'));
         } catch (fileErr) {
-          console.error('Failed to save file:', file.name, fileErr);
+          if (fileErr instanceof UploadRejected) {
+            return NextResponse.json({ error: fileErr.message }, { status: 400 });
+          }
+          console.error('Failed to upload file to Supabase:', file.name, fileErr);
         }
       }
     }
 
-    if (!name || !name.trim() || !phone || !phone.trim() || !serviceTitle) {
+    if (!name || !phone || !serviceTitle) {
       return NextResponse.json(
         { error: 'پر کردن نام، تلفن و عنوان خدمت الزامی است' },
         { status: 400 }
@@ -78,35 +73,39 @@ export async function POST(request: Request) {
     }
 
     const newRequest = await addRequest({
-      name: name.trim(),
-      phone: phone.trim(),
-      description: (description || '').trim(),
+      name,
+      phone,
+      description,
       serviceTitle,
       files: uploadedFilesMetadata
     });
 
-    return NextResponse.json({ success: true, request: newRequest });
+    // Echo back only what the submitter needs, not the stored row.
+    return NextResponse.json({ success: true, request: { id: newRequest.id } });
   } catch (error: any) {
     console.error('Error submitting request:', error);
-    return NextResponse.json(
-      { error: 'خطایی در سرور رخ داده است', details: error.message || String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'خطایی در سرور رخ داده است' }, { status: 500 });
   }
 }
 
 // GET (Secure, Admin Only) - Get all requests
 export async function GET() {
   try {
-    const auth = await verifyAdminAuth();
+    const auth = await verifyAdminAuth(['requests', 'customers', 'qms', 'cars']);
     if (!auth.authenticated) {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' }, { status: 401 });
+    }
+    if (!auth.authorized || !auth.user) {
+      return NextResponse.json({ error: 'شما به این بخش دسترسی ندارید.' }, { status: 403 });
     }
 
     const requests = await getRequests();
+
+    // The fleet-only admin just needs customer names/phones for the booking form.
+    const seesFullRequests = auth.user.allowedScreens.some(s => s === 'requests' || s === 'customers' || s === 'qms');
+    if (!seesFullRequests) {
+      return NextResponse.json(requests.map(r => ({ name: r.name, phone: r.phone })));
+    }
     return NextResponse.json(requests);
   } catch (error) {
     console.error('Error getting requests:', error);
@@ -120,13 +119,8 @@ export async function GET() {
 // DELETE (Secure, Admin Only) - Delete a request
 export async function DELETE(request: Request) {
   try {
-    const auth = await verifyAdminAuth();
-    if (!auth.authenticated) {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
-        { status: 401 }
-      );
-    }
+    const denied = await requireAdmin(['requests', 'customers', 'qms']);
+    if (denied) return denied;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
@@ -159,13 +153,8 @@ export async function DELETE(request: Request) {
 // PATCH (Secure, Admin Only) - Update request workflow, status, source, notes, or files
 export async function PATCH(request: Request) {
   try {
-    const auth = await verifyAdminAuth();
-    if (!auth.authenticated) {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
-        { status: 401 }
-      );
-    }
+    const denied = await requireAdmin(['requests', 'customers', 'qms']);
+    if (denied) return denied;
 
     const body = await request.json();
     const { id, ...updates } = body;
@@ -177,7 +166,6 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const { updateRequestDetails } = await import('@/lib/db-requests');
     const success = await updateRequestDetails(id, updates);
 
     if (success) {
@@ -191,7 +179,7 @@ export async function PATCH(request: Request) {
   } catch (error: any) {
     console.error('Error updating request via PATCH:', error);
     return NextResponse.json(
-      { error: 'خطا در بروزرسانی اطلاعات درخواست', details: error.message || String(error) },
+      { error: 'خطا در بروزرسانی اطلاعات درخواست' },
       { status: 500 }
     );
   }

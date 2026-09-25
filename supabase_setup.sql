@@ -60,8 +60,8 @@ DROP POLICY IF EXISTS "Allow public all access on services" ON public.services;
 DROP POLICY IF EXISTS "Allow public all access on requests" ON public.requests;
 
 -- Create policies for full access
-CREATE POLICY "Allow public all access on services" ON public.services FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public all access on requests" ON public.requests FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on services" ON public.services FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on requests" ON public.requests FOR ALL USING (true) WITH CHECK (true);
 
 -- 3. Create Storage bucket for uploads
 INSERT INTO storage.buckets (id, name, public) 
@@ -75,7 +75,7 @@ DROP POLICY IF EXISTS "Allow public update on uploads" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public delete on uploads" ON storage.objects;
 
 -- Create Storage policies
-CREATE POLICY "Allow public read on uploads" ON storage.objects FOR SELECT USING (bucket_id = 'uploads');
-CREATE POLICY "Allow public upload to uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'uploads');
-CREATE POLICY "Allow public update on uploads" ON storage.objects FOR UPDATE USING (bucket_id = 'uploads');
-CREATE POLICY "Allow public delete on uploads" ON storage.objects FOR DELETE USING (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public read on uploads" ON storage.objects FOR SELECT USING (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public upload to uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public update on uploads" ON storage.objects FOR UPDATE USING (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public delete on uploads" ON storage.objects FOR DELETE USING (bucket_id = 'uploads');
