@@ -19,7 +19,7 @@ interface AdminAccount extends AdminUserSession {
   passwordEnv: string;
 }
 
-const MIN_PASSWORD_LENGTH = 12;
+const MIN_PASSWORD_LENGTH = 10;
 
 const ADMIN_ACCOUNTS: AdminAccount[] = [
   {
