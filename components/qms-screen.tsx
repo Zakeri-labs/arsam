@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { confirmDialog } from '@/components/confirm-dialog';
 import {
   Users, Volume2, CheckCircle2, Clock, RefreshCw, ArrowRightLeft,
   MessageSquare, Trash2, Phone, Paperclip, Download, ChevronDown,
@@ -524,7 +525,7 @@ export default function QMSScreen() {
   }, [transferTicket, showToast]);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!confirm('آیا از حذف این نوبت اطمینان دارید؟')) return;
+    if (!(await confirmDialog('آیا از حذف این نوبت اطمینان دارید؟'))) return;
     try {
       const res = await fetch(`/api/requests?id=${id}`, { method: 'DELETE' });
       if (res.ok) {

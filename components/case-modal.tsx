@@ -146,10 +146,11 @@ export default function CaseModal({
         toast.success('تغییرات پرونده با موفقیت ذخیره شد');
         onClose();
       } else {
-        alert('خطا در ذخیره‌سازی تغییرات پرونده');
+        toast.error('خطا در ذخیره‌سازی تغییرات پرونده');
       }
     } catch (err) {
       console.error('Error saving request:', err);
+      toast.error('خطای ارتباط با سرور');
     } finally {
       setSaving(false);
     }

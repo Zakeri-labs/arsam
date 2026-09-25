@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue } from '@/lib/db-cars';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError } from '@/lib/db-cars';
 import { verifyAdminAuth } from '@/lib/auth-check';
 
 async function checkAuth() {
@@ -67,9 +67,14 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'شناسه رزرو الزامی است' }, { status: 400 });
     }
 
-    await deleteReservation(id);
-    return NextResponse.json({ success: true });
+    const removed = await deleteReservation(id);
+    return NextResponse.json({ success: true, ...removed });
   } catch (error: any) {
+    if (error instanceof ReservationDeleteBlockedError) {
+      return NextResponse.json({
+        error: `خودرو برای این رزرو تحویل شده است (قرارداد ${error.contractId}). به‌جای حذف، وضعیت رزرو را «لغو شده» کنید.`
+      }, { status: 409 });
+    }
     console.error('Error deleting reservation:', error);
     return NextResponse.json({ error: 'خطا در حذف رزرو' }, { status: 500 });
   }

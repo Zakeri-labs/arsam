@@ -78,6 +78,7 @@ export const HANDOVER_CHECKLIST_ITEMS: { key: string; label: string }[] = [
 export interface CarContract {
   id: string;
   reservationId: string;
+  carId?: string;
   carTitle: string;
   plateNumber: string;
   customerName: string;
@@ -91,6 +92,67 @@ export interface CarContract {
   checklist?: Record<string, boolean>;
   notes?: string;
   createdAt: string;
+  // Details entered in the contract window (printed on the paper form)
+  customerNameEn?: string;
+  customerNationalId?: string;
+  customerNationality?: string;
+  customerAddress?: string;
+  workAddress?: string;
+  whatsapp?: string;
+  licenceType?: string;
+  licenceNo?: string;
+  carTitleEn?: string;
+  color?: string;
+  cleanInside?: string;
+  cleanOutside?: string;
+  contractDate?: string;
+  startDate?: string;
+  departureTime?: string;
+  endDate?: string;
+  returnTime?: string;
+  rentalDays?: number;
+  dailyRate?: number;
+  totalPrice?: number;
+  extraKm?: string;
+  extraKmAmount?: number;
+  deductionsAmount?: number;
+}
+
+// Contract detail fields: [CarContract key, column, kind]. Empty values are stored as NULL.
+const CONTRACT_DETAIL_COLUMNS: [keyof CarContract, string, 'text' | 'date' | 'number'][] = [
+  ['customerNameEn', 'customer_name_en', 'text'],
+  ['customerNationalId', 'customer_national_id', 'text'],
+  ['customerNationality', 'customer_nationality', 'text'],
+  ['customerAddress', 'customer_address', 'text'],
+  ['workAddress', 'work_address', 'text'],
+  ['whatsapp', 'whatsapp', 'text'],
+  ['licenceType', 'licence_type', 'text'],
+  ['licenceNo', 'licence_no', 'text'],
+  ['carTitleEn', 'car_title_en', 'text'],
+  ['color', 'color', 'text'],
+  ['cleanInside', 'clean_inside', 'text'],
+  ['cleanOutside', 'clean_outside', 'text'],
+  ['contractDate', 'contract_date', 'date'],
+  ['startDate', 'start_date', 'date'],
+  ['departureTime', 'departure_time', 'text'],
+  ['endDate', 'end_date', 'date'],
+  ['returnTime', 'return_time', 'text'],
+  ['rentalDays', 'rental_days', 'number'],
+  ['dailyRate', 'daily_rate', 'number'],
+  ['totalPrice', 'total_price', 'number'],
+  ['extraKm', 'extra_km', 'text'],
+  ['extraKmAmount', 'extra_km_amount', 'number'],
+  ['deductionsAmount', 'deductions_amount', 'number'],
+];
+
+function detailToColumn(value: unknown, kind: 'text' | 'date' | 'number') {
+  if (value === undefined || value === null || value === '') return null;
+  if (kind === 'number') {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (kind === 'date') return /^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? String(value) : null;
+  return String(value);
 }
 
 export function cleanCarTitle(title: string): string {
@@ -391,6 +453,7 @@ function carFromRow(item: any): Car {
   return {
     id: item.id,
     title: item.title,
+    titleEn: item.title_en || undefined,
     brand: item.brand,
     modelYear: item.model_year,
     plateNumber: item.plate_number,
@@ -445,9 +508,17 @@ function transactionFromRow(item: any): CarTransaction {
 }
 
 function contractFromRow(item: any): CarContract {
+  const details: Partial<CarContract> = {};
+  for (const [key, column, kind] of CONTRACT_DETAIL_COLUMNS) {
+    const v = item[column];
+    if (v === null || v === undefined) continue;
+    (details as any)[key] = kind === 'number' ? Number(v) : String(v);
+  }
   return {
+    ...details,
     id: item.id,
-    reservationId: item.reservation_id,
+    reservationId: item.reservation_id || '',
+    carId: item.car_id || undefined,
     carTitle: item.car_title,
     plateNumber: item.plate_number,
     customerName: item.customer_name,
@@ -488,6 +559,7 @@ export async function saveCar(carData: Partial<Car>): Promise<Car> {
   const car: Car = {
     id,
     title: carData.title ?? existing?.title ?? 'خودرو بدون نام',
+    titleEn: carData.titleEn ?? existing?.titleEn ?? '',
     brand: carData.brand ?? existing?.brand ?? '',
     modelYear: carData.modelYear ?? existing?.modelYear ?? '',
     plateNumber: carData.plateNumber ?? existing?.plateNumber ?? '',
@@ -508,6 +580,7 @@ export async function saveCar(carData: Partial<Car>): Promise<Car> {
   const { error } = await supabase.from('cars').upsert({
     id: car.id,
     title: car.title,
+    title_en: car.titleEn || null,
     brand: car.brand,
     model_year: car.modelYear,
     plate_number: car.plateNumber,
@@ -587,10 +660,37 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
   return reservation;
 }
 
-export async function deleteReservation(id: string): Promise<boolean> {
+export class ReservationDeleteBlockedError extends Error {
+  contractId: string;
+  constructor(contractId: string) {
+    super(`reservation has a handed-over contract ${contractId}`);
+    this.contractId = contractId;
+  }
+}
+
+// A reservation owns its auto-issued contract and its accounting rows, so they are removed with it.
+// Once the car has actually been handed over, the contract is a real record: deletion is refused and
+// the reservation should be cancelled instead.
+// `force` (superadmin only) also removes a reservation whose car was already handed over.
+export async function deleteReservation(id: string, options: { force?: boolean } = {}): Promise<{ contractIds: string[]; transactionIds: string[] }> {
+  if (!options.force) {
+    const { data: contractRows, error: contractsError } = await supabase.from('car_contracts').select('id, handover_status').eq('reservation_id', id);
+    ensureOk('car_contracts select', contractsError);
+    const handedOver = (contractRows || []).find(c => c.handover_status !== 'pending_delivery');
+    if (handedOver) throw new ReservationDeleteBlockedError(handedOver.id);
+  }
+
+  const { data: txRows, error: txError } = await supabase.from('car_transactions').delete().eq('reservation_id', id).select('id');
+  ensureOk('car_transactions delete', txError);
+  const { data: deletedContracts, error: cntError } = await supabase.from('car_contracts').delete().eq('reservation_id', id).select('id');
+  ensureOk('car_contracts delete', cntError);
   const { error } = await supabase.from('car_reservations').delete().eq('id', id);
   ensureOk('car_reservations delete', error);
-  return true;
+
+  return {
+    contractIds: (deletedContracts || []).map(c => c.id),
+    transactionIds: (txRows || []).map(t => t.id),
+  };
 }
 
 // --- TRANSACTIONS CRUD ---
@@ -628,8 +728,8 @@ export async function saveTransaction(txData: Partial<CarTransaction>): Promise<
 
   const { error } = await supabase.from('car_transactions').upsert({
     id: transaction.id,
-    reservation_id: transaction.reservationId,
-    car_id: transaction.carId,
+    reservation_id: transaction.reservationId || null,
+    car_id: transaction.carId || null,
     customer_name: transaction.customerName,
     amount: transaction.amount,
     type: transaction.type,
@@ -658,18 +758,31 @@ export async function getContracts(): Promise<CarContract[]> {
 }
 
 export async function saveContract(data: Partial<CarContract>): Promise<CarContract> {
-  const id = data.id || 'CNT-' + Date.now().toString().slice(-6);
-
   let existing: CarContract | undefined;
   if (data.id) {
-    const { data: row, error: selectError } = await supabase.from('car_contracts').select('*').eq('id', id).maybeSingle();
+    const { data: row, error: selectError } = await supabase.from('car_contracts').select('*').eq('id', data.id).maybeSingle();
     ensureOk('car_contracts select', selectError);
     existing = row ? contractFromRow(row) : undefined;
+  } else if (data.reservationId) {
+    // One contract per reservation: a handover updates the auto-issued contract instead of adding a duplicate
+    const { data: row, error: selectError } = await supabase.from('car_contracts').select('*').eq('reservation_id', data.reservationId).maybeSingle();
+    ensureOk('car_contracts select', selectError);
+    existing = row ? contractFromRow(row) : undefined;
+  }
+  const id = data.id || existing?.id || 'CNT-' + Date.now().toString().slice(-6);
+
+  const reservationId = data.reservationId ?? existing?.reservationId ?? '';
+  let carId = data.carId ?? existing?.carId;
+  if (!carId && reservationId) {
+    const { data: resRow, error: resError } = await supabase.from('car_reservations').select('car_id').eq('id', reservationId).maybeSingle();
+    ensureOk('car_reservations select', resError);
+    carId = resRow?.car_id || undefined;
   }
 
   const contract: CarContract = {
     id,
-    reservationId: data.reservationId ?? existing?.reservationId ?? '',
+    reservationId,
+    carId,
     carTitle: data.carTitle ?? existing?.carTitle ?? '',
     plateNumber: data.plateNumber ?? existing?.plateNumber ?? '',
     customerName: data.customerName ?? existing?.customerName ?? '',
@@ -685,9 +798,19 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
     createdAt: existing?.createdAt || data.createdAt || new Date().toISOString(),
   };
 
+  // Details not sent in this save keep their stored value
+  const detailRow: Record<string, unknown> = {};
+  for (const [key, column, kind] of CONTRACT_DETAIL_COLUMNS) {
+    const value = key in data ? data[key] : existing?.[key];
+    (contract as any)[key] = value === '' || value === null ? undefined : value;
+    detailRow[column] = detailToColumn(value, kind);
+  }
+
   const { error } = await supabase.from('car_contracts').upsert({
+    ...detailRow,
     id: contract.id,
-    reservation_id: contract.reservationId,
+    reservation_id: contract.reservationId || null,
+    car_id: contract.carId || null,
     car_title: contract.carTitle,
     plate_number: contract.plateNumber,
     customer_name: contract.customerName,
@@ -706,10 +829,53 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
   return contract;
 }
 
-export async function deleteContract(id: string): Promise<boolean> {
+// Extra-km and accident amounts from the contract are their own income rows for the reservation, so the
+// original rent revenue stays untouched. A cleared amount removes its row.
+export async function syncContractExtraCharges(contract: CarContract): Promise<void> {
+  if (!contract.reservationId) return;
+  const charges = [
+    { id: `tx-xkm-${contract.reservationId}`, amount: contract.extraKmAmount || 0, label: 'کیلومتر اضافه' },
+    { id: `tx-dmg-${contract.reservationId}`, amount: contract.deductionsAmount || 0, label: 'خسارت/حادثه' },
+  ];
+  const { data: rows, error } = await supabase.from('car_transactions').select('*').in('id', charges.map(c => c.id));
+  ensureOk('car_transactions select', error);
+  const existing = new Map((rows || []).map(r => [r.id, transactionFromRow(r)]));
+
+  for (const charge of charges) {
+    const current = existing.get(charge.id);
+    if (charge.amount > 0) {
+      if (current?.amount === charge.amount) continue;
+      await saveTransaction({
+        id: charge.id,
+        reservationId: contract.reservationId,
+        carId: contract.carId,
+        customerName: contract.customerName,
+        amount: charge.amount,
+        type: 'other_income',
+        description: `${charge.label} - قرارداد ${contract.id} (${contract.customerName})`,
+        transactionDate: contract.endDate || new Date().toISOString().split('T')[0],
+      });
+    } else if (current) {
+      await deleteTransaction(charge.id);
+    }
+  }
+}
+
+// Superadmin cleanup: removes a contract even after handover, together with its reservation and
+// every accounting row of that reservation. A contract without a reservation is removed on its own.
+export async function deleteContract(id: string): Promise<{ reservationId?: string; contractIds: string[]; transactionIds: string[] }> {
+  const { data: row, error: selectError } = await supabase.from('car_contracts').select('id, reservation_id').eq('id', id).maybeSingle();
+  ensureOk('car_contracts select', selectError);
+  if (!row) return { contractIds: [], transactionIds: [] };
+
+  if (row.reservation_id) {
+    const removed = await deleteReservation(row.reservation_id, { force: true });
+    return { reservationId: row.reservation_id, ...removed };
+  }
+
   const { error } = await supabase.from('car_contracts').delete().eq('id', id);
   ensureOk('car_contracts delete', error);
-  return true;
+  return { contractIds: [id], transactionIds: [] };
 }
 
 // --- RESERVATION CHAIN: reservation -> contract -> accounting revenue ---
@@ -739,11 +905,16 @@ export async function issueContractAndRevenue(
     contract = await saveContract({
       id: await nextContractSerial(),
       reservationId: reservation.id,
+      carId: reservation.carId,
       carTitle: reservation.carTitle || car?.title || '',
       plateNumber: car?.plateNumber || '',
       customerName: reservation.customerName,
       customerPhone: reservation.customerPhone,
       depositAmount: reservation.depositPaid,
+      startDate: reservation.startDate,
+      endDate: reservation.endDate,
+      totalPrice: reservation.totalPrice,
+      customerNationalId: reservation.customerNationalId,
       handoverStatus: 'pending_delivery',
     });
   }
