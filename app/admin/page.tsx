@@ -15,6 +15,7 @@ import CustomersScreen from '@/components/customers-screen';
 import CarsScreen from '@/components/cars-screen';
 import CaseModal from '@/components/case-modal';
 import NewRequestModal from '@/components/new-request-modal';
+import { ConfirmDialogHost, confirmDialog } from '@/components/confirm-dialog';
 
 // Categories list matching app/page.tsx
 const categories = [
@@ -431,8 +432,7 @@ export default function AdminPage() {
 
   const handleDeleteClick = async (serviceId: string) => {
     if (!db) return;
-    const confirmDelete = window.confirm(`آیا مطمئن هستید که می‌خواهید خدمت با شناسه "${serviceId}" را حذف کنید؟`);
-    if (!confirmDelete) return;
+    if (!(await confirmDialog(`آیا مطمئن هستید که می‌خواهید خدمت با شناسه «${serviceId}» را حذف کنید؟`))) return;
 
     // Filter out the service
     const updatedDb: ServicesDB = {
@@ -466,8 +466,7 @@ export default function AdminPage() {
   };
 
   const handleDeleteRequest = async (requestId: string) => {
-    const confirmDelete = window.confirm('آیا مطمئن هستید که می‌خواهید این درخواست پیگیری ثبت شده را حذف کنید؟');
-    if (!confirmDelete) return;
+    if (!(await confirmDialog('آیا مطمئن هستید که می‌خواهید این درخواست پیگیری ثبت شده را حذف کنید؟'))) return;
 
     try {
       const res = await fetch(`/api/requests?id=${requestId}`, {
@@ -1920,6 +1919,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-[#07111f] font-sans text-right text-white" dir="rtl">
       <Toaster position="top-center" toastOptions={{ style: { fontFamily: 'inherit' } }} />
+      <ConfirmDialogHost />
 
       {/* Case Workflow & Task Management Modal */}
       <AnimatePresence>
@@ -2028,7 +2028,7 @@ export default function AdminPage() {
               ) : activeScreen === 'customers' ? (
                 <CustomersScreen />
               ) : (
-                <CarsScreen initialTab={carSubTab} />
+                <CarsScreen initialTab={carSubTab} canDeleteContracts={currentUser?.role === 'superadmin'} />
               )}
             </div>
           </main>

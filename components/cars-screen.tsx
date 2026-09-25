@@ -18,6 +18,7 @@ import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
 import CarContractModal, { ContractData } from './car-contract-modal';
+import { confirmDialog } from '@/components/confirm-dialog';
 
 interface CRMClient {
   name: string;
@@ -43,9 +44,11 @@ const allChecked = () => Object.fromEntries(HANDOVER_CHECKLIST_ITEMS.map(i => [i
 
 interface CarsScreenProps {
   initialTab?: 'calendar' | 'fleet' | 'contracts' | 'accounting';
+  // General manager only: delete a contract (even after handover) with its reservation and accounting rows
+  canDeleteContracts?: boolean;
 }
 
-export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
+export default function CarsScreen({ initialTab, canDeleteContracts = false }: CarsScreenProps = {}) {
   const [activeTab, setActiveTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>(initialTab || 'calendar');
 
   const handleTabChange = (tab: 'calendar' | 'fleet' | 'contracts' | 'accounting') => {
@@ -120,37 +123,143 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
     const matchingRes = reservations.find(r => r.id === cnt.reservationId);
     const matchingCar = cars.find(c => c.id === matchingRes?.carId || c.title === cnt.carTitle);
 
-    const sDate = matchingRes?.startDate || new Date().toISOString().split('T')[0];
-    const eDate = matchingRes?.endDate || new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+    // Values saved on the contract win; otherwise they come from the reservation and the car (never invented)
+    const sDate = cnt.startDate || matchingRes?.startDate || new Date().toISOString().split('T')[0];
+    const eDate = cnt.endDate || matchingRes?.endDate || sDate;
     const diffTime = Math.abs(new Date(eDate).getTime() - new Date(sDate).getTime());
     const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
 
     const contractData: ContractData = {
       id: cnt.id,
       contractNo: cnt.id.toUpperCase(),
-      date: cnt.createdAt ? new Date(cnt.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      date: cnt.contractDate || (cnt.createdAt ? new Date(cnt.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
       carTitle: cnt.carTitle,
-      carTitleEn: matchingCar?.titleEn || cnt.carTitle,
+      carTitleEn: cnt.carTitleEn || matchingCar?.titleEn || cnt.carTitle,
       brand: matchingCar?.brand,
       modelYear: matchingCar?.modelYear,
       plateNumber: cnt.plateNumber,
-      color: matchingCar?.color,
+      color: cnt.color || matchingCar?.color,
       customerName: cnt.customerName,
+      customerNameEn: cnt.customerNameEn,
       customerPhone: cnt.customerPhone,
-      customerNationalId: matchingRes?.customerNationalId || '۹۸۷۶۵۴۳۲۱',
+      customerNationalId: cnt.customerNationalId || matchingRes?.customerNationalId || '',
+      customerNationality: cnt.customerNationality,
+      customerAddress: cnt.customerAddress,
+      workAddress: cnt.workAddress,
+      whatsapp: cnt.whatsapp,
+      licenceType: cnt.licenceType,
+      licenceNo: cnt.licenceNo,
+      cleanInside: cnt.cleanInside,
+      cleanOutside: cnt.cleanOutside,
       startDate: sDate,
       endDate: eDate,
-      rentalDays: calculatedDays,
-      totalPrice: matchingRes?.totalPrice || 90,
-      depositPaid: cnt.depositAmount || 50,
+      rentalDays: cnt.rentalDays ?? calculatedDays,
+      dailyRate: cnt.dailyRate,
+      totalPrice: cnt.totalPrice ?? matchingRes?.totalPrice ?? 0,
+      depositPaid: cnt.depositAmount || 0,
       initialOdometer: cnt.initialOdometer,
       fuelLevel: FUEL_LEVEL_LABELS[cnt.fuelLevel] || FUEL_LEVEL_LABELS.full,
-      departureTime: cnt.createdAt ? new Date(cnt.createdAt).toTimeString().slice(0, 5) : undefined,
+      departureTime: cnt.departureTime || (cnt.createdAt ? new Date(cnt.createdAt).toTimeString().slice(0, 5) : undefined),
+      returnTime: cnt.returnTime,
       returnOdometer: cnt.returnOdometer,
+      extraKm: cnt.extraKm,
+      extraKmAmount: cnt.extraKmAmount,
+      deductionsAmount: cnt.deductionsAmount,
       notes: cnt.notes
     };
 
     setSelectedContractForPdf(contractData);
+  };
+
+  const handleDeleteContract = async (cnt: CarContract) => {
+    const res = reservations.find(r => r.id === cnt.reservationId);
+    const handedOver = cnt.handoverStatus !== 'pending_delivery';
+    const lines = [
+      `قرارداد ${cnt.id} (${cnt.customerName} - ${cleanCarTitle(cnt.carTitle)}) برای همیشه حذف می‌شود.`,
+      res ? 'رزرو مربوط و همه ردیف‌های مالی آن (درآمد اجاره، ودیعه، کیلومتر اضافه، خسارت) هم حذف می‌شوند.' : '',
+      handedOver ? '⚠️ برای این قرارداد صورتجلسه تحویل ثبت شده است؛ فقط در صورتی حذف کنید که قرارداد تستی یا اشتباه است.' : '',
+      'این عمل قابل بازگشت نیست.',
+    ].filter(Boolean);
+    if (!(await confirmDialog({ title: 'حذف کامل قرارداد', message: lines.join('\n'), requireText: cnt.id, confirmText: 'حذف کامل' }))) return;
+
+    try {
+      const response = await fetch(`/api/cars/contracts?id=${encodeURIComponent(cnt.id)}`, { method: 'DELETE' });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.success) {
+        toast.error(data.error || 'خطا در حذف قرارداد');
+        return;
+      }
+      setContracts(prev => prev.filter(c => !data.contractIds.includes(c.id)));
+      setTransactions(prev => prev.filter(t => !data.transactionIds.includes(t.id)));
+      if (data.reservationId) setReservations(prev => prev.filter(r => r.id !== data.reservationId));
+      toast.success(`قرارداد ${cnt.id} و اسناد مرتبط حذف شد`);
+    } catch (err) {
+      toast.error('خطای ارتباط با سرور');
+    }
+  };
+
+  // Saves what was entered in the contract window; extra-km / accident amounts become their own income rows
+  const handleSaveContractDetails = async (data: ContractData): Promise<boolean> => {
+    const fuelMap: Record<string, FuelLevel> = { full: 'full', '3/4': 'three_quarters', half: 'half', '1/4': 'quarter', empty: 'empty' };
+    const fuelFromLabel = (Object.keys(FUEL_LEVEL_LABELS) as FuelLevel[]).find(k => FUEL_LEVEL_LABELS[k] === data.fuelLevel);
+    try {
+      const res = await fetch('/api/cars/contracts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: data.id,
+          customerName: data.customerName,
+          carTitle: data.carTitle,
+          customerPhone: data.customerPhone,
+          plateNumber: data.plateNumber,
+          initialOdometer: data.initialOdometer ?? 0,
+          returnOdometer: data.returnOdometer,
+          fuelLevel: fuelMap[data.fuelLevel || ''] || fuelFromLabel,
+          depositAmount: data.depositPaid,
+          notes: data.notes ?? '',
+          customerNameEn: data.customerNameEn ?? '',
+          customerNationalId: data.customerNationalId ?? '',
+          customerNationality: data.customerNationality ?? '',
+          customerAddress: data.customerAddress ?? '',
+          workAddress: data.workAddress ?? '',
+          whatsapp: data.whatsapp ?? '',
+          licenceType: data.licenceType ?? '',
+          licenceNo: data.licenceNo ?? '',
+          carTitleEn: data.carTitleEn ?? '',
+          color: data.color ?? '',
+          cleanInside: data.cleanInside ?? '',
+          cleanOutside: data.cleanOutside ?? '',
+          contractDate: data.date ?? '',
+          startDate: data.startDate ?? '',
+          departureTime: data.departureTime ?? '',
+          endDate: data.endDate ?? '',
+          returnTime: data.returnTime ?? '',
+          rentalDays: data.rentalDays ?? '',
+          dailyRate: data.dailyRate ?? '',
+          totalPrice: data.totalPrice ?? '',
+          extraKm: data.extraKm ?? '',
+          extraKmAmount: data.extraKmAmount ?? '',
+          deductionsAmount: data.deductionsAmount ?? '',
+        })
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok || !result.success) {
+        toast.error(result.error || 'خطا در ذخیره اطلاعات قرارداد');
+        return false;
+      }
+      setContracts(prev => prev.map(c => c.id === result.contract.id ? result.contract : c));
+      if (result.chargesError) {
+        toast.error('قرارداد ذخیره شد اما ثبت مبالغ اضافه در حسابداری ناموفق بود');
+      } else {
+        toast.success('اطلاعات قرارداد ذخیره شد');
+      }
+      // Extra-km / accident rows may have changed in accounting
+      fetch('/api/cars/transactions').then(r => r.json()).then(tx => { if (Array.isArray(tx)) setTransactions(tx); }).catch(() => {});
+      return true;
+    } catch (err) {
+      toast.error('خطای ارتباط با سرور');
+      return false;
+    }
   };
 
   // Form States - Car
@@ -354,7 +463,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   };
 
   const handleDeleteCar = async (id: string) => {
-    if (!window.confirm('آیا از حذف این خودرو اطمینان دارید؟')) return;
+    if (!(await confirmDialog('آیا از حذف این خودرو اطمینان دارید؟'))) return;
     try {
       const res = await fetch(`/api/cars?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
@@ -614,13 +723,22 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   };
 
   const handleDeleteReservation = async (id: string) => {
-    if (!window.confirm('آیا از لغو/حذف این رزرو مطمئن هستید؟')) return;
+    const linkedContract = contracts.find(c => c.reservationId === id);
+    const message = linkedContract
+      ? `با حذف این رزرو، قرارداد ${linkedContract.id} و درآمد/ودیعه ثبت‌شده آن در حسابداری هم حذف می‌شود. ادامه می‌دهید؟`
+      : 'آیا از حذف این رزرو مطمئن هستید؟';
+    if (!(await confirmDialog({ title: 'حذف رزرو', message }))) return;
     try {
       const res = await fetch(`/api/cars/reservations?id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        toast.success('رزرو با موفقیت حذف گردید');
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        toast.success('رزرو و قرارداد و اسناد مالی مرتبط حذف شد');
         setSelectedResDetails(null);
         setReservations(prev => prev.filter(r => r.id !== id));
+        setContracts(prev => prev.filter(c => c.reservationId !== id));
+        setTransactions(prev => prev.filter(t => t.reservationId !== id));
+      } else {
+        toast.error(data.error || 'خطا در حذف رزرو');
       }
     } catch (err) {
       toast.error('خطا در حذف رزرو');
@@ -689,12 +807,29 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-    if (!window.confirm('آیا از حذف این تراکنش مالی مطمئن هستید؟')) return;
+    // Rows issued automatically with a reservation (rent revenue / deposit) are part of that reservation's chain
+    const tx = transactions.find(t => t.id === id);
+    const isAutoIssued = ['tx-rent-', 'tx-dep-', 'tx-xkm-', 'tx-dmg-'].some(prefix => id.startsWith(prefix));
+    const linkedRes = tx?.reservationId ? reservations.find(r => r.id === tx.reservationId) : undefined;
+    const linkedContract = tx?.reservationId ? contracts.find(c => c.reservationId === tx.reservationId) : undefined;
+
+    const confirmed = isAutoIssued && linkedRes
+      ? await confirmDialog({
+          title: 'این ردیف مربوط به یک رزرو است',
+          message: `این ردیف به‌صورت خودکار برای رزرو «${linkedRes.customerName} - ${cleanCarTitle(linkedRes.carTitle || '')}»${linkedContract ? ` و قرارداد ${linkedContract.id}` : ''} ثبت شده است. با حذف آن فقط همین ردیف مالی پاک می‌شود و رزرو و قرارداد باقی می‌مانند. برای حذف کامل، خود رزرو را از تب «تقویم و رزروها» حذف کنید. آیا فقط این ردیف حذف شود؟`,
+          confirmText: 'فقط این ردیف حذف شود',
+        })
+      : await confirmDialog('آیا از حذف این تراکنش مالی مطمئن هستید؟');
+    if (!confirmed) return;
+
     try {
       const res = await fetch(`/api/cars/transactions?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
         toast.success('تراکنش حذف گردید');
         setTransactions(prev => prev.filter(t => t.id !== id));
+      } else {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || 'خطا در حذف تراکنش');
       }
     } catch (err) {
       toast.error('خطا در حذف تراکنش');
@@ -1373,6 +1508,15 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
                           <FileText size={14} />
                           <span>خروجی PDF</span>
                         </button>
+                        {canDeleteContracts && (
+                          <button
+                            onClick={() => handleDeleteContract(cnt)}
+                            title="حذف قرارداد (مدیر کل)"
+                            className="mr-1.5 inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer align-middle"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -2280,6 +2424,7 @@ export default function CarsScreen({ initialTab }: CarsScreenProps = {}) {
           <CarContractModal
             contract={selectedContractForPdf}
             onClose={() => setSelectedContractForPdf(null)}
+            onSave={handleSaveContractDetails}
           />
         )}
       </AnimatePresence>

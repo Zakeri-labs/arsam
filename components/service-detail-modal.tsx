@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Service, Language } from '@/lib/content';
 import { CheckCircle2, ChevronRight, MessageSquare, FileText, ArrowLeft, Send, Clock, UploadCloud, X, Paperclip, ChevronDown, Search } from 'lucide-react';
+import { toast } from 'sonner';
 
 const categoryImages: Record<string, string> = {
   'Company Setup Services': 'https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?q=80&w=600&auto=format&fit=crop',
@@ -271,7 +272,7 @@ export function ServiceDetailModal({
       const file = e.target.files[0];
       if (file.size > MAX_FILE_SIZE) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-        alert(language === 'fa' 
+        toast.error(language === 'fa' 
           ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۵۰ مگابایت) است. لطفاً فایل کمتر از ۵۰ مگابایت انتخاب کنید.` 
           : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (50 MB). Please choose a smaller file.`
         );
@@ -298,7 +299,7 @@ export function ServiceDetailModal({
       for (const file of newFiles) {
         if (file.size > MAX_FILE_SIZE) {
           const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-          alert(language === 'fa' 
+          toast.error(language === 'fa' 
             ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۵۰ مگابایت) است.` 
             : `File "${file.name}" (${sizeMB} MB) exceeds maximum limit (50 MB).`
           );
@@ -379,7 +380,7 @@ export function ServiceDetailModal({
       for (const file of allFilesToUpload) {
         if (file.size > MAX_FILE_SIZE) {
           const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-          alert(language === 'fa' 
+          toast.error(language === 'fa' 
             ? `حجم فایل «${file.name}» (${sizeMB} مگابایت) بیشتر از سقف مجاز (۵۰ مگابایت) است.` 
             : `File "${file.name}" (${sizeMB} MB) exceeds maximum allowed size (50 MB).`
           );
@@ -446,7 +447,7 @@ export function ServiceDetailModal({
         }
 
         if (!fileUploaded) {
-          alert(language === 'fa' 
+          toast.error(language === 'fa' 
             ? `خطا در آپلود فایل «${file.name}». لطفاً اینترنت خود یا حجم فایل را بررسی و دوباره تلاش کنید.` 
             : `Failed to upload "${file.name}". Please check network connection and try again.`
           );
@@ -478,14 +479,14 @@ export function ServiceDetailModal({
         } catch (e) {
           errorMsg = 'پاسخ نامعتبر از سرور';
         }
-        alert(language === 'fa' 
+        toast.error(language === 'fa' 
           ? `خطا در ثبت درخواست: ${errorMsg}` 
           : `Failed to submit request: ${errorMsg}`
         );
       }
     } catch (err: any) {
       console.error('Error submitting form:', err);
-      alert(language === 'fa' ? `خطا در ارتباط با سرور: ${err.message || err}` : `Network error: ${err.message || err}`);
+      toast.error(language === 'fa' ? `خطا در ارتباط با سرور: ${err.message || err}` : `Network error: ${err.message || err}`);
     } finally {
       setIsSubmitting(false);
     }
