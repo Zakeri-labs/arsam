@@ -1,20 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getTransactions, saveTransaction, deleteTransaction } from '@/lib/db-cars';
-import { supabase } from '@/lib/supabase';
-import path from 'path';
-import { verifyAdminAuth } from '@/lib/auth-check';
-
-async function checkAuth() {
-  const auth = await verifyAdminAuth();
-  return auth.authenticated;
-}
+import { uploadFile, UploadRejected } from '@/lib/storage';
+import { requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
   try {
-    const isAuth = await checkAuth();
-    if (!isAuth) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const transactions = await getTransactions();
     return NextResponse.json(transactions);
@@ -26,10 +18,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const isAuth = await checkAuth();
-    if (!isAuth) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const contentType = request.headers.get('content-type') || '';
 
@@ -51,30 +41,14 @@ export async function POST(request: Request) {
 
       if (file && file.name && file.size > 0) {
         try {
-          const buffer = await file.arrayBuffer();
-          const fileExt = path.extname(file.name) || '';
-          const uniqueId = Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
-          const cleanBaseName = path.basename(file.name, fileExt).replace(/[^a-zA-Z0-9_\u0600-\u06FF.-]/g, '_');
-          const safeFileName = `tx_${cleanBaseName}_${uniqueId}${fileExt}`;
-
-          const { data, error } = await supabase.storage
-            .from('uploads')
-            .upload(safeFileName, buffer, {
-              contentType: file.type || 'application/octet-stream',
-              upsert: false
-            });
-
-          if (!error) {
-            const { data: publicUrlData } = supabase.storage
-              .from('uploads')
-              .getPublicUrl(safeFileName);
-            receiptFileUrl = publicUrlData.publicUrl;
-            receiptFileName = file.name;
-          } else {
-            console.error('Failed upload to Supabase storage:', error);
-          }
+          const uploaded = await uploadFile(file, 'tx');
+          receiptFileUrl = uploaded.url;
+          receiptFileName = uploaded.name;
         } catch (fileErr) {
-          console.error('File process error:', fileErr);
+          if (fileErr instanceof UploadRejected) {
+            return NextResponse.json({ error: fileErr.message }, { status: 400 });
+          }
+          console.error('Failed upload to Supabase storage:', fileErr);
         }
       }
 
@@ -111,10 +85,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const isAuth = await checkAuth();
-    if (!isAuth) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

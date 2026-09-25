@@ -83,8 +83,8 @@ ALTER TABLE public.requests ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public all access on services" ON public.services;
 DROP POLICY IF EXISTS "Allow public all access on requests" ON public.requests;
 
-CREATE POLICY "Allow public all access on services" ON public.services FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public all access on requests" ON public.requests FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on services" ON public.services FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on requests" ON public.requests FOR ALL USING (true) WITH CHECK (true);
 
 -- 4. Create Storage bucket for user file uploads
 INSERT INTO storage.buckets (id, name, public) 
@@ -96,10 +96,10 @@ DROP POLICY IF EXISTS "Allow public upload to uploads" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public update on uploads" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public delete on uploads" ON storage.objects;
 
-CREATE POLICY "Allow public read on uploads" ON storage.objects FOR SELECT USING (bucket_id = 'uploads');
-CREATE POLICY "Allow public upload to uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'uploads');
-CREATE POLICY "Allow public update on uploads" ON storage.objects FOR UPDATE USING (bucket_id = 'uploads');
-CREATE POLICY "Allow public delete on uploads" ON storage.objects FOR DELETE USING (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public read on uploads" ON storage.objects FOR SELECT USING (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public upload to uploads" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public update on uploads" ON storage.objects FOR UPDATE USING (bucket_id = 'uploads');
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public delete on uploads" ON storage.objects FOR DELETE USING (bucket_id = 'uploads');
 
 -- All set! Tables, policies, storage, and indexes are ready.
 
@@ -170,9 +170,9 @@ DROP POLICY IF EXISTS "Allow public all access on cars" ON public.cars;
 DROP POLICY IF EXISTS "Allow public all access on car_reservations" ON public.car_reservations;
 DROP POLICY IF EXISTS "Allow public all access on car_transactions" ON public.car_transactions;
 
-CREATE POLICY "Allow public all access on cars" ON public.cars FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public all access on car_reservations" ON public.car_reservations FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow public all access on car_transactions" ON public.car_transactions FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on cars" ON public.cars FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on car_reservations" ON public.car_reservations FOR ALL USING (true) WITH CHECK (true);
+-- DISABLED (see supabase_migration_security_lockdown.sql): CREATE POLICY "Allow public all access on car_transactions" ON public.car_transactions FOR ALL USING (true) WITH CHECK (true);
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_car_reservations_dates ON public.car_reservations(start_date, end_date);

@@ -1,17 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getContracts, saveContract, deleteContract, syncContractExtraCharges } from '@/lib/db-cars';
-import { verifyAdminAuth } from '@/lib/auth-check';
-
-async function checkAuth() {
-  const auth = await verifyAdminAuth();
-  return auth.authenticated;
-}
+import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
   try {
-    if (!(await checkAuth())) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
     return NextResponse.json(await getContracts());
   } catch (error: any) {
     console.error('Error fetching contracts:', error);
@@ -21,9 +15,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    if (!(await checkAuth())) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const body = await request.json();
     if (!body.customerName || !body.carTitle || body.initialOdometer === undefined || body.initialOdometer === '') {
@@ -46,9 +39,12 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const auth = await verifyAdminAuth();
+    const auth = await verifyAdminAuth(['cars']);
     if (!auth.authenticated) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
+      return NextResponse.json({ error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' }, { status: 401 });
+    }
+    if (!auth.authorized) {
+      return NextResponse.json({ error: 'شما به این بخش دسترسی ندارید.' }, { status: 403 });
     }
     // Removes the reservation and accounting rows too, even after handover: general manager only
     if (auth.user?.role !== 'superadmin') {

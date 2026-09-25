@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
 
 // POST (Public) - Submit a QMS queue request
 export async function POST(request: Request) {
   try {
+    if (!rateLimit(`qms:${clientIp(request)}`, 5, 10 * 60 * 1000)) {
+      return tooManyRequests();
+    }
+
     const body = await request.json();
-    const { phone, serviceTitle } = body;
+    const phone = typeof body.phone === 'string' ? body.phone.trim().slice(0, 50) : '';
+    const serviceTitle = typeof body.serviceTitle === 'string' ? body.serviceTitle.trim().slice(0, 500) : '';
 
     if (!phone || !serviceTitle) {
       return NextResponse.json(
@@ -65,7 +71,7 @@ export async function POST(request: Request) {
     if (insertError) {
       console.error('QMS insert error:', insertError);
       return NextResponse.json(
-        { error: 'خطا در ثبت نوبت در دیتابیس', details: insertError.message },
+        { error: 'خطا در ثبت نوبت در دیتابیس' },
         { status: 500 }
       );
     }
@@ -78,7 +84,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error in QMS route:', error);
     return NextResponse.json(
-      { error: 'خطایی در سرور رخ داده است', details: error.message },
+      { error: 'خطایی در سرور رخ داده است' },
       { status: 500 }
     );
   }

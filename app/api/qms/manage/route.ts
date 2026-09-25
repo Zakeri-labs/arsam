@@ -1,21 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getRequests, updateRequestQueue, getRequestsByPhone } from '@/lib/db-requests';
-import { verifyAdminAuth } from '@/lib/auth-check';
-
-async function isAuthenticated(): Promise<boolean> {
-  const auth = await verifyAdminAuth();
-  return auth.authenticated;
-}
+import { requireAdmin } from '@/lib/auth-check';
 
 // GET (Secure, Admin Only) - Get QMS queue items, or files by phone
 export async function GET(request: Request) {
   try {
-    if (!(await isAuthenticated())) {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
-        { status: 401 }
-      );
-    }
+    const denied = await requireAdmin(['qms']);
+    if (denied) return denied;
 
     const { searchParams } = new URL(request.url);
     const queueNameFilter = searchParams.get('queueName');
@@ -55,12 +46,8 @@ export async function GET(request: Request) {
 // PATCH (Secure, Admin Only) - Update status or queue name of a ticket
 export async function PATCH(request: Request) {
   try {
-    if (!(await isAuthenticated())) {
-      return NextResponse.json(
-        { error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' },
-        { status: 401 }
-      );
-    }
+    const denied = await requireAdmin(['qms']);
+    if (denied) return denied;
 
     const body = await request.json();
     const { id, queueName, queueStatus } = body;

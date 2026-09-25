@@ -1,18 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError } from '@/lib/db-cars';
-import { verifyAdminAuth } from '@/lib/auth-check';
-
-async function checkAuth() {
-  const auth = await verifyAdminAuth();
-  return auth.authenticated;
-}
+import { requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
   try {
-    const isAuth = await checkAuth();
-    if (!isAuth) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const reservations = await getReservations();
     return NextResponse.json(reservations);
@@ -24,10 +17,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const isAuth = await checkAuth();
-    if (!isAuth) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const body = await request.json();
     if (!body.carId || !body.customerName || !body.startDate || !body.endDate) {
@@ -56,10 +47,8 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const isAuth = await checkAuth();
-    if (!isAuth) {
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 401 });
-    }
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

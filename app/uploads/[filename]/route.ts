@@ -53,6 +53,9 @@ export async function GET(
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${encodeURIComponent(filename)}"`,
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Content-Type-Options': 'nosniff',
+        // Stops an uploaded SVG/HTML file from running scripts on our origin.
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
       },
     });
   } catch (error) {
