@@ -46,7 +46,7 @@ export async function DELETE(request: Request) {
     if (!auth.authorized) {
       return NextResponse.json({ error: 'شما به این بخش دسترسی ندارید.' }, { status: 403 });
     }
-    // Removes the reservation and accounting rows too, even after handover: general manager only
+    // Deleting a contract also removes its accounting rows: general manager only
     if (auth.user?.role !== 'superadmin') {
       return NextResponse.json({ error: 'حذف قرارداد فقط برای مدیر کل مجاز است' }, { status: 403 });
     }
