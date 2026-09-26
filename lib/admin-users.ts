@@ -1,10 +1,12 @@
 // Server-only admin account registry.
 //
 // Two kinds of accounts:
-//  * Built-in accounts (below) — the general manager and the fleet manager.
-//    Their passwords come exclusively from the environment; an account whose
-//    password variable is unset (or too short) cannot log in at all. They
-//    cannot be edited or removed from the panel.
+//  * The built-in general manager account (below). Its password comes
+//    exclusively from the environment; if the variable is unset (or too short)
+//    it cannot log in at all. It cannot be edited or removed from the panel, so
+//    nobody can lock the general manager out.
+//  * (The fleet manager used to be built in as well; supabase_migration_admin_users_fleet_manager.sql
+//    moves him into the staff table so his sections can be managed from the panel.)
 //  * Staff accounts — created by the general manager in the panel's access
 //    management screen and stored in `public.admin_users` with a scrypt
 //    password hash. Their sections are re-read from the database on every
@@ -55,13 +57,6 @@ const BUILT_IN_ACCOUNTS: BuiltInAccount[] = [
     role: 'superadmin',
     allowedScreens: ['services', 'requests', 'qms', 'customers', 'cars'],
   },
-  {
-    email: 'b.mohammadi.d@gmail.com',
-    passwordEnv: 'CAR_ADMIN_PASSWORD',
-    name: 'محمدی (مدیر ناوگان خودروها)',
-    role: 'cars_only',
-    allowedScreens: ['cars'],
-  },
 ];
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -99,7 +94,20 @@ export async function hashPassword(password: string): Promise<string> {
   return `scrypt$${SCRYPT.N}$${SCRYPT.r}$${SCRYPT.p}$${salt.toString('base64')}$${hash.toString('base64')}`;
 }
 
+// A staff row may hold `env:<VARIABLE>` instead of a hash: the password is then
+// read from that environment variable. Used to move the fleet manager from a
+// built-in account into the staff table without changing his password; the
+// first password reset from the panel replaces the marker with a real hash.
+const ENV_PASSWORD_MARKER = /^env:([A-Z_]+)$/;
+
 async function verifyPasswordHash(password: string, stored: string): Promise<boolean> {
+  const envMarker = stored.match(ENV_PASSWORD_MARKER);
+  if (envMarker) {
+    const expected = process.env[envMarker[1]];
+    if (!expected || expected.length < MIN_PASSWORD_LENGTH) return false;
+    return plainPasswordsMatch(password, expected);
+  }
+
   const parts = stored.split('$');
   if (parts.length !== 6 || parts[0] !== 'scrypt') return false;
   const [, n, r, p, saltB64, hashB64] = parts;

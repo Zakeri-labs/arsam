@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { KeyRound, Lock, Plus, Save, ShieldCheck, Trash2, UserPlus, X, Power } from 'lucide-react';
+import { KeyRound, Lock, Pencil, Plus, Save, ShieldCheck, Trash2, UserPlus, X, Power } from 'lucide-react';
 import { confirmDialog } from '@/components/confirm-dialog';
 
 // Access management (general manager only): create staff accounts and choose
@@ -73,8 +73,8 @@ export default function AccessScreen() {
   const [form, setForm] = useState({ name: '', email: '', password: '', allowedScreens: [] as Screen[] });
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editScreens, setEditScreens] = useState<Screen[]>([]);
   const [editName, setEditName] = useState('');
+  const [savingScreen, setSavingScreen] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -131,23 +131,35 @@ export default function AccessScreen() {
     }
   };
 
-  const startEdit = (u: StaffAccount) => {
+  const startEditName = (u: StaffAccount) => {
     setEditingId(u.id);
-    setEditScreens(u.allowedScreens);
     setEditName(u.name);
   };
 
-  const saveEdit = async () => {
+  const saveName = async () => {
     if (!editingId) return;
-    if (editScreens.length === 0) {
-      toast.error('حداقل یک بخش را انتخاب کنید.');
-      return;
-    }
-    const data = await call('PATCH', { id: editingId, name: editName, allowedScreens: editScreens });
+    const data = await call('PATCH', { id: editingId, name: editName });
     if (data) {
-      toast.success('دسترسی‌ها ذخیره شد');
+      toast.success('نام ذخیره شد');
       setEditingId(null);
       load();
+    }
+  };
+
+  // One click grants or revokes a section and saves immediately.
+  const toggleScreen = async (u: StaffAccount, screen: Screen) => {
+    const has = u.allowedScreens.includes(screen);
+    const next = has ? u.allowedScreens.filter(s => s !== screen) : [...u.allowedScreens, screen];
+    if (next.length === 0) {
+      toast.error('کاربر باید حداقل به یک بخش دسترسی داشته باشد. برای قطع کامل دسترسی، کاربر را غیرفعال کنید.');
+      return;
+    }
+    setSavingScreen(`${u.id}:${screen}`);
+    const data = await call('PATCH', { id: u.id, allowedScreens: next });
+    setSavingScreen(null);
+    if (data) {
+      setStaff(list => list?.map(x => (x.id === u.id ? data.account : x)) ?? list);
+      toast.success(`${has ? 'دسترسی گرفته شد' : 'دسترسی داده شد'}: ${screenLabel(screen)} — ${u.name}`);
     }
   };
 
@@ -289,7 +301,7 @@ export default function AccessScreen() {
                 <div className="flex items-center gap-1.5">
                   {editingId === u.id ? (
                     <>
-                      <button onClick={saveEdit} disabled={busy} title="ذخیره"
+                      <button onClick={saveName} disabled={busy} title="ذخیره نام"
                         className="flex items-center gap-1 rounded-lg bg-emerald-500 px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50 cursor-pointer">
                         <Save className="h-3.5 w-3.5" /> ذخیره
                       </button>
@@ -298,9 +310,8 @@ export default function AccessScreen() {
                     </>
                   ) : (
                     <>
-                      <button onClick={() => startEdit(u)} className="rounded-lg bg-white/5 px-3 py-1.5 text-[11px] font-bold text-white/80 hover:bg-white/10 cursor-pointer">
-                        ویرایش دسترسی
-                      </button>
+                      <button onClick={() => startEditName(u)} title="ویرایش نام" disabled={busy}
+                        className="rounded-lg bg-white/5 p-2 text-white/70 hover:bg-white/10 cursor-pointer"><Pencil className="h-3.5 w-3.5" /></button>
                       <button onClick={() => resetPassword(u)} title="تغییر رمز" disabled={busy}
                         className="rounded-lg bg-white/5 p-2 text-white/70 hover:bg-white/10 cursor-pointer"><KeyRound className="h-3.5 w-3.5" /></button>
                       <button onClick={() => toggleActive(u)} title={u.isActive ? 'غیرفعال کردن' : 'فعال کردن'} disabled={busy}
@@ -313,15 +324,34 @@ export default function AccessScreen() {
                   )}
                 </div>
               </div>
-              {editingId === u.id ? (
-                <ScreenPicker value={editScreens} onChange={setEditScreens} />
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {u.allowedScreens.map(s => (
-                    <span key={s} className="rounded-lg bg-gold/10 px-2 py-1 text-[10px] text-gold/90">{screenLabel(s)}</span>
-                  ))}
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-white/40">برای دادن یا گرفتن دسترسی، روی هر بخش بزنید:</span>
+                <div className="flex flex-wrap gap-2">
+                  {SCREENS.map(s => {
+                    const on = u.allowedScreens.includes(s.id);
+                    const saving = savingScreen === `${u.id}:${s.id}`;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        role="switch"
+                        aria-checked={on}
+                        disabled={busy}
+                        onClick={() => toggleScreen(u, s.id)}
+                        title={on ? 'برای گرفتن دسترسی بزنید' : 'برای دادن دسترسی بزنید'}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold border transition-all cursor-pointer disabled:cursor-wait ${
+                          on
+                            ? 'bg-emerald-500/15 border-emerald-400/50 text-emerald-300 hover:bg-emerald-500/25'
+                            : 'bg-white/[0.03] border-white/10 text-white/40 hover:text-white/70 hover:border-white/30'
+                        }`}
+                      >
+                        <span className={`inline-block h-2 w-2 rounded-full ${on ? 'bg-emerald-400' : 'bg-white/20'} ${saving ? 'animate-pulse' : ''}`} />
+                        {s.label}
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
+              </div>
             </div>
           ))
         )}
