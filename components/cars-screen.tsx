@@ -172,15 +172,19 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   };
 
   const handleDeleteContract = async (cnt: CarContract) => {
-    const res = reservations.find(r => r.id === cnt.reservationId);
+    // Deleting the contract also removes its accounting rows; the reservation can then be cancelled or deleted
+    const linkedTx = cnt.reservationId ? transactions.filter(t => t.reservationId === cnt.reservationId) : [];
     const handedOver = cnt.handoverStatus !== 'pending_delivery';
     const lines = [
       `قرارداد ${cnt.id} (${cnt.customerName} - ${cleanCarTitle(cnt.carTitle)}) برای همیشه حذف می‌شود.`,
-      res ? 'رزرو مربوط و همه ردیف‌های مالی آن (درآمد اجاره، ودیعه، کیلومتر اضافه، خسارت) هم حذف می‌شوند.' : '',
+      linkedTx.length
+        ? `این ${linkedTx.length} سند مالی هم خودکار از حسابداری حذف می‌شوند:\n${linkedTx.map(t => `• ${t.description || t.type} (${t.amount})`).join('\n')}`
+        : '',
+      cnt.reservationId ? 'رزرو مربوط باقی می‌ماند و بعد از حذف قرارداد می‌توانید آن را لغو یا حذف کنید.' : '',
       handedOver ? '⚠️ برای این قرارداد صورتجلسه تحویل ثبت شده است؛ فقط در صورتی حذف کنید که قرارداد تستی یا اشتباه است.' : '',
       'این عمل قابل بازگشت نیست.',
     ].filter(Boolean);
-    if (!(await confirmDialog({ title: 'حذف کامل قرارداد', message: lines.join('\n'), requireText: cnt.id, confirmText: 'حذف کامل' }))) return;
+    if (!(await confirmDialog({ title: 'حذف قرارداد', message: lines.join('\n'), requireText: cnt.id, confirmText: 'حذف قرارداد' }))) return;
 
     try {
       const response = await fetch(`/api/cars/contracts?id=${encodeURIComponent(cnt.id)}`, { method: 'DELETE' });
@@ -191,8 +195,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       }
       setContracts(prev => prev.filter(c => !data.contractIds.includes(c.id)));
       setTransactions(prev => prev.filter(t => !data.transactionIds.includes(t.id)));
-      if (data.reservationId) setReservations(prev => prev.filter(r => r.id !== data.reservationId));
-      toast.success(`قرارداد ${cnt.id} و اسناد مرتبط حذف شد`);
+      toast.success(`قرارداد ${cnt.id} و ${data.transactionIds.length} سند مالی آن حذف شد`);
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
     }
@@ -374,6 +377,14 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   };
 
   // --- CALENDAR DAYS COMPUTATION ---
+  // Cancelled reservations stay in the database as records but are hidden from the calendar, lists and pickers
+  const activeReservations = useMemo(() => reservations.filter(r => r.status !== 'cancelled'), [reservations]);
+
+  // Contract of the reservation open in the details window once its car was handed over (blocks cancel/delete)
+  const handedOverContractForDetails = selectedResDetails
+    ? contracts.find(c => c.reservationId === selectedResDetails.id && c.handoverStatus !== 'pending_delivery')
+    : undefined;
+
   const calendarDays = useMemo(() => {
     const days: { date: Date; dateStr: string; dayName: string; dayNum: number; isToday: boolean; isWeekend: boolean }[] = [];
     const base = new Date(calendarAnchorDate);
@@ -745,6 +756,41 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
   };
 
+  // Cancelling keeps the reservation, its contract and accounting rows as records (used once the car was handed over)
+  const handleCancelReservation = async (reservation: CarReservation) => {
+    if (!(await confirmDialog({
+      title: 'لغو رزرو',
+      message: `رزرو «${reservation.customerName} - ${cleanCarTitle(reservation.carTitle || '')}» لغو می‌شود و از تقویم برداشته می‌شود. قرارداد و اسناد مالی آن به‌عنوان سابقه باقی می‌مانند.`,
+      confirmText: 'بله، لغو شود',
+    }))) return;
+    try {
+      const res = await fetch('/api/cars/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...reservation, status: 'cancelled' })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'خطا در لغو رزرو');
+        return;
+      }
+      setReservations(prev => prev.map(r => r.id === reservation.id ? { ...r, status: 'cancelled' } : r));
+      setSelectedResDetails(null);
+
+      // Free the car if no other live reservation covers today
+      const todayStr = new Date().toISOString().split('T')[0];
+      const car = cars.find(c => c.id === reservation.carId);
+      const stillBusy = reservations.some(r => r.id !== reservation.id && r.carId === reservation.carId && r.status !== 'cancelled' && r.status !== 'completed' && r.startDate <= todayStr && r.endDate >= todayStr);
+      if (car?.status === 'rented' && !stillBusy) {
+        await fetch('/api/cars', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: car.id, status: 'available' }) });
+        setCars(prev => prev.map(c => c.id === car.id ? { ...c, status: 'available' } : c));
+      }
+      toast.success('رزرو لغو شد');
+    } catch (err) {
+      toast.error('خطای ارتباط با سرور');
+    }
+  };
+
   // --- TRANSACTION HANDLERS ---
   const handleOpenAddTransaction = () => {
     setTxForm({
@@ -816,7 +862,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     const confirmed = isAutoIssued && linkedRes
       ? await confirmDialog({
           title: 'این ردیف مربوط به یک رزرو است',
-          message: `این ردیف به‌صورت خودکار برای رزرو «${linkedRes.customerName} - ${cleanCarTitle(linkedRes.carTitle || '')}»${linkedContract ? ` و قرارداد ${linkedContract.id}` : ''} ثبت شده است. با حذف آن فقط همین ردیف مالی پاک می‌شود و رزرو و قرارداد باقی می‌مانند. برای حذف کامل، خود رزرو را از تب «تقویم و رزروها» حذف کنید. آیا فقط این ردیف حذف شود؟`,
+          message: `این ردیف به‌صورت خودکار برای رزرو «${linkedRes.customerName} - ${cleanCarTitle(linkedRes.carTitle || '')}»${linkedContract ? ` و قرارداد ${linkedContract.id}` : ''} ثبت شده است. با حذف آن فقط همین ردیف مالی پاک می‌شود و رزرو و قرارداد باقی می‌مانند.\nبرای حذف کامل: اگر خودرو هنوز تحویل نشده، کافی است خود رزرو را از تب «تقویم و رزروها» حذف کنید؛ اگر تحویل شده، قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم حذف می‌شوند) و سپس رزرو را.\nآیا این ردیف حذف شود؟`,
           confirmText: 'فقط این ردیف حذف شود',
         })
       : await confirmDialog('آیا از حذف این تراکنش مالی مطمئن هستید؟');
@@ -837,7 +883,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   };
 
   const handleOpenAddHandover = (resId?: string) => {
-    const res = reservations.find(r => r.id === resId) || reservations[0];
+    const res = activeReservations.find(r => r.id === resId) || activeReservations[0];
     const car = cars.find(c => c.id === res?.carId);
 
     const plate = car?.plateNumber || '';
@@ -1246,12 +1292,12 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg space-y-3">
             <h3 className="text-sm font-black text-white flex items-center gap-2">
               <span>آخرین رزروهای فعال سیستم</span>
-              <span className="text-xs font-normal text-white/40">({reservations.length} رزرو ثبت شده)</span>
+              <span className="text-xs font-normal text-white/40">({activeReservations.length} رزرو فعال)</span>
             </h3>
 
-            {reservations.length > 0 ? (
+            {activeReservations.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {reservations.slice(0, 6).map(res => (
+                {activeReservations.slice(0, 6).map(res => (
                   <div
                     key={res.id}
                     className="p-3.5 rounded-xl border bg-[#07111f] border-white/10 hover:border-gold/30 transition-all space-y-2"
@@ -1264,9 +1310,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
                         res.status === 'active' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
                         res.status === 'completed' ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' :
+                        res.status === 'cancelled' ? 'bg-white/10 text-white/50 border-white/20' :
                         'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       }`}>
-                        {res.status === 'active' ? 'در حال اجرا' : res.status === 'completed' ? 'تکمیل شده' : 'تایید شده'}
+                        {res.status === 'active' ? 'در حال اجرا' : res.status === 'completed' ? 'تکمیل شده' : res.status === 'cancelled' ? 'لغو شده' : 'تایید شده'}
                       </span>
                     </div>
 
@@ -2267,13 +2314,35 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 </div>
               </div>
 
-              <div className="flex justify-between items-center pt-2">
-                <button
-                  onClick={() => handleDeleteReservation(selectedResDetails.id)}
-                  className="px-4 py-2 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30"
-                >
-                  لغو / حذف رزرو
-                </button>
+              {handedOverContractForDetails && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-6 text-amber-200 space-y-1">
+                  <p>
+                    خودرو برای این رزرو تحویل شده است (قرارداد <span className="font-mono font-bold">{handedOverContractForDetails.id}</span>)؛ تا وقتی قرارداد باقی است، رزرو قابل لغو یا حذف نیست. به ترتیب:
+                  </p>
+                  <p>۱. حذف قرارداد {handedOverContractForDetails.id} در تب «قراردادها و تحویل»{!canDeleteContracts && ' (توسط مدیر کل)'}؛ اسناد مالی آن هم خودکار حذف می‌شوند.</p>
+                  <p>۲. سپس لغو یا حذف همین رزرو</p>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center gap-2 pt-2">
+                <div className="flex gap-2">
+                  {!handedOverContractForDetails && selectedResDetails.status !== 'cancelled' && (
+                    <button
+                      onClick={() => handleCancelReservation(selectedResDetails)}
+                      className="px-4 py-2 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/25"
+                    >
+                      لغو رزرو
+                    </button>
+                  )}
+                  {!handedOverContractForDetails && (
+                    <button
+                      onClick={() => handleDeleteReservation(selectedResDetails.id)}
+                      className="px-4 py-2 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30"
+                    >
+                      حذف رزرو
+                    </button>
+                  )}
+                </div>
                 <button
                   onClick={() => setSelectedResDetails(null)}
                   className="px-4 py-2 rounded-xl bg-white/10 text-white text-xs font-bold"
@@ -2472,7 +2541,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                     }}
                     className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
                   >
-                    {reservations.map(r => (
+                    {activeReservations.map(r => (
                       <option key={r.id} value={r.id}>
                         {r.carTitle || 'خودرو'} - {r.customerName} ({r.startDate} تا {r.endDate})
                       </option>

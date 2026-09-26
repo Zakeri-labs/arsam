@@ -668,17 +668,19 @@ export class ReservationDeleteBlockedError extends Error {
   }
 }
 
-// A reservation owns its auto-issued contract and its accounting rows, so they are removed with it.
-// Once the car has actually been handed over, the contract is a real record: deletion is refused and
-// the reservation should be cancelled instead.
-// `force` (superadmin only) also removes a reservation whose car was already handed over.
-export async function deleteReservation(id: string, options: { force?: boolean } = {}): Promise<{ contractIds: string[]; transactionIds: string[] }> {
-  if (!options.force) {
-    const { data: contractRows, error: contractsError } = await supabase.from('car_contracts').select('id, handover_status').eq('reservation_id', id);
-    ensureOk('car_contracts select', contractsError);
-    const handedOver = (contractRows || []).find(c => c.handover_status !== 'pending_delivery');
-    if (handedOver) throw new ReservationDeleteBlockedError(handedOver.id);
-  }
+// Returns the id of the reservation's contract once the car was handed over, if any
+export async function findHandedOverContractId(reservationId: string): Promise<string | undefined> {
+  const { data, error } = await supabase.from('car_contracts').select('id, handover_status').eq('reservation_id', reservationId);
+  ensureOk('car_contracts select', error);
+  return (data || []).find(c => c.handover_status !== 'pending_delivery')?.id;
+}
+
+// Before handover, a reservation owns its auto-issued contract and accounting rows, so they are removed
+// with it. After handover it can neither be deleted nor cancelled until its contract has been deleted,
+// which also removes its accounting rows (see deleteContract).
+export async function deleteReservation(id: string): Promise<{ contractIds: string[]; transactionIds: string[] }> {
+  const handedOverId = await findHandedOverContractId(id);
+  if (handedOverId) throw new ReservationDeleteBlockedError(handedOverId);
 
   const { data: txRows, error: txError } = await supabase.from('car_transactions').delete().eq('reservation_id', id).select('id');
   ensureOk('car_transactions delete', txError);
@@ -861,21 +863,23 @@ export async function syncContractExtraCharges(contract: CarContract): Promise<v
   }
 }
 
-// Superadmin cleanup: removes a contract even after handover, together with its reservation and
-// every accounting row of that reservation. A contract without a reservation is removed on its own.
-export async function deleteContract(id: string): Promise<{ reservationId?: string; contractIds: string[]; transactionIds: string[] }> {
+// Superadmin: removes the contract together with every accounting row of its reservation. The
+// reservation stays and can then be cancelled or deleted.
+export async function deleteContract(id: string): Promise<{ contractIds: string[]; transactionIds: string[] }> {
   const { data: row, error: selectError } = await supabase.from('car_contracts').select('id, reservation_id').eq('id', id).maybeSingle();
   ensureOk('car_contracts select', selectError);
   if (!row) return { contractIds: [], transactionIds: [] };
 
+  let transactionIds: string[] = [];
   if (row.reservation_id) {
-    const removed = await deleteReservation(row.reservation_id, { force: true });
-    return { reservationId: row.reservation_id, ...removed };
+    const { data: txRows, error: txError } = await supabase.from('car_transactions').delete().eq('reservation_id', row.reservation_id).select('id');
+    ensureOk('car_transactions delete', txError);
+    transactionIds = (txRows || []).map(t => t.id);
   }
 
   const { error } = await supabase.from('car_contracts').delete().eq('id', id);
   ensureOk('car_contracts delete', error);
-  return { contractIds: [id], transactionIds: [] };
+  return { contractIds: [id], transactionIds };
 }
 
 // --- RESERVATION CHAIN: reservation -> contract -> accounting revenue ---

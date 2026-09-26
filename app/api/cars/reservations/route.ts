@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError } from '@/lib/db-cars';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError, findHandedOverContractId } from '@/lib/db-cars';
+
+const HANDED_OVER_MESSAGE = (contractId: string) =>
+  `خودرو برای این رزرو تحویل شده است (قرارداد ${contractId}). برای لغو یا حذف رزرو، ابتدا قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم خودکار حذف می‌شوند).`;
 import { requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
@@ -26,6 +29,12 @@ export async function POST(request: Request) {
     }
 
     const isNew = !body.id;
+    if (!isNew && body.status === 'cancelled') {
+      const handedOverId = await findHandedOverContractId(body.id);
+      if (handedOverId) {
+        return NextResponse.json({ error: HANDED_OVER_MESSAGE(handedOverId) }, { status: 409 });
+      }
+    }
     const reservation = await saveReservation(body);
     if (!isNew) {
       return NextResponse.json({ success: true, reservation });
@@ -60,9 +69,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ success: true, ...removed });
   } catch (error: any) {
     if (error instanceof ReservationDeleteBlockedError) {
-      return NextResponse.json({
-        error: `خودرو برای این رزرو تحویل شده است (قرارداد ${error.contractId}). به‌جای حذف، وضعیت رزرو را «لغو شده» کنید.`
-      }, { status: 409 });
+      return NextResponse.json({ error: HANDED_OVER_MESSAGE(error.contractId) }, { status: 409 });
     }
     console.error('Error deleting reservation:', error);
     return NextResponse.json({ error: 'خطا در حذف رزرو' }, { status: 500 });
