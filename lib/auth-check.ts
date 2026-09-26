@@ -1,11 +1,14 @@
 import { cookies } from 'next/headers';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { AdminScreen, AdminUserSession, findAdminByEmail } from './admin-users';
+import { AdminScreen, AdminUserSession, resolveSessionUser } from './admin-users';
 
 // The admin session cookie is `<base64url payload>.<base64url HMAC-SHA256>`.
-// The payload only carries the email and expiry; role and allowed screens are
-// always re-derived from the server-side account list, so nothing a browser
-// sends can grant extra privileges. Without SESSION_SECRET no session is valid.
+// The payload only carries the email, a session version and the expiry; role
+// and allowed screens are always re-derived on the server (built-in list or the
+// admin_users table), so nothing a browser sends can grant extra privileges.
+// Staff sessions die as soon as the account is deactivated, deleted or its
+// password reset (the version no longer matches). Without SESSION_SECRET no
+// session is valid.
 
 export const SESSION_COOKIE = 'ofogh_session';
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 12; // 12 hours
@@ -25,16 +28,16 @@ function sign(payload: string, secret: string): string {
   return createHmac('sha256', secret).update(payload).digest('base64url');
 }
 
-export function createSessionToken(email: string): string | null {
+export function createSessionToken(email: string, sessionVersion = 0): string | null {
   const secret = getSessionSecret();
   if (!secret) return null;
   const payload = Buffer.from(
-    JSON.stringify({ e: email, exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS })
+    JSON.stringify({ e: email, v: sessionVersion, exp: Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS })
   ).toString('base64url');
   return `${payload}.${sign(payload, secret)}`;
 }
 
-export function readSessionToken(token: string | undefined): AdminUserSession | null {
+export async function readSessionToken(token: string | undefined): Promise<AdminUserSession | null> {
   if (!token) return null;
   const secret = getSessionSecret();
   if (!secret) return null;
@@ -51,7 +54,7 @@ export function readSessionToken(token: string | undefined): AdminUserSession | 
     const data = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
     if (typeof data?.e !== 'string' || typeof data?.exp !== 'number') return null;
     if (data.exp < Math.floor(Date.now() / 1000)) return null;
-    return findAdminByEmail(data.e);
+    return await resolveSessionUser(data.e, typeof data.v === 'number' ? data.v : 0);
   } catch {
     return null;
   }
@@ -62,7 +65,7 @@ export async function verifyAdminAuth(
 ): Promise<{ authenticated: boolean; authorized: boolean; user?: AdminUserSession }> {
   try {
     const cookieStore = await cookies();
-    const user = readSessionToken(cookieStore.get(SESSION_COOKIE)?.value);
+    const user = await readSessionToken(cookieStore.get(SESSION_COOKIE)?.value);
     if (!user) return { authenticated: false, authorized: false };
 
     const authorized =
@@ -87,4 +90,16 @@ export async function requireAdmin(requiredScreens?: AdminScreen[]): Promise<Res
     return Response.json({ error: 'شما به این بخش دسترسی ندارید.' }, { status: 403 });
   }
   return null;
+}
+
+/** Guard for routes only the general manager may use (e.g. access management). */
+export async function requireSuperadmin(): Promise<{ denied: Response | null; user?: AdminUserSession }> {
+  const auth = await verifyAdminAuth();
+  if (!auth.authenticated || !auth.user) {
+    return { denied: Response.json({ error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' }, { status: 401 }) };
+  }
+  if (auth.user.role !== 'superadmin') {
+    return { denied: Response.json({ error: 'این بخش فقط برای مدیر کل است.' }, { status: 403 }) };
+  }
+  return { denied: null, user: auth.user };
 }

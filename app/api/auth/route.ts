@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createHash, timingSafeEqual } from 'crypto';
-import { findAdminByEmail, getAdminPassword } from '@/lib/admin-users';
+import { verifyAdminCredentials } from '@/lib/admin-users';
 import {
   SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
@@ -15,13 +14,6 @@ export type { AdminUserSession } from '@/lib/admin-users';
 const LOGIN_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
-// Hash both sides to equal length so the comparison is constant-time.
-function passwordsMatch(given: string, expected: string): boolean {
-  const a = createHash('sha256').update(given).digest();
-  const b = createHash('sha256').update(expected).digest();
-  return timingSafeEqual(a, b);
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -34,16 +26,13 @@ export async function POST(request: Request) {
       return tooManyRequests();
     }
 
-    const user = findAdminByEmail(cleanEmail);
-    const expected = user ? getAdminPassword(cleanEmail) : null;
-    // Always run the comparison so response timing does not reveal which emails exist.
-    const ok = passwordsMatch(password, expected ?? 'no-account-placeholder') && !!user && !!expected;
-
-    if (!ok || !user) {
+    const result = await verifyAdminCredentials(cleanEmail, password);
+    if (!result) {
       return NextResponse.json({ success: false, error: 'ایمیل یا رمز عبور اشتباه است' }, { status: 401 });
     }
+    const { user, sessionVersion } = result;
 
-    const token = createSessionToken(user.email);
+    const token = createSessionToken(user.email, sessionVersion);
     if (!token) {
       return NextResponse.json({ success: false, error: 'پیکربندی امنیتی سرور کامل نیست' }, { status: 500 });
     }
