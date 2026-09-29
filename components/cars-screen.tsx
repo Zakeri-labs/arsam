@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import {
   Car, CarReservation, CarTransaction, CarContract, FuelLevel, PaymentMethod,
-  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, INCOMING_TRANSACTION_TYPES, cleanCarTitle, cleanCarPlate
+  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, INCOMING_TRANSACTION_TYPES, cleanCarTitle, cleanCarPlate, pendingIdOfPayment
 } from '@/lib/db-cars';
 import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
@@ -886,11 +886,19 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const handleDeleteTransaction = async (id: string) => {
     // Rows issued automatically with a reservation (rent revenue / deposit) are part of that reservation's chain
     const tx = transactions.find(t => t.id === id);
-    const isAutoIssued = ['tx-rent-', 'tx-dep-', 'tx-xkm-', 'tx-dmg-'].some(prefix => id.startsWith(prefix));
+    // A payment recorded against a reservation charge: deleting it puts the amount back on what the customer owes
+    const isRecordedPayment = !!tx && tx.paymentStatus === 'paid' && !!pendingIdOfPayment(tx);
+    const isAutoIssued = !isRecordedPayment && ['tx-rent-', 'tx-dep-', 'tx-xkm-', 'tx-dmg-'].some(prefix => id.startsWith(prefix));
     const linkedRes = tx?.reservationId ? reservations.find(r => r.id === tx.reservationId) : undefined;
     const linkedContract = tx?.reservationId ? contracts.find(c => c.reservationId === tx.reservationId) : undefined;
 
-    const confirmed = isAutoIssued && linkedRes
+    const confirmed = isRecordedPayment
+      ? await confirmDialog({
+          title: 'حذف پرداخت ثبت‌شده',
+          message: `این پرداخت (${tx!.amount.toLocaleString()} OMR - ${getPaymentBadge(tx!.paymentMethod).label}) حذف می‌شود و همین مبلغ دوباره به «در انتظار پرداخت» مشتری${linkedRes ? ` (${linkedRes.customerName})` : ''} برمی‌گردد.\nآیا پرداخت حذف شود؟`,
+          confirmText: 'حذف پرداخت',
+        })
+      : isAutoIssued && linkedRes
       ? await confirmDialog({
           title: 'این ردیف مربوط به یک رزرو است',
           message: `این ردیف به‌صورت خودکار برای رزرو «${linkedRes.customerName} - ${cleanCarTitle(linkedRes.carTitle || '')}»${linkedContract ? ` و قرارداد ${linkedContract.id}` : ''} ثبت شده است. با حذف آن فقط همین ردیف مالی پاک می‌شود و رزرو و قرارداد باقی می‌مانند.\nبرای حذف کامل: اگر خودرو هنوز تحویل نشده، کافی است خود رزرو را از تب «تقویم و رزروها» حذف کنید؛ اگر تحویل شده، قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم حذف می‌شوند) و سپس رزرو را.\nآیا این ردیف حذف شود؟`,
@@ -902,8 +910,15 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     try {
       const res = await fetch(`/api/cars/transactions?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success('تراکنش حذف گردید');
-        setTransactions(prev => prev.filter(t => t.id !== id));
+        const data = await res.json().catch(() => ({}));
+        const restored: CarTransaction | undefined = data.restored;
+        setTransactions(prev => {
+          const rest = prev.filter(t => t.id !== id && t.id !== restored?.id);
+          return restored ? [restored, ...rest] : rest;
+        });
+        toast.success(restored
+          ? `پرداخت حذف شد؛ ${tx?.amount.toLocaleString()} OMR دوباره در انتظار پرداخت است`
+          : 'تراکنش حذف گردید');
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data.error || 'خطا در حذف تراکنش');

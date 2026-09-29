@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTransactions, saveTransaction, deleteTransaction, recordPayment, setTransactionReceived, TransactionRuleError } from '@/lib/db-cars';
+import { getTransactions, saveTransaction, deleteTransactionRestoringDebt, recordPayment, setTransactionReceived, TransactionRuleError } from '@/lib/db-cars';
 import { uploadFile, UploadRejected } from '@/lib/storage';
 import { requireAdmin, verifyAdminAuth } from '@/lib/auth-check';
 
@@ -88,8 +88,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'مبلغ و روش پرداخت الزامی است' }, { status: 400 });
     }
 
-    // Rows entered by hand are money that already moved; only the reservation chain issues pending rows
-    const tx = await saveTransaction({ ...body, paymentStatus: 'paid', recordedBy: actor });
+    // Rows entered by hand are money that already moved; only the reservation chain issues pending rows.
+    // POST always creates a new row: a client-sent id could otherwise overwrite (e.g. settle) an existing row.
+    const tx = await saveTransaction({
+      amount: body.amount,
+      type: body.type,
+      paymentMethod: body.paymentMethod,
+      description: body.description,
+      customerName: body.customerName,
+      carId: body.carId,
+      reservationId: body.reservationId,
+      transactionDate: body.transactionDate,
+      receiptFileUrl: body.receiptFileUrl,
+      receiptFileName: body.receiptFileName,
+      paymentStatus: 'paid',
+      recordedBy: actor,
+    });
     return NextResponse.json({ success: true, transaction: tx });
 
   } catch (error: any) {
@@ -144,9 +158,13 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'شناسه تراکنش الزامی است' }, { status: 400 });
     }
 
-    await deleteTransaction(id);
-    return NextResponse.json({ success: true });
+    // Deleting a recorded payment puts its amount back on what the customer owes
+    const { restored } = await deleteTransactionRestoringDebt(id);
+    return NextResponse.json({ success: true, restored });
   } catch (error: any) {
+    if (error instanceof TransactionRuleError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     console.error('Error deleting transaction:', error);
     return NextResponse.json({ error: 'خطا در حذف تراکنش' }, { status: 500 });
   }

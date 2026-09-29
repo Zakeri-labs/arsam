@@ -65,8 +65,8 @@ export interface CarTransaction {
 
 export const INCOMING_TRANSACTION_TYPES: CarTransaction['type'][] = ['rent_fee', 'deposit_in', 'other_income'];
 
-// Payments against a pending row are stored as `<pending row id>-p<suffix>`; the pending row itself keeps
-// only the amount still owed and is removed once nothing is left.
+// Payments against a pending row are stored as `<pending row id>-p<suffix>` (suffix without dashes); the pending
+// row itself keeps only the amount still owed and is removed once nothing is left.
 export const isPaymentOf = (paymentId: string, pendingId: string) => paymentId.startsWith(`${pendingId}-p`);
 
 const roundOmr = (n: number) => Math.round(n * 1000) / 1000;
@@ -786,6 +786,23 @@ async function getTransactionById(id: string): Promise<CarTransaction | undefine
   return data ? transactionFromRow(data) : undefined;
 }
 
+const CONCURRENT_CHANGE = 'این ردیف هم‌زمان توسط کاربر دیگری تغییر کرد؛ صفحه را تازه کنید و دوباره تلاش کنید.';
+
+// Sets the pending row to `newAmount` (or deletes it when null) only if it still holds `expectedAmount`,
+// so two payments against the same row can never both succeed. Returns false when someone else changed it first.
+async function swapPendingAmount(id: string, expectedAmount: number, newAmount: number | null): Promise<boolean> {
+  const query = newAmount === null
+    ? supabase.from('car_transactions').delete()
+    : supabase.from('car_transactions').update({ amount: newAmount });
+  const { data, error } = await query
+    .eq('id', id)
+    .eq('payment_status', 'pending')
+    .eq('amount', expectedAmount)
+    .select('id');
+  ensureOk('car_transactions pending update', error);
+  return (data || []).length > 0;
+}
+
 // Records that the customer paid (part of) a pending row. The payment becomes its own paid row, and the
 // pending row keeps only what is still owed (removed when nothing is left), so paid + pending always add
 // up to the amount originally due.
@@ -804,27 +821,99 @@ export async function recordPayment(
   }
   if (!PAYMENT_METHODS.includes(payment.paymentMethod)) throw new TransactionRuleError('روش پرداخت معتبر نیست.');
 
-  const paid = await saveTransaction({
-    id: `${pending.id}-p${Date.now().toString(36)}`,
-    reservationId: pending.reservationId,
-    carId: pending.carId,
-    customerName: pending.customerName,
-    amount,
-    type: pending.type,
-    paymentStatus: 'paid',
-    paymentMethod: payment.paymentMethod,
-    description: pending.description,
-    transactionDate: payment.transactionDate || new Date().toISOString().split('T')[0],
-    recordedBy: payment.recordedBy,
-  });
-
+  // Claim the amount on the pending row first: only one concurrent payment can win this
   const left = roundOmr(pending.amount - amount);
-  if (left <= 0) {
-    await deleteTransaction(pending.id);
-    return { payment: paid };
+  if (!(await swapPendingAmount(pending.id, pending.amount, left > 0 ? left : null))) {
+    throw new TransactionRuleError(CONCURRENT_CHANGE);
   }
-  const remaining = await saveTransaction({ id: pending.id, amount: left });
-  return { payment: paid, remaining };
+
+  let paid: CarTransaction;
+  try {
+    paid = await saveTransaction({
+      id: newPaymentId(pending.id),
+      reservationId: pending.reservationId,
+      carId: pending.carId,
+      customerName: pending.customerName,
+      amount,
+      type: pending.type,
+      paymentStatus: 'paid',
+      paymentMethod: payment.paymentMethod,
+      description: pending.description,
+      transactionDate: payment.transactionDate || new Date().toISOString().split('T')[0],
+      recordedBy: payment.recordedBy,
+    });
+  } catch (err) {
+    // The payment row was not written: give the claimed amount back to the pending row
+    await restoreOwed(pending, amount).catch(restoreErr =>
+      console.error(`recordPayment: could not restore ${amount} to ${pending.id} after a failed payment write:`, restoreErr)
+    );
+    throw err;
+  }
+
+  return left > 0
+    ? { payment: paid, remaining: { ...pending, amount: left } }
+    : { payment: paid };
+}
+
+// Payment ids: `<pending row id>-p<random, no dashes>` (see isPaymentOf / pendingIdOfPayment)
+function newPaymentId(pendingId: string): string {
+  return `${pendingId}-p${globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+}
+
+// The pending row a payment row was recorded against, or null for any other row. Built from the row's own
+// reservation (charge ids are `tx-<kind>-<reservation id>`), since a reservation id may itself contain "-p".
+export function pendingIdOfPayment(tx: Pick<CarTransaction, 'id' | 'reservationId'>): string | null {
+  if (!tx.reservationId) return null;
+  for (const kind of ['rent', 'dep', 'xkm', 'dmg']) {
+    const pendingId = `tx-${kind}-${tx.reservationId}`;
+    if (isPaymentOf(tx.id, pendingId) && /^[0-9a-z]+$/.test(tx.id.slice(pendingId.length + 2))) return pendingId;
+  }
+  return null;
+}
+
+// Adds `amount` back to what the customer owes on `pendingRow.id` (re-creating the pending row if it was removed)
+async function restoreOwed(pendingRow: CarTransaction, amount: number): Promise<CarTransaction> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await getTransactionById(pendingRow.id);
+    if (!current) {
+      return saveTransaction({
+        id: pendingRow.id,
+        reservationId: pendingRow.reservationId,
+        carId: pendingRow.carId,
+        customerName: pendingRow.customerName,
+        amount: roundOmr(amount),
+        type: pendingRow.type,
+        paymentStatus: 'pending',
+        description: pendingRow.description,
+        transactionDate: pendingRow.transactionDate,
+      });
+    }
+    if (current.paymentStatus !== 'pending') {
+      throw new TransactionRuleError('ردیف بدهی این مبلغ دیگر در انتظار پرداخت نیست؛ مبلغ برگشت داده نشد.');
+    }
+    const next = roundOmr(current.amount + amount);
+    if (await swapPendingAmount(current.id, current.amount, next)) return { ...current, amount: next };
+  }
+  throw new TransactionRuleError(CONCURRENT_CHANGE);
+}
+
+// Deletes a transaction. Deleting a payment recorded against a reservation charge puts its amount back on
+// what the customer owes, so undoing a wrong payment never makes the debt disappear.
+export async function deleteTransactionRestoringDebt(id: string): Promise<{ restored?: CarTransaction }> {
+  const tx = await getTransactionById(id);
+  const pendingId = tx && tx.paymentStatus === 'paid' ? pendingIdOfPayment(tx) : null;
+  if (!tx || !pendingId) {
+    await deleteTransaction(id);
+    return {};
+  }
+
+  // Remove the payment only if it is still there (a second delete of the same row must not restore twice)
+  const { data, error } = await supabase.from('car_transactions').delete().eq('id', id).select('id');
+  ensureOk('car_transactions delete', error);
+  if (!(data || []).length) return {};
+
+  const restored = await restoreOwed({ ...tx, id: pendingId }, tx.amount);
+  return { restored };
 }
 
 // Confirms (or withdraws the confirmation) that the person in paymentMethod actually received the money
