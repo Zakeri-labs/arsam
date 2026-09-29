@@ -75,6 +75,20 @@ export const HANDOVER_CHECKLIST_ITEMS: { key: string; label: string }[] = [
   { key: 'safety', label: 'مثلث و کپسول ایمنی' },
 ];
 
+// Photos / videos attached to a contract in the handover wizard (all optional)
+export type ContractAttachmentKind = 'licence' | 'passport' | 'car_photo' | 'car_video';
+
+export interface ContractAttachment {
+  kind: ContractAttachmentKind;
+  url: string;
+  name?: string;
+  size?: number;
+  // Videos: a still frame shown in the PDF, linked to the video itself
+  posterUrl?: string;
+}
+
+export const CONTRACT_ATTACHMENT_KINDS: ContractAttachmentKind[] = ['licence', 'passport', 'car_photo', 'car_video'];
+
 export interface CarContract {
   id: string;
   reservationId: string;
@@ -116,6 +130,9 @@ export interface CarContract {
   extraKm?: string;
   extraKmAmount?: number;
   deductionsAmount?: number;
+  attachments?: ContractAttachment[];
+  // Added by the contracts API: token of the public download link (never stored)
+  shareToken?: string | null;
 }
 
 // Contract detail fields: [CarContract key, column, kind]. Empty values are stored as NULL.
@@ -532,6 +549,7 @@ function contractFromRow(item: any): CarContract {
     checklist: item.checklist || {},
     notes: item.notes,
     createdAt: item.created_at,
+    attachments: Array.isArray(item.attachments) ? item.attachments : [],
   };
 }
 
@@ -759,6 +777,20 @@ export async function getContracts(): Promise<CarContract[]> {
   return (data || []).map(contractFromRow);
 }
 
+export async function getContractById(id: string): Promise<CarContract | undefined> {
+  const { data, error } = await supabase.from('car_contracts').select('*').eq('id', id).maybeSingle();
+  ensureOk('car_contracts select', error);
+  return data ? contractFromRow(data) : undefined;
+}
+
+export async function getReservationById(id: string): Promise<CarReservation | undefined> {
+  const { data, error } = await supabase.from('car_reservations').select('*').eq('id', id).maybeSingle();
+  ensureOk('car_reservations select', error);
+  return data ? reservationFromRow(data) : undefined;
+}
+
+export { getCarById };
+
 export async function saveContract(data: Partial<CarContract>): Promise<CarContract> {
   let existing: CarContract | undefined;
   if (data.id) {
@@ -798,6 +830,7 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
     checklist: data.checklist ?? existing?.checklist ?? {},
     notes: data.notes ?? existing?.notes ?? '',
     createdAt: existing?.createdAt || data.createdAt || new Date().toISOString(),
+    attachments: data.attachments ?? existing?.attachments ?? [],
   };
 
   // Details not sent in this save keep their stored value
@@ -825,6 +858,8 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
     handover_status: contract.handoverStatus,
     checklist: contract.checklist,
     notes: contract.notes,
+    // Only written when sent, so saves without attachments keep working before the attachments column exists
+    ...(data.attachments !== undefined ? { attachments: contract.attachments } : {}),
   }, { onConflict: 'id' });
   ensureOk('car_contracts upsert', error);
 

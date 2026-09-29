@@ -1,12 +1,35 @@
 import { NextResponse } from 'next/server';
-import { getContracts, saveContract, deleteContract, syncContractExtraCharges } from '@/lib/db-cars';
+import { getContracts, saveContract, deleteContract, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
 import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
+import { createContractShareToken } from '@/lib/contract-share';
+import { isOwnUploadUrl } from '@/lib/storage';
+
+const MAX_ATTACHMENTS = 40;
+
+// Each contract carries the token of its public "download the contract" link
+const withShareToken = (contract: CarContract) => ({ ...contract, shareToken: createContractShareToken(contract.id) });
+
+// Only files that were uploaded to our own bucket are accepted as attachments
+function cleanAttachments(value: unknown): ContractAttachment[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((a: any) => a && CONTRACT_ATTACHMENT_KINDS.includes(a.kind) && isOwnUploadUrl(a.url))
+    .slice(0, MAX_ATTACHMENTS)
+    .map((a: any) => ({
+      kind: a.kind,
+      url: a.url,
+      name: typeof a.name === 'string' ? a.name.slice(0, 200) : undefined,
+      size: Number.isFinite(Number(a.size)) ? Number(a.size) : undefined,
+      posterUrl: a.kind === 'car_video' && isOwnUploadUrl(a.posterUrl) ? a.posterUrl : undefined,
+    }));
+}
 
 export async function GET() {
   try {
     const denied = await requireAdmin(['cars']);
     if (denied) return denied;
-    return NextResponse.json(await getContracts());
+    return NextResponse.json((await getContracts()).map(withShareToken));
   } catch (error: any) {
     console.error('Error fetching contracts:', error);
     return NextResponse.json({ error: 'خطا در دریافت صورتجلسه‌های تحویل' }, { status: 500 });
@@ -22,18 +45,24 @@ export async function POST(request: Request) {
     if (!body.customerName || !body.carTitle || body.initialOdometer === undefined || body.initialOdometer === '') {
       return NextResponse.json({ error: 'اطلاعات ضروری صورتجلسه ناقص است' }, { status: 400 });
     }
+    body.attachments = cleanAttachments(body.attachments);
+    delete body.shareToken;
 
     const contract = await saveContract(body);
     try {
       await syncContractExtraCharges(contract);
     } catch (syncErr) {
       console.error('Error syncing contract extra charges:', syncErr);
-      return NextResponse.json({ success: true, contract, chargesError: true });
+      return NextResponse.json({ success: true, contract: withShareToken(contract), chargesError: true });
     }
-    return NextResponse.json({ success: true, contract });
+    return NextResponse.json({ success: true, contract: withShareToken(contract) });
   } catch (error: any) {
     console.error('Error saving contract:', error);
-    return NextResponse.json({ error: 'خطا در ذخیره‌سازی صورتجلسه' }, { status: 500 });
+    const missingColumn = /attachments/.test(String(error?.message || ''));
+    return NextResponse.json(
+      { error: missingColumn ? 'ذخیره تصاویر قرارداد هنوز فعال نشده است (اسکریپت دیتابیس اجرا نشده)' : 'خطا در ذخیره‌سازی صورتجلسه' },
+      { status: 500 }
+    );
   }
 }
 

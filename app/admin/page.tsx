@@ -7,13 +7,14 @@ import {
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
   Trash2, Edit3, Globe, Save, LogOut, Check, X, FileText, 
   Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink, Menu,
-  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare, ChevronDown, Car, ShieldCheck
+  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare, ChevronDown, Car, ShieldCheck, Settings
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
 import CustomersScreen from '@/components/customers-screen';
 import CarsScreen from '@/components/cars-screen';
 import AccessScreen from '@/components/access-screen';
+import SettingsScreen from '@/components/settings-screen';
 import CaseModal from '@/components/case-modal';
 import NewRequestModal from '@/components/new-request-modal';
 import { ConfirmDialogHost, confirmDialog } from '@/components/confirm-dialog';
@@ -121,7 +122,7 @@ export default function AdminPage() {
   };
 
   // Layout & Navigation State
-  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'access'>('services');
+  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'access' | 'settings'>('services');
   const [carSubTab, setCarSubTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>('calendar');
   const [isCarMenuOpen, setIsCarMenuOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -131,7 +132,7 @@ export default function AdminPage() {
     try {
       const savedScreen = localStorage.getItem('admin_active_screen');
       const savedCarSubTab = localStorage.getItem('admin_car_sub_tab');
-      if (savedScreen && ['services', 'requests', 'qms', 'customers', 'cars', 'access'].includes(savedScreen)) {
+      if (savedScreen && ['services', 'requests', 'qms', 'customers', 'cars', 'access', 'settings'].includes(savedScreen)) {
         setActiveScreen(savedScreen as any);
       }
       if (savedCarSubTab && ['calendar', 'fleet', 'contracts', 'accounting'].includes(savedCarSubTab)) {
@@ -140,7 +141,7 @@ export default function AdminPage() {
     } catch (e) {}
   }, []);
 
-  const changeActiveScreen = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'access') => {
+  const changeActiveScreen = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'access' | 'settings') => {
     setActiveScreen(screen);
     setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0 });
@@ -267,8 +268,8 @@ export default function AdminPage() {
           setCurrentUser(data.user);
           if (Array.isArray(data.user.allowedScreens) && data.user.allowedScreens.length > 0) {
             const savedScreen = localStorage.getItem('admin_active_screen');
-            // 'access' is not a per-user screen: it belongs to the general manager only
-            const canOpenSaved = savedScreen === 'access' ? data.user.role === 'superadmin' : data.user.allowedScreens.includes(savedScreen);
+            // 'access' and 'settings' are not per-user screens: they belong to the general manager only
+            const canOpenSaved = savedScreen === 'access' || savedScreen === 'settings' ? data.user.role === 'superadmin' : data.user.allowedScreens.includes(savedScreen);
             if (!savedScreen || !canOpenSaved) {
               setActiveScreen(data.user.allowedScreens[0]);
             }
@@ -1063,6 +1064,23 @@ export default function AdminPage() {
             >
               <ShieldCheck className="h-4.5 w-4.5 shrink-0 text-sky-400" />
               مدیریت دسترسی‌ها
+            </button>
+          )}
+
+          {/* SETTINGS (general manager only): company signature for contracts */}
+          {currentUser?.role === 'superadmin' && (
+            <button
+              onClick={() => {
+                changeActiveScreen('settings');
+              }}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeScreen === 'settings'
+                  ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <Settings className="h-4.5 w-4.5 shrink-0 text-white/60" />
+              تنظیمات
             </button>
           )}
         </nav>
@@ -2021,10 +2039,10 @@ export default function AdminPage() {
             <div className="max-w-[1650px] mx-auto w-full flex items-center justify-between">
               <div>
                 <h1 className="text-base font-extrabold text-white leading-none">
-                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : activeScreen === 'customers' ? 'مدیریت مشتریان (CRM)' : activeScreen === 'access' ? 'مدیریت دسترسی‌ها' : 'مدیریت و رزرو خودروها'}
+                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : activeScreen === 'customers' ? 'مدیریت مشتریان (CRM)' : activeScreen === 'access' ? 'مدیریت دسترسی‌ها' : activeScreen === 'settings' ? 'تنظیمات' : 'مدیریت و رزرو خودروها'}
                 </h1>
                 <p className="text-[10px] text-white/50 mt-1.5 font-bold">
-                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : activeScreen === 'customers' ? 'لیست پرونده‌ها، سوابق و مدارک مشتریان' : activeScreen === 'access' ? 'تعریف کاربران همکار و تعیین بخش‌های مجاز برای هر کدام' : 'تعریف ناوگان، تقویم اشغال خودروها، سیستم رزرو CRM و حسابداری مالی اجاره'}
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : activeScreen === 'customers' ? 'لیست پرونده‌ها، سوابق و مدارک مشتریان' : activeScreen === 'access' ? 'تعریف کاربران همکار و تعیین بخش‌های مجاز برای هر کدام' : activeScreen === 'settings' ? 'امضای شرکت روی قراردادها' : 'تعریف ناوگان، تقویم اشغال خودروها، سیستم رزرو CRM و حسابداری مالی اجاره'}
                 </p>
               </div>
               
@@ -2049,6 +2067,8 @@ export default function AdminPage() {
                 <CustomersScreen />
               ) : activeScreen === 'access' && currentUser?.role === 'superadmin' ? (
                 <AccessScreen />
+              ) : activeScreen === 'settings' && currentUser?.role === 'superadmin' ? (
+                <SettingsScreen />
               ) : (
                 <CarsScreen initialTab={carSubTab} canDeleteContracts={currentUser?.role === 'superadmin'} />
               )}
