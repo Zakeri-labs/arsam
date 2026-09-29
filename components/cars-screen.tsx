@@ -165,6 +165,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       extraKm: cnt.extraKm,
       extraKmAmount: cnt.extraKmAmount,
       deductionsAmount: cnt.deductionsAmount,
+      checklist: cnt.checklist,
       notes: cnt.notes
     };
 
@@ -243,6 +244,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           extraKm: data.extraKm ?? '',
           extraKmAmount: data.extraKmAmount ?? '',
           deductionsAmount: data.deductionsAmount ?? '',
+          checklist: data.checklist,
         })
       });
       const result = await res.json().catch(() => ({}));
