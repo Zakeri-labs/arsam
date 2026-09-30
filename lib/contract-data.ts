@@ -47,6 +47,8 @@ export interface ContractData {
   cleanOutside?: string;
   extraKm?: string;
   extraKmAmount?: number;
+  // Handover health checklist (true = OK, false = has a problem); problems are marked on the car diagram
+  checklist?: Record<string, boolean>;
   attachments?: ContractAttachment[];
 }
 
@@ -94,6 +96,7 @@ export function buildContractData(cnt: CarContract, reservation?: CarReservation
     extraKm: cnt.extraKm,
     extraKmAmount: cnt.extraKmAmount,
     deductionsAmount: cnt.deductionsAmount,
+    checklist: cnt.checklist,
     notes: cnt.notes,
     attachments: cnt.attachments || [],
   };

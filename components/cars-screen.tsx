@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner';
 import {
   Car, CarReservation, CarTransaction, CarContract, FuelLevel,
-  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate
+  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate, carModelName
 } from '@/lib/db-cars';
 import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
@@ -22,6 +22,7 @@ import FancySelect from '@/components/ui/fancy-select';
 import { useContractPdf, contractShareUrl } from './use-contract-pdf';
 import { buildContractData } from '@/lib/contract-data';
 import { confirmDialog } from '@/components/confirm-dialog';
+import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 
 interface CRMClient {
   name: string;
@@ -862,6 +863,36 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         return { label: 'غیرفعال', bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', border: 'rgba(156,163,175,0.3)' };
     }
   };
+
+  // --- COMPACT PICKER ROWS: model + year + plate, so several units of the same model stay distinguishable ---
+  const renderCarLine = (car: Car | undefined, fallbackTitle?: string) => {
+    const badge = car ? getCarStatusBadge(car.status) : undefined;
+    const plate = car ? cleanCarPlate(car.plateNumber) : '';
+    return (
+      <span className="flex items-center gap-1.5 min-w-0">
+        {badge && <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: badge.text }} title={badge.label} />}
+        <span className="truncate text-xs font-bold text-white">{car ? carModelName(car) : cleanCarTitle(fallbackTitle || 'خودرو')}</span>
+        {car?.modelYear && <span className="shrink-0 text-[10px] text-white/45 font-mono">{car.modelYear}</span>}
+        {plate && (
+          <span className="ms-auto shrink-0 rounded-md border border-gold/30 bg-black/40 px-1.5 py-px font-mono text-[10.5px] font-bold text-gold dir-ltr">
+            {plate}
+          </span>
+        )}
+      </span>
+    );
+  };
+
+  const carPickerOptions: CompactPickerOption[] = [...cars]
+    .sort((a, b) =>
+      carModelName(a).localeCompare(carModelName(b), 'fa') ||
+      (a.modelYear || '').localeCompare(b.modelYear || '') ||
+      cleanCarPlate(a.plateNumber).localeCompare(cleanCarPlate(b.plateNumber), 'en', { numeric: true })
+    )
+    .map(car => ({
+      value: car.id,
+      content: renderCarLine(car),
+      searchText: `${car.title} ${car.titleEn || ''} ${car.modelYear || ''} ${car.plateNumber}`,
+    }));
 
   return (
     <div className="space-y-5 animate-fadeIn text-white font-sans w-full max-w-full overflow-x-hidden min-w-0" dir="rtl">
@@ -1827,17 +1858,15 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 <div className="space-y-1.5">
                   <label className="block text-white/90 font-bold text-[11px] flex items-center gap-1.5">
                     <CarIcon size={14} className="text-gold" />
-                    <span>خودرو مورد نظر *</span>
+                    <span>خودرو *</span>
                   </label>
-                  <FancySelect
+                  <CompactPicker
                     value={resForm.carId || ''}
-                    onChange={v => updateResFormPricing({ carId: v })}
-                    placeholder="یک خودرو انتخاب کنید"
-                    options={cars.map(c => ({
-                      value: c.id,
-                      label: cleanCarTitle(c.title),
-                      hint: `${cleanCarPlate(c.plateNumber)} · روزانه ${c.dailyRate.toLocaleString()} ریال`,
-                    }))}
+                    onChange={carId => updateResFormPricing({ carId })}
+                    options={carPickerOptions}
+                    placeholder="انتخاب خودرو"
+                    searchPlaceholder="مدل یا پلاک..."
+                    emptyText="خودرویی یافت نشد"
                   />
                 </div>
 

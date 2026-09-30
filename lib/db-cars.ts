@@ -180,6 +180,16 @@ export function cleanCarTitle(title: string): string {
     .trim();
 }
 
+// Bare model name for pickers: title without color, unit number (#2) or model year — those are shown separately
+export function carModelName(car: Pick<Car, 'title' | 'modelYear'>): string {
+  let name = cleanCarTitle(car.title)
+    .replace(/\(\s*#?\d+\s*\)/g, '')
+    .replace(/#\d+/g, '');
+  const year = (car.modelYear || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  if (year) name = name.replace(new RegExp(`(^|\\s)${year}(?=\\s|$)`, 'g'), ' ');
+  return name.replace(/\s+/g, ' ').trim() || cleanCarTitle(car.title);
+}
+
 export function cleanCarPlate(plate: string): string {
   if (!plate) return '';
   return plate.replace(/^.*?\s*-\s*/, '').trim();
