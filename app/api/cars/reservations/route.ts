@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     // Auto chain: new reservation -> official contract (serial) -> rental revenue in accounting
     try {
-      const { contract, transaction, depositTransaction } = await issueContractAndRevenue(reservation, body.paymentMethod);
+      const { contract, transaction, depositTransaction } = await issueContractAndRevenue(reservation);
       return NextResponse.json({ success: true, reservation, contract, transaction, depositTransaction });
     } catch (chainErr) {
       console.error('Error issuing contract/revenue for reservation:', chainErr);
