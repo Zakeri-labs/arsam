@@ -7,7 +7,7 @@ import {
   Edit3, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Clock,
   AlertTriangle, Upload, FileText, UserCheck, Phone, ShieldCheck,
   CreditCard, Landmark, Wallet, Check, X, Info, ExternalLink, Image as ImageIcon,
-  Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge
+  Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge, Download, Link2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -17,7 +17,10 @@ import {
 import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
-import CarContractModal, { ContractData } from './car-contract-modal';
+import HandoverWizard from './handover-wizard';
+import FancySelect from '@/components/ui/fancy-select';
+import { useContractPdf, contractShareUrl } from './use-contract-pdf';
+import { buildContractData } from '@/lib/contract-data';
 import { confirmDialog } from '@/components/confirm-dialog';
 import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 
@@ -62,8 +65,6 @@ const formatDateTime = (iso?: string) => {
   return isNaN(d.getTime()) ? '' : d.toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
 };
 
-const allChecked = () => Object.fromEntries(HANDOVER_CHECKLIST_ITEMS.map(i => [i.key, true]));
-
 interface CarsScreenProps {
   initialTab?: 'calendar' | 'fleet' | 'contracts' | 'accounting';
   // General manager only: delete a contract (even after handover) with its reservation and accounting rows
@@ -95,7 +96,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
   // Contracts Mock Data & State
   const [contracts, setContracts] = useState<CarContract[]>([]);
-  const [savingHandover, setSavingHandover] = useState(false);
   const [savingCar, setSavingCar] = useState(false);
   const [savingRes, setSavingRes] = useState(false);
   // Synchronous locks: a state flag only updates on the next render, so a fast double-click could still slip through
@@ -121,77 +121,30 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
-  const [selectedContractForPdf, setSelectedContractForPdf] = useState<ContractData | null>(null);
+  // Handover wizard: new handover (contract null), edit (step 1) or the finished contract (download / share)
+  const [wizard, setWizard] = useState<{ contract: CarContract | null; startAtDone?: boolean; reservationId?: string } | null>(null);
+  const contractPdf = useContractPdf();
 
-  // Handover Modal State
-  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
-  const [handoverForm, setHandoverForm] = useState({
-    reservationId: '',
-    carTitle: '',
-    plateNumber: '',
-    customerName: '',
-    customerPhone: '',
-    initialOdometer: 0,
-    returnOdometer: 0,
-    fuelLevel: 'full' as FuelLevel,
-    depositAmount: 40,
-    depositStatus: 'held' as CarContract['depositStatus'],
-    handoverStatus: 'delivered' as CarContract['handoverStatus'],
-    checklist: allChecked() as Record<string, boolean>,
-    notes: ''
-  });
+  const handleDownloadContract = async (cnt: CarContract) => {
+    const res = reservations.find(r => r.id === cnt.reservationId);
+    const car = cars.find(c => c.id === (cnt.carId || res?.carId));
+    try {
+      const sig = await fetch('/api/settings/signature').then(r => (r.ok ? r.json() : null)).catch(() => null);
+      await contractPdf.download(buildContractData(cnt, res, car), sig?.url || null);
+    } catch {
+      toast.error('ساخت فایل PDF ناموفق بود؛ دوباره تلاش کنید');
+    }
+  };
 
-  const handleOpenContractPdf = (cnt: CarContract) => {
-    const matchingRes = reservations.find(r => r.id === cnt.reservationId);
-    const matchingCar = cars.find(c => c.id === matchingRes?.carId || c.title === cnt.carTitle);
-
-    // Values saved on the contract win; otherwise they come from the reservation and the car (never invented)
-    const sDate = cnt.startDate || matchingRes?.startDate || new Date().toISOString().split('T')[0];
-    const eDate = cnt.endDate || matchingRes?.endDate || sDate;
-    const diffTime = Math.abs(new Date(eDate).getTime() - new Date(sDate).getTime());
-    const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
-
-    const contractData: ContractData = {
-      id: cnt.id,
-      contractNo: cnt.id.toUpperCase(),
-      date: cnt.contractDate || (cnt.createdAt ? new Date(cnt.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-      carTitle: cnt.carTitle,
-      carTitleEn: cnt.carTitleEn || matchingCar?.titleEn || cnt.carTitle,
-      brand: matchingCar?.brand,
-      modelYear: matchingCar?.modelYear,
-      plateNumber: cnt.plateNumber,
-      color: cnt.color || matchingCar?.color,
-      customerName: cnt.customerName,
-      customerNameEn: cnt.customerNameEn,
-      customerPhone: cnt.customerPhone,
-      customerNationalId: cnt.customerNationalId || matchingRes?.customerNationalId || '',
-      customerNationality: cnt.customerNationality,
-      customerAddress: cnt.customerAddress,
-      workAddress: cnt.workAddress,
-      whatsapp: cnt.whatsapp,
-      licenceType: cnt.licenceType,
-      licenceNo: cnt.licenceNo,
-      cleanInside: cnt.cleanInside,
-      cleanOutside: cnt.cleanOutside,
-      startDate: sDate,
-      endDate: eDate,
-      rentalDays: cnt.rentalDays ?? calculatedDays,
-      dailyRate: cnt.dailyRate,
-      totalPrice: cnt.totalPrice ?? matchingRes?.totalPrice ?? 0,
-      depositPaid: cnt.depositAmount || 0,
-      initialOdometer: cnt.initialOdometer,
-      fuelLevel: FUEL_LEVEL_LABELS[cnt.fuelLevel] || FUEL_LEVEL_LABELS.full,
-      departureTime: cnt.departureTime || (cnt.createdAt ? new Date(cnt.createdAt).toTimeString().slice(0, 5) : undefined),
-      returnTime: cnt.returnTime,
-      returnOdometer: cnt.returnOdometer,
-      extraKm: cnt.extraKm,
-      extraKmAmount: cnt.extraKmAmount,
-      deductionsAmount: cnt.deductionsAmount,
-      checklist: cnt.checklist,
-      notes: cnt.notes
-    };
-
-    setSelectedContractForPdf(contractData);
+  const handleCopyContractLink = async (cnt: CarContract) => {
+    if (!cnt.shareToken) return toast.error('لینک قرارداد در دسترس نیست');
+    const link = contractShareUrl(cnt.shareToken);
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success('لینک دانلود قرارداد کپی شد');
+    } catch {
+      window.prompt('لینک قرارداد:', link);
+    }
   };
 
   const handleDeleteContract = async (cnt: CarContract) => {
@@ -221,71 +174,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       toast.success(`قرارداد ${cnt.id} و ${data.transactionIds.length} سند مالی آن حذف شد`);
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
-    }
-  };
-
-  // Saves what was entered in the contract window; extra-km / accident amounts become their own income rows
-  const handleSaveContractDetails = async (data: ContractData): Promise<boolean> => {
-    const fuelMap: Record<string, FuelLevel> = { full: 'full', '3/4': 'three_quarters', half: 'half', '1/4': 'quarter', empty: 'empty' };
-    const fuelFromLabel = (Object.keys(FUEL_LEVEL_LABELS) as FuelLevel[]).find(k => FUEL_LEVEL_LABELS[k] === data.fuelLevel);
-    try {
-      const res = await fetch('/api/cars/contracts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: data.id,
-          customerName: data.customerName,
-          carTitle: data.carTitle,
-          customerPhone: data.customerPhone,
-          plateNumber: data.plateNumber,
-          initialOdometer: data.initialOdometer ?? 0,
-          returnOdometer: data.returnOdometer,
-          fuelLevel: fuelMap[data.fuelLevel || ''] || fuelFromLabel,
-          depositAmount: data.depositPaid,
-          notes: data.notes ?? '',
-          customerNameEn: data.customerNameEn ?? '',
-          customerNationalId: data.customerNationalId ?? '',
-          customerNationality: data.customerNationality ?? '',
-          customerAddress: data.customerAddress ?? '',
-          workAddress: data.workAddress ?? '',
-          whatsapp: data.whatsapp ?? '',
-          licenceType: data.licenceType ?? '',
-          licenceNo: data.licenceNo ?? '',
-          carTitleEn: data.carTitleEn ?? '',
-          color: data.color ?? '',
-          cleanInside: data.cleanInside ?? '',
-          cleanOutside: data.cleanOutside ?? '',
-          contractDate: data.date ?? '',
-          startDate: data.startDate ?? '',
-          departureTime: data.departureTime ?? '',
-          endDate: data.endDate ?? '',
-          returnTime: data.returnTime ?? '',
-          rentalDays: data.rentalDays ?? '',
-          dailyRate: data.dailyRate ?? '',
-          totalPrice: data.totalPrice ?? '',
-          extraKm: data.extraKm ?? '',
-          extraKmAmount: data.extraKmAmount ?? '',
-          deductionsAmount: data.deductionsAmount ?? '',
-          checklist: data.checklist,
-        })
-      });
-      const result = await res.json().catch(() => ({}));
-      if (!res.ok || !result.success) {
-        toast.error(result.error || 'خطا در ذخیره اطلاعات قرارداد');
-        return false;
-      }
-      setContracts(prev => prev.map(c => c.id === result.contract.id ? result.contract : c));
-      if (result.chargesError) {
-        toast.error('قرارداد ذخیره شد اما ثبت مبالغ اضافه در حسابداری ناموفق بود');
-      } else {
-        toast.success('اطلاعات قرارداد ذخیره شد');
-      }
-      // Extra-km / accident rows may have changed in accounting
-      fetch('/api/cars/transactions').then(r => r.json()).then(tx => { if (Array.isArray(tx)) setTransactions(tx); }).catch(() => {});
-      return true;
-    } catch (err) {
-      toast.error('خطای ارتباط با سرور');
-      return false;
     }
   };
 
@@ -1007,86 +895,20 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
   };
 
+  // Starts on the first reservation still waiting for its handover (the wizard continues its auto-issued contract)
   const handleOpenAddHandover = (resId?: string) => {
-    const res = activeReservations.find(r => r.id === resId) || activeReservations[0];
-    const car = cars.find(c => c.id === res?.carId);
-
-    const plate = car?.plateNumber || '';
-    // Start from the last recorded odometer of the same vehicle
-    const lastCnt = contracts.find(c => plate && c.plateNumber === plate);
-
-    setHandoverForm({
-      reservationId: res?.id || '',
-      carTitle: res?.carTitle || car?.title || '',
-      plateNumber: plate,
-      customerName: res?.customerName || '',
-      customerPhone: res?.customerPhone || '',
-      initialOdometer: lastCnt ? (lastCnt.returnOdometer || lastCnt.initialOdometer) : 0,
-      returnOdometer: 0,
-      fuelLevel: 'full',
-      depositAmount: res?.depositPaid || car?.depositAmount || 0,
-      depositStatus: 'held',
-      handoverStatus: 'delivered',
-      checklist: allChecked(),
-      notes: ''
-    });
-    setIsHandoverModalOpen(true);
+    const pending = (r: CarReservation) => {
+      const c = contracts.find(x => x.reservationId === r.id);
+      return !c || c.handoverStatus === 'pending_delivery';
+    };
+    const res = activeReservations.find(r => r.id === resId) || activeReservations.find(pending) || activeReservations[0];
+    setWizard({ contract: null, reservationId: res?.id });
   };
 
-  const handleSaveHandover = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const initialKm = Number(handoverForm.initialOdometer);
-    const returnKm = Number(handoverForm.returnOdometer);
-    if (!handoverForm.customerName.trim() || !handoverForm.carTitle) {
-      toast.error('انتخاب رزرو و نام مشتری الزامی است');
-      return;
-    }
-    if (!initialKm || initialKm < 0) {
-      toast.error('کیلومتر تحویل را وارد کنید');
-      return;
-    }
-    if (returnKm && returnKm < initialKm) {
-      toast.error('کیلومتر عودت نمی‌تواند کمتر از کیلومتر تحویل باشد');
-      return;
-    }
-
-    setSavingHandover(true);
-    try {
-      const res = await fetch('/api/cars/contracts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reservationId: handoverForm.reservationId,
-          carTitle: handoverForm.carTitle,
-          plateNumber: handoverForm.plateNumber,
-          customerName: handoverForm.customerName.trim(),
-          customerPhone: handoverForm.customerPhone,
-          initialOdometer: initialKm,
-          returnOdometer: returnKm || undefined,
-          fuelLevel: handoverForm.fuelLevel,
-          depositAmount: Number(handoverForm.depositAmount) || 0,
-          depositStatus: handoverForm.depositStatus,
-          handoverStatus: handoverForm.handoverStatus,
-          checklist: handoverForm.checklist,
-          notes: handoverForm.notes
-        })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const saved: CarContract = data.contract;
-        setContracts(prev => [saved, ...prev.filter(c => c.id !== saved.id)]);
-        setIsHandoverModalOpen(false);
-        toast.success('صورتجلسه تحویل با موفقیت ثبت شد');
-        handleOpenContractPdf(saved);
-      } else {
-        toast.error(data.error || 'خطا در ثبت صورتجلسه');
-      }
-    } catch (err) {
-      toast.error('خطای برقراری ارتباط با سرور');
-    } finally {
-      setSavingHandover(false);
-    }
+  const handleWizardSaved = (saved: CarContract) => {
+    setContracts(prev => [saved, ...prev.filter(c => c.id !== saved.id)]);
+    // Extra-km / accident amounts become their own accounting rows
+    fetch('/api/cars/transactions').then(r => r.json()).then(tx => { if (Array.isArray(tx)) setTransactions(tx); }).catch(() => {});
   };
 
   // --- CRM AUTOSUGGEST FILTER ---
@@ -1240,30 +1062,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       content: renderCarLine(car),
       searchText: `${car.title} ${car.titleEn || ''} ${car.modelYear || ''} ${car.plateNumber}`,
     }));
-
-  const shortDate = (d: string) => (d || '').slice(5).replace('-', '/');
-  const handoverPickerOptions: CompactPickerOption[] = activeReservations.map(r => {
-    const car = cars.find(c => c.id === r.carId);
-    return {
-      value: r.id,
-      content: (
-        <span className="block min-w-0 space-y-0.5">
-          {renderCarLine(car, r.carTitle)}
-          <span className="flex items-center gap-1.5 text-[10.5px] text-white/50 min-w-0">
-            <span className="truncate">{r.customerName}</span>
-            <span className="ms-auto shrink-0 font-mono">{shortDate(r.startDate)} تا {shortDate(r.endDate)}</span>
-          </span>
-        </span>
-      ),
-      selectedContent: (
-        <span className="flex items-center gap-1.5 min-w-0">
-          <span className="min-w-0 flex-1">{renderCarLine(car, r.carTitle)}</span>
-          <span className="shrink-0 max-w-[40%] truncate text-[10.5px] text-white/55">{r.customerName}</span>
-        </span>
-      ),
-      searchText: `${r.carTitle || ''} ${car?.plateNumber || ''} ${r.customerName} ${r.customerPhone || ''}`,
-    };
-  });
 
   return (
     <div className="space-y-5 animate-fadeIn text-white font-sans w-full max-w-full overflow-x-hidden min-w-0" dir="rtl">
@@ -1743,13 +1541,21 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                     <th className="py-3.5 px-4">بنزین</th>
                     <th className="py-3.5 px-4">وضعیت ودیعه</th>
                     <th className="py-3.5 px-4">وضعیت تحویل</th>
-                    <th className="py-3.5 px-4 text-center">قرارداد رسمی PDF</th>
+                    <th className="py-3.5 px-4 text-center">قرارداد</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {contracts.map(cnt => (
                     <tr key={cnt.id} className="hover:bg-white/5 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-gold">{cnt.id}</td>
+                      <td className="py-3.5 px-4">
+                        <button
+                          onClick={() => setWizard({ contract: cnt, startAtDone: true })}
+                          className="font-mono font-bold text-gold hover:underline cursor-pointer"
+                          title="دانلود و اشتراک‌گذاری قرارداد"
+                        >
+                          {cnt.id}
+                        </button>
+                      </td>
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-white block">{cnt.carTitle}</span>
                         <span className="text-[10px] text-white/50 font-mono">{cnt.plateNumber}</span>
@@ -1779,23 +1585,41 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <button
-                          onClick={() => handleOpenContractPdf(cnt)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer"
-                        >
-                          <FileText size={14} />
-                          <span>خروجی PDF</span>
-                        </button>
-                        {canDeleteContracts && (
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center justify-center gap-1.5">
                           <button
-                            onClick={() => handleDeleteContract(cnt)}
-                            title="حذف قرارداد (مدیر کل)"
-                            className="mr-1.5 inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer align-middle"
+                            onClick={() => handleDownloadContract(cnt)}
+                            disabled={contractPdf.busy}
+                            title="دانلود قرارداد PDF"
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer disabled:opacity-50"
                           >
-                            <Trash2 size={14} />
+                            {contractPdf.busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                            <span>PDF</span>
                           </button>
-                        )}
+                          <button
+                            onClick={() => handleCopyContractLink(cnt)}
+                            title="کپی لینک دانلود قرارداد برای مشتری"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+                          >
+                            <Link2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => setWizard({ contract: cnt })}
+                            title="ویرایش صورتجلسه، اطلاعات قرارداد و تصاویر"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+                          >
+                            <Edit3 size={14} />
+                          </button>
+                          {canDeleteContracts && (
+                            <button
+                              onClick={() => handleDeleteContract(cnt)}
+                              title="حذف قرارداد (مدیر کل)"
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1891,20 +1715,21 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
           {/* TRANSACTIONS FILTER & NEW BUTTON */}
           <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <select
+            <div className="w-full sm:w-64">
+              <FancySelect
                 value={paymentFilter}
-                onChange={e => setPaymentFilter(e.target.value)}
-                className="bg-[#07111f] border border-white/15 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
-              >
-                <option value="all">همه روش‌های پرداخت</option>
-                <option value="bank_reza">واریز: حساب رضا اماره</option>
-                <option value="bank_mohammadi">واریز: حساب محمدی</option>
-                <option value="cash_reza">نقد: رضا اماره</option>
-                <option value="cash_mohammadi">نقد: محمدی</option>
-                <option value="pending">⏳ در انتظار پرداخت مشتری</option>
-                <option value="unconfirmed">دریافت تأییدنشده</option>
-              </select>
+                onChange={setPaymentFilter}
+                ariaLabel="فیلتر روش پرداخت"
+                options={[
+                  { value: 'all', label: 'همه روش‌های پرداخت', icon: <Filter size={14} className="text-white/50" /> },
+                  { value: 'bank_reza', label: 'واریز به حساب رضا اماره', icon: <Landmark size={14} className="text-blue-400" /> },
+                  { value: 'bank_mohammadi', label: 'واریز به حساب محمدی', icon: <Landmark size={14} className="text-purple-400" /> },
+                  { value: 'cash_reza', label: 'نقد به رضا اماره', icon: <Wallet size={14} className="text-teal-400" /> },
+                  { value: 'cash_mohammadi', label: 'نقد به محمدی', icon: <Wallet size={14} className="text-orange-400" /> },
+                  { value: 'pending', label: 'در انتظار پرداخت مشتری', icon: <Clock size={14} className="text-amber-400" /> },
+                  { value: 'unconfirmed', label: 'دریافت تأییدنشده', icon: <CheckCircle2 size={14} className="text-sky-400" /> },
+                ]}
+              />
             </div>
 
             <button
@@ -2137,14 +1962,14 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
                   <div>
                     <label className="block text-white/80 font-bold mb-1">گیربکس</label>
-                    <select
+                    <FancySelect<Car['transmission']>
                       value={carForm.transmission || 'automatic'}
-                      onChange={e => setCarForm({ ...carForm, transmission: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="automatic">اتوماتیک</option>
-                      <option value="manual">دستی</option>
-                    </select>
+                      onChange={v => setCarForm({ ...carForm, transmission: v })}
+                      options={[
+                        { value: 'automatic', label: 'اتوماتیک' },
+                        { value: 'manual', label: 'دستی' },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -2176,16 +2001,16 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
                   <div>
                     <label className="block text-white/80 font-bold mb-1">وضعیت خودرو</label>
-                    <select
+                    <FancySelect<Car['status']>
                       value={carForm.status || 'available'}
-                      onChange={e => setCarForm({ ...carForm, status: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="available">آماده رزرو</option>
-                      <option value="rented">در حال اجاره</option>
-                      <option value="maintenance">در حال سرویس</option>
-                      <option value="disabled">غیرفعال</option>
-                    </select>
+                      onChange={v => setCarForm({ ...carForm, status: v })}
+                      options={[
+                        { value: 'available', label: 'آماده رزرو', icon: <span className="block h-2 w-2 rounded-full bg-emerald-400" /> },
+                        { value: 'rented', label: 'در حال اجاره', icon: <span className="block h-2 w-2 rounded-full bg-rose-400" /> },
+                        { value: 'maintenance', label: 'در حال سرویس', icon: <span className="block h-2 w-2 rounded-full bg-amber-400" /> },
+                        { value: 'disabled', label: 'غیرفعال', icon: <span className="block h-2 w-2 rounded-full bg-gray-400" /> },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -2830,32 +2655,31 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 {/* EXACT ACCOUNTS SELECTION REQUIRED BY USER */}
                 <div>
                   <label className="block text-white/80 font-bold mb-1">روش پرداخت و حساب مقصد *</label>
-                  <select
-                    required
+                  <FancySelect<PaymentMethod>
                     value={txForm.paymentMethod}
-                    onChange={e => setTxForm({ ...txForm, paymentMethod: e.target.value as any })}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-bold text-gold"
-                  >
-                    <option value="bank_reza">🏦 واریز به حساب - حساب رضا اماره</option>
-                    <option value="bank_mohammadi">🏦 واریز به حساب - حساب محمدی</option>
-                    <option value="cash_reza">💵 نقد - نقد به رضا اماره</option>
-                    <option value="cash_mohammadi">💵 نقد - نقد به محمدی</option>
-                  </select>
+                    onChange={v => setTxForm({ ...txForm, paymentMethod: v })}
+                    options={[
+                      { value: 'bank_reza', label: 'واریز به حساب رضا اماره', icon: <Landmark size={14} className="text-blue-400" /> },
+                      { value: 'bank_mohammadi', label: 'واریز به حساب محمدی', icon: <Landmark size={14} className="text-purple-400" /> },
+                      { value: 'cash_reza', label: 'نقد به رضا اماره', icon: <Wallet size={14} className="text-teal-400" /> },
+                      { value: 'cash_mohammadi', label: 'نقد به محمدی', icon: <Wallet size={14} className="text-orange-400" /> },
+                    ]}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-white/80 font-bold mb-1">نوع تراکنش</label>
-                    <select
+                    <FancySelect<CarTransaction['type']>
                       value={txForm.type}
-                      onChange={e => setTxForm({ ...txForm, type: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                    >
-                      <option value="rent_fee">درآمد کرایه خودرو</option>
-                      <option value="deposit_in">دریافت ودیعه</option>
-                      <option value="deposit_refund">عودت ودیعه (منفی)</option>
-                      <option value="maintenance_expense">هزینه سرویس و تعمیرات (منفی)</option>
-                    </select>
+                      onChange={v => setTxForm({ ...txForm, type: v })}
+                      options={[
+                        { value: 'rent_fee', label: 'درآمد کرایه خودرو', icon: <ArrowUpRight size={14} className="text-emerald-400" /> },
+                        { value: 'deposit_in', label: 'دریافت ودیعه', icon: <ArrowUpRight size={14} className="text-blue-400" /> },
+                        { value: 'deposit_refund', label: 'عودت ودیعه', hint: 'از موجودی کم می‌شود', icon: <ArrowDownRight size={14} className="text-rose-400" /> },
+                        { value: 'maintenance_expense', label: 'هزینه سرویس و تعمیرات', hint: 'از موجودی کم می‌شود', icon: <ArrowDownRight size={14} className="text-amber-400" /> },
+                      ]}
+                    />
                   </div>
 
                   <div>
@@ -2924,215 +2748,22 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         )}
       </AnimatePresence>
 
-      {/* BILINGUAL CONTRACT PDF MODAL */}
+      {/* HANDOVER WIZARD (handover record + contract, photos, PDF / share) */}
       <AnimatePresence>
-        {selectedContractForPdf && (
-          <CarContractModal
-            contract={selectedContractForPdf}
-            onClose={() => setSelectedContractForPdf(null)}
-            onSave={handleSaveContractDetails}
+        {wizard && (
+          <HandoverWizard
+            contract={wizard.contract}
+            startAtDone={wizard.startAtDone}
+            defaultReservationId={wizard.reservationId}
+            reservations={reservations}
+            cars={cars}
+            contracts={contracts}
+            onSaved={handleWizardSaved}
+            onClose={() => setWizard(null)}
           />
         )}
       </AnimatePresence>
-
-      {/* ==================================================================== */}
-      {/* MODAL 4: HANDOVER & CONTRACT CREATION                                 */}
-      {/* ==================================================================== */}
-      <AnimatePresence>
-        {isHandoverModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              className="w-full max-w-xl rounded-t-3xl sm:rounded-3xl border border-gold/30 bg-[#0b172a] p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
-                  <ClipboardList className="text-gold" size={18} />
-                  <span>ثبت صورتجلسه تحویل / عودت و صدور قرارداد</span>
-                </h3>
-                <button onClick={() => setIsHandoverModalOpen(false)} className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveHandover} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block text-white/80 font-bold mb-1">رزرو / خودرو *</label>
-                  <CompactPicker
-                    value={handoverForm.reservationId}
-                    onChange={reservationId => {
-                      const res = reservations.find(r => r.id === reservationId);
-                      const car = cars.find(c => c.id === res?.carId);
-                      setHandoverForm(prev => ({
-                        ...prev,
-                        reservationId,
-                        carTitle: res?.carTitle || car?.title || prev.carTitle,
-                        plateNumber: car?.plateNumber || prev.plateNumber,
-                        customerName: res?.customerName || prev.customerName,
-                        customerPhone: res?.customerPhone || prev.customerPhone,
-                        depositAmount: res?.depositPaid || car?.depositAmount || prev.depositAmount
-                      }));
-                    }}
-                    options={handoverPickerOptions}
-                    placeholder="انتخاب رزرو"
-                    searchPlaceholder="مدل، پلاک یا نام مشتری..."
-                    emptyText="رزروی یافت نشد"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">نام مشتری *</label>
-                    <input
-                      type="text"
-                      required
-                      value={handoverForm.customerName}
-                      onChange={e => setHandoverForm({ ...handoverForm, customerName: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">شماره تماس *</label>
-                    <input
-                      type="text"
-                      required
-                      value={handoverForm.customerPhone}
-                      onChange={e => setHandoverForm({ ...handoverForm, customerPhone: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-mono dir-ltr"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">کیلومتر تحویل (Initial KM) *</label>
-                    <NumericInput
-                      required
-                      value={handoverForm.initialOdometer}
-                      onValueChange={v => setHandoverForm({ ...handoverForm, initialOdometer: v })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">کیلومتر عودت (Return KM)</label>
-                    <NumericInput
-                      value={handoverForm.returnOdometer}
-                      onValueChange={v => setHandoverForm({ ...handoverForm, returnOdometer: v })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">وضعیت بنزین تحویلی</label>
-                    <select
-                      value={handoverForm.fuelLevel}
-                      onChange={e => setHandoverForm({ ...handoverForm, fuelLevel: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="full">فول (Full)</option>
-                      <option value="three_quarters">۳/۴ (3/4)</option>
-                      <option value="half">۱/۲ (1/2)</option>
-                      <option value="quarter">۱/۴ (1/4)</option>
-                      <option value="empty">خالی (Empty)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">وضعیت تحویل خودرو</label>
-                    <select
-                      value={handoverForm.handoverStatus}
-                      onChange={e => setHandoverForm({ ...handoverForm, handoverStatus: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="delivered">تحویل داده شد (Delivered)</option>
-                      <option value="pending_delivery">در انتظار تحویل (Pending)</option>
-                      <option value="returned">عودت داده شد (Returned)</option>
-                      <option value="inspection_required">نیازمند بررسی بدنه (Inspection)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">وضعیت ودیعه ضمانت</label>
-                    <select
-                      value={handoverForm.depositStatus}
-                      onChange={e => setHandoverForm({ ...handoverForm, depositStatus: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="held">نزد شرکت (امانی)</option>
-                      <option value="refunded">مسترد شد به مشتری</option>
-                      <option value="partially_refunded">کسر جریمه و استرداد مانده</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white/80 font-bold mb-1.5">چک‌لیست سلامت خودرو</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {HANDOVER_CHECKLIST_ITEMS.map(item => {
-                      const ok = !!handoverForm.checklist[item.key];
-                      return (
-                        <label
-                          key={item.key}
-                          className={`flex items-center gap-2 rounded-xl border p-2.5 cursor-pointer transition-colors ${
-                            ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/40 bg-rose-500/10 text-rose-200'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={ok}
-                            onChange={e => setHandoverForm(prev => ({
-                              ...prev,
-                              checklist: { ...prev.checklist, [item.key]: e.target.checked }
-                            }))}
-                            className="h-4 w-4 accent-emerald-500 shrink-0"
-                          />
-                          <span className="flex-1 text-[11px] font-bold">{item.label}</span>
-                          <span className="text-[10px] font-black">{ok ? 'سالم' : 'مشکل دارد'}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white/80 font-bold mb-1">ملاحظات و سلامت بدنه</label>
-                  <textarea
-                    rows={2}
-                    value={handoverForm.notes}
-                    onChange={e => setHandoverForm({ ...handoverForm, notes: e.target.value })}
-                    placeholder="نکات تحویل، چک‌لیست خط‌وخش بدنه، جریمه‌ها..."
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold resize-none"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setIsHandoverModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 text-white/70 hover:text-white hover:bg-white/10 text-xs font-bold transition-all"
-                  >
-                    انصراف
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingHandover}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    <CheckCircle2 size={16} />
-                    <span>{savingHandover ? 'در حال ذخیره...' : 'ثبت صورتجلسه و نمایش قرارداد'}</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {contractPdf.element}
 
     </div>
   );

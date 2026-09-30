@@ -25,6 +25,7 @@ interface CompactPickerProps {
   emptyText?: string;
   /** Show the search box only when the list is long enough to need it */
   searchThreshold?: number;
+  disabled?: boolean;
   className?: string;
 }
 
@@ -39,6 +40,7 @@ export default function CompactPicker({
   searchPlaceholder = 'جستجو...',
   emptyText = 'موردی یافت نشد',
   searchThreshold = 6,
+  disabled,
   className,
 }: CompactPickerProps) {
   const [open, setOpen] = useState(false);
@@ -53,8 +55,9 @@ export default function CompactPicker({
           type="button"
           role="combobox"
           aria-expanded={open}
+          disabled={disabled}
           className={cn(
-            'flex w-full items-center gap-2 rounded-xl border border-white/15 bg-[#07111f] px-3 h-11 sm:h-9 text-right text-white outline-none transition-colors hover:border-white/30 focus-visible:border-gold data-[state=open]:border-gold cursor-pointer',
+            'flex w-full items-center gap-2 rounded-xl border border-white/15 bg-[#07111f] px-3 h-11 sm:h-9 text-right text-white outline-none transition-colors hover:border-white/30 focus-visible:border-gold data-[state=open]:border-gold cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-white/15',
             className,
           )}
         >
