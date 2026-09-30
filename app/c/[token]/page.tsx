@@ -7,11 +7,23 @@ import { useContractPdf } from '@/components/use-contract-pdf';
 
 // Public page behind a contract's share link: no login, nothing to edit — only the PDF download.
 
+class LinkError extends Error {
+  constructor(public code: 'expired' | 'revoked' | 'invalid') {
+    super(code);
+  }
+}
+
+const ERROR_TEXT = {
+  expired: { en: 'This link has expired.', ar: 'انتهت صلاحية الرابط', fa: 'مهلت این لینک تمام شده است' },
+  revoked: { en: 'This link is no longer active.', ar: 'تم إلغاء هذا الرابط', fa: 'این لینک باطل شده است' },
+  invalid: { en: 'This link is not valid.', ar: 'الرابط غير صالح', fa: 'لینک معتبر نیست' },
+};
+
 export default function SharedContractPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const [contract, setContract] = useState<ContractData | null>(null);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<'expired' | 'revoked' | 'invalid' | null>(null);
   const [failed, setFailed] = useState(false);
   const pdf = useContractPdf();
 
@@ -19,11 +31,11 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
     fetch(`/api/contract-share/${encodeURIComponent(token)}`)
       .then(async r => {
         const data = await r.json().catch(() => ({}));
-        if (!r.ok || !data.contract) throw new Error(data.error || 'Contract not found');
+        if (!r.ok || !data.contract) throw new LinkError(data.code === 'expired' || data.code === 'revoked' ? data.code : 'invalid');
         setContract(data.contract);
         setSignatureUrl(data.signatureUrl || null);
       })
-      .catch(err => setError(err.message));
+      .catch(err => setError(err instanceof LinkError ? err.code : 'invalid'));
   }, [token]);
 
   const download = async () => {
@@ -47,8 +59,14 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
         {error ? (
           <div className="mt-6 space-y-2">
             <AlertTriangle className="mx-auto text-amber-400" />
-            <p className="text-sm font-bold">This link is not valid.</p>
-            <p className="text-[12px] text-white/55" dir="rtl">الرابط غير صالح · لینک معتبر نیست</p>
+            <p className="text-sm font-bold">{ERROR_TEXT[error].en}</p>
+            <p className="text-[12px] text-white/55" dir="rtl">{ERROR_TEXT[error].ar} · {ERROR_TEXT[error].fa}</p>
+            {error !== 'invalid' && (
+              <p className="pt-2 text-[12px] text-white/70">
+                Please contact ARSAM Rent a Car for a new link.
+                <span className="mt-0.5 block" dir="rtl">لطفاً برای دریافت لینک جدید با آرسام تماس بگیرید.</span>
+              </p>
+            )}
           </div>
         ) : !contract ? (
           <Loader2 className="mx-auto mt-8 animate-spin text-[#c9a04a]" />

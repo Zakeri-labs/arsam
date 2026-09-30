@@ -364,7 +364,7 @@ function Tile({ att, index, doc }: { att: ContractAttachment; index: number; doc
       <div
         className={`relative overflow-hidden rounded-xl ${doc ? 'bg-[#f4f1ea]' : 'bg-[#0f2a5c]'}`}
         style={{ height: imageH }}
-        {...(isVideo ? { 'data-pdf-link': att.url } : {})}
+        {...(isVideo ? { 'data-pdf-link': att.linkUrl ? `${window.location.origin}${att.linkUrl}` : att.url } : {})}
       >
         {src ? (
           <img src={src} crossOrigin="anonymous" alt="" className={`h-full w-full ${doc ? 'object-contain' : 'object-cover'}`} />

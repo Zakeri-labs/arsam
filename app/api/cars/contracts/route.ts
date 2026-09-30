@@ -2,34 +2,47 @@ import { NextResponse } from 'next/server';
 import { getContracts, saveContract, deleteContract, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
 import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
 import { createContractShareToken } from '@/lib/contract-share';
-import { isOwnUploadUrl } from '@/lib/storage';
+import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments } from '@/lib/storage';
 
 const MAX_ATTACHMENTS = 40;
 
-// Each contract carries the token of its public "download the contract" link
-const withShareToken = (contract: CarContract) => ({ ...contract, shareToken: createContractShareToken(contract.id) });
+// What the browser receives: each contract carries the token of its public "download the contract" link,
+// and its attachments carry short-lived signed URLs (the stored form only holds bucket paths).
+async function present(contracts: CarContract[]): Promise<CarContract[]> {
+  const tokens = new Map(contracts.map(c => [c.id, createContractShareToken(c.id, c.shareVersion || 1)]));
+  const withMedia = await presentContractAttachments(contracts, tokens);
+  return withMedia.map(c => ({ ...c, shareToken: tokens.get(c.id) ?? null }));
+}
 
-// Only files that were uploaded to our own bucket are accepted as attachments
+// Only files that were uploaded to our own buckets are accepted as attachments. The browser sends back
+// the `path`; any signed URL it also holds is ignored. Attachments from before the private bucket
+// (public `url` only) are kept as they are until the migration script moves them.
 function cleanAttachments(value: unknown): ContractAttachment[] | undefined {
   if (value === undefined) return undefined;
   if (!Array.isArray(value)) return [];
-  return value
-    .filter((a: any) => a && CONTRACT_ATTACHMENT_KINDS.includes(a.kind) && isOwnUploadUrl(a.url))
-    .slice(0, MAX_ATTACHMENTS)
-    .map((a: any) => ({
+  const out: ContractAttachment[] = [];
+  for (const a of value as any[]) {
+    if (!a || !CONTRACT_ATTACHMENT_KINDS.includes(a.kind)) continue;
+    const video = a.kind === 'car_video';
+    const base = {
       kind: a.kind,
-      url: a.url,
       name: typeof a.name === 'string' ? a.name.slice(0, 200) : undefined,
       size: Number.isFinite(Number(a.size)) ? Number(a.size) : undefined,
-      posterUrl: a.kind === 'car_video' && isOwnUploadUrl(a.posterUrl) ? a.posterUrl : undefined,
-    }));
+    };
+    if (isContractMediaPath(a.path)) {
+      out.push({ ...base, path: a.path, posterPath: video && isContractMediaPath(a.posterPath) ? a.posterPath : undefined });
+    } else if (isOwnUploadUrl(a.url)) {
+      out.push({ ...base, url: a.url, posterUrl: video && isOwnUploadUrl(a.posterUrl) ? a.posterUrl : undefined });
+    }
+  }
+  return out.slice(0, MAX_ATTACHMENTS);
 }
 
 export async function GET() {
   try {
     const denied = await requireAdmin(['cars']);
     if (denied) return denied;
-    return NextResponse.json((await getContracts()).map(withShareToken));
+    return NextResponse.json(await present(await getContracts()));
   } catch (error: any) {
     console.error('Error fetching contracts:', error);
     return NextResponse.json({ error: 'خطا در دریافت صورتجلسه‌های تحویل' }, { status: 500 });
@@ -47,15 +60,18 @@ export async function POST(request: Request) {
     }
     body.attachments = cleanAttachments(body.attachments);
     delete body.shareToken;
+    delete body.shareVersion;
 
     const contract = await saveContract(body);
     try {
       await syncContractExtraCharges(contract);
     } catch (syncErr) {
       console.error('Error syncing contract extra charges:', syncErr);
-      return NextResponse.json({ success: true, contract: withShareToken(contract), chargesError: true });
+      const [shown] = await present([contract]);
+      return NextResponse.json({ success: true, contract: shown, chargesError: true });
     }
-    return NextResponse.json({ success: true, contract: withShareToken(contract) });
+    const [shown] = await present([contract]);
+    return NextResponse.json({ success: true, contract: shown });
   } catch (error: any) {
     console.error('Error saving contract:', error);
     const missingColumn = /attachments/.test(String(error?.message || ''));

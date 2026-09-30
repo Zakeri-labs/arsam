@@ -62,3 +62,22 @@ export function useContractPdf() {
 }
 
 export const contractShareUrl = (token: string) => `${window.location.origin}/c/${token}`;
+
+/** Revokes every customer link issued so far for a contract; resolves with the fresh link's token, or null on failure. */
+export async function revokeContractLink(contractId: string): Promise<{ shareToken: string; shareVersion: number } | { error: string }> {
+  try {
+    const res = await fetch('/api/cars/contracts/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: contractId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.shareToken) return { error: data.error || 'خطا در باطل کردن لینک' };
+    return { shareToken: data.shareToken, shareVersion: data.shareVersion };
+  } catch {
+    return { error: 'خطای ارتباط با سرور' };
+  }
+}
+
+export const REVOKE_LINK_MESSAGE =
+  'همه لینک‌هایی که تا الان برای این قرارداد به مشتری داده‌اید از کار می‌افتد و یک لینک جدید ساخته می‌شود. ادامه می‌دهید؟';

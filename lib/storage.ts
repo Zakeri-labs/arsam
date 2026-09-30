@@ -1,6 +1,7 @@
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { supabase } from './supabase';
+import type { ContractAttachment } from './db-cars';
 
 // Upload rules shared by every route that writes to the `uploads` bucket.
 // Only document/image types on this list are accepted, and the stored content
@@ -70,6 +71,51 @@ export function isOwnUploadUrl(url: unknown): url is string {
 }
 
 // --- Contract media (handover wizard): photos and short videos, uploaded straight to storage ---
+// These include passports, licences and car photos, so they live in a PRIVATE bucket: nothing is
+// reachable by URL until the server signs a short-lived link for someone allowed to see it.
+
+export const CONTRACT_MEDIA_BUCKET = 'contract-media';
+export const MEDIA_URL_TTL_SECONDS = 60 * 60;
+const CONTRACT_MEDIA_PATH = /^contracts\/[A-Za-z0-9_.-]+$/;
+
+export const isContractMediaPath = (p: unknown): p is string => typeof p === 'string' && CONTRACT_MEDIA_PATH.test(p) && !p.includes('..');
+
+/** Signed read URLs for many objects at once (one storage call per 100 paths). Missing objects are skipped. */
+export async function signContractMedia(paths: string[], expiresIn = MEDIA_URL_TTL_SECONDS): Promise<Map<string, string>> {
+  const unique = Array.from(new Set(paths.filter(isContractMediaPath)));
+  const out = new Map<string, string>();
+  for (let i = 0; i < unique.length; i += 100) {
+    const { data, error } = await supabase.storage.from(CONTRACT_MEDIA_BUCKET).createSignedUrls(unique.slice(i, i + 100), expiresIn);
+    if (error) throw error;
+    for (const row of data || []) if (row.path && row.signedUrl) out.set(row.path, row.signedUrl);
+  }
+  return out;
+}
+
+/**
+ * Adds short-lived signed URLs to stored attachments before they leave the server.
+ * With a share token, videos also get the token-checked link that is printed in the PDF.
+ */
+export async function presentContractAttachments<T extends { id: string; attachments?: ContractAttachment[] }>(
+  contracts: T[],
+  shareTokens?: Map<string, string | null>
+): Promise<T[]> {
+  const paths: string[] = [];
+  for (const c of contracts) for (const a of c.attachments || []) paths.push(a.path || '', a.posterPath || '');
+  const signed = await signContractMedia(paths);
+  return contracts.map(c => ({
+    ...c,
+    attachments: (c.attachments || []).map(a => {
+      const token = shareTokens?.get(c.id);
+      return {
+        ...a,
+        url: (a.path && signed.get(a.path)) || (a.path ? undefined : a.url),
+        posterUrl: (a.posterPath && signed.get(a.posterPath)) || (a.posterPath ? undefined : a.posterUrl),
+        linkUrl: a.kind === 'car_video' && a.path && token ? `/api/contract-share/${token}/media?f=${encodeURIComponent(a.path)}` : undefined,
+      };
+    }),
+  }));
+}
 
 export const MAX_CONTRACT_IMAGE_BYTES = 10 * 1024 * 1024;
 // Videos are compressed in the browser first (720p, ~1.5 Mbps, max 60 s ≈ 11 MB); this is the hard cap
