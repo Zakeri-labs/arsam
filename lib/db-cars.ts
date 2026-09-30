@@ -37,6 +37,10 @@ export interface CarReservation {
   createdAt?: string;
 }
 
+export type PaymentMethod = 'cash_reza' | 'cash_mohammadi' | 'bank_reza' | 'bank_mohammadi';
+
+export const PAYMENT_METHODS: PaymentMethod[] = ['bank_reza', 'bank_mohammadi', 'cash_reza', 'cash_mohammadi'];
+
 export interface CarTransaction {
   id: string;
   reservationId?: string;
@@ -44,13 +48,28 @@ export interface CarTransaction {
   customerName?: string;
   amount: number;
   type: 'rent_fee' | 'deposit_in' | 'deposit_refund' | 'maintenance_expense' | 'other_income';
-  paymentMethod: 'cash_reza' | 'cash_mohammadi' | 'bank_reza' | 'bank_mohammadi';
+  // 'pending': the customer still owes this amount, so it has no payment method yet and is left out of
+  // every balance. 'paid': the money was paid to the account / person in paymentMethod.
+  paymentStatus: 'pending' | 'paid';
+  paymentMethod: PaymentMethod | null;
   description: string;
   receiptFileUrl?: string;
   receiptFileName?: string;
   transactionDate: string; // YYYY-MM-DD
+  recordedBy?: string;
+  // Set once the person in paymentMethod confirmed the money actually reached them
+  receivedAt?: string;
+  receivedBy?: string;
   createdAt?: string;
 }
+
+export const INCOMING_TRANSACTION_TYPES: CarTransaction['type'][] = ['rent_fee', 'deposit_in', 'other_income'];
+
+// Payments against a pending row are stored as `<pending row id>-p<suffix>` (suffix without dashes); the pending
+// row itself keeps only the amount still owed and is removed once nothing is left.
+export const isPaymentOf = (paymentId: string, pendingId: string) => paymentId.startsWith(`${pendingId}-p`);
+
+const roundOmr = (n: number) => Math.round(n * 1000) / 1000;
 
 export type FuelLevel = 'full' | 'three_quarters' | 'half' | 'quarter' | 'empty';
 
@@ -508,11 +527,15 @@ function transactionFromRow(item: any): CarTransaction {
     customerName: item.customer_name,
     amount: Number(item.amount),
     type: item.type,
-    paymentMethod: item.payment_method,
+    paymentStatus: item.payment_status === 'pending' ? 'pending' : 'paid',
+    paymentMethod: item.payment_method || null,
     description: item.description,
     receiptFileUrl: item.receipt_file_url,
     receiptFileName: item.receipt_file_name,
     transactionDate: item.transaction_date,
+    recordedBy: item.recorded_by || undefined,
+    receivedAt: item.received_at || undefined,
+    receivedBy: item.received_by || undefined,
     createdAt: item.created_at,
   };
 }
@@ -723,6 +746,7 @@ export async function saveTransaction(txData: Partial<CarTransaction>): Promise<
     existing = data ? transactionFromRow(data) : undefined;
   }
 
+  const paymentStatus = txData.paymentStatus ?? existing?.paymentStatus ?? 'paid';
   const transaction: CarTransaction = {
     id,
     reservationId: txData.reservationId ?? existing?.reservationId ?? '',
@@ -730,14 +754,20 @@ export async function saveTransaction(txData: Partial<CarTransaction>): Promise<
     customerName: txData.customerName ?? existing?.customerName ?? '',
     amount: txData.amount !== undefined ? Number(txData.amount) : (existing?.amount || 0),
     type: txData.type ?? existing?.type ?? 'rent_fee',
-    paymentMethod: txData.paymentMethod ?? existing?.paymentMethod ?? 'bank_reza',
+    paymentStatus,
+    // A pending row has not been paid anywhere yet
+    paymentMethod: paymentStatus === 'pending' ? null : (txData.paymentMethod || existing?.paymentMethod || 'bank_reza'),
     description: txData.description ?? existing?.description ?? '',
     receiptFileUrl: txData.receiptFileUrl ?? existing?.receiptFileUrl ?? '',
     receiptFileName: txData.receiptFileName ?? existing?.receiptFileName ?? '',
     transactionDate: txData.transactionDate ?? existing?.transactionDate ?? new Date().toISOString().split('T')[0],
+    recordedBy: txData.recordedBy ?? existing?.recordedBy,
+    receivedAt: existing?.receivedAt,
+    receivedBy: existing?.receivedBy,
     createdAt: existing?.createdAt || txData.createdAt || now,
   };
 
+  // received_at / received_by are only written by setTransactionReceived, so a save never clears them
   const { error } = await supabase.from('car_transactions').upsert({
     id: transaction.id,
     reservation_id: transaction.reservationId || null,
@@ -745,15 +775,170 @@ export async function saveTransaction(txData: Partial<CarTransaction>): Promise<
     customer_name: transaction.customerName,
     amount: transaction.amount,
     type: transaction.type,
+    payment_status: transaction.paymentStatus,
     payment_method: transaction.paymentMethod,
     description: transaction.description,
     receipt_file_url: transaction.receiptFileUrl,
     receipt_file_name: transaction.receiptFileName,
     transaction_date: transaction.transactionDate,
+    recorded_by: transaction.recordedBy || null,
   }, { onConflict: 'id' });
   ensureOk('car_transactions upsert', error);
 
   return transaction;
+}
+
+export class TransactionRuleError extends Error {}
+
+async function getTransactionById(id: string): Promise<CarTransaction | undefined> {
+  const { data, error } = await supabase.from('car_transactions').select('*').eq('id', id).maybeSingle();
+  ensureOk('car_transactions select', error);
+  return data ? transactionFromRow(data) : undefined;
+}
+
+const CONCURRENT_CHANGE = 'این ردیف هم‌زمان توسط کاربر دیگری تغییر کرد؛ صفحه را تازه کنید و دوباره تلاش کنید.';
+
+// Sets the pending row to `newAmount` (or deletes it when null) only if it still holds `expectedAmount`,
+// so two payments against the same row can never both succeed. Returns false when someone else changed it first.
+async function swapPendingAmount(id: string, expectedAmount: number, newAmount: number | null): Promise<boolean> {
+  const query = newAmount === null
+    ? supabase.from('car_transactions').delete()
+    : supabase.from('car_transactions').update({ amount: newAmount });
+  const { data, error } = await query
+    .eq('id', id)
+    .eq('payment_status', 'pending')
+    .eq('amount', expectedAmount)
+    .select('id');
+  ensureOk('car_transactions pending update', error);
+  return (data || []).length > 0;
+}
+
+// Records that the customer paid (part of) a pending row. The payment becomes its own paid row, and the
+// pending row keeps only what is still owed (removed when nothing is left), so paid + pending always add
+// up to the amount originally due.
+export async function recordPayment(
+  pendingId: string,
+  payment: { amount: number; paymentMethod: PaymentMethod; transactionDate?: string; recordedBy?: string }
+): Promise<{ payment: CarTransaction; remaining?: CarTransaction }> {
+  const pending = await getTransactionById(pendingId);
+  if (!pending) throw new TransactionRuleError('این ردیف مالی پیدا نشد؛ صفحه را تازه کنید.');
+  if (pending.paymentStatus !== 'pending') throw new TransactionRuleError('این مبلغ قبلاً پرداخت شده است.');
+
+  const amount = roundOmr(Number(payment.amount));
+  if (!Number.isFinite(amount) || amount <= 0) throw new TransactionRuleError('مبلغ پرداخت معتبر نیست.');
+  if (amount > roundOmr(pending.amount)) {
+    throw new TransactionRuleError(`مبلغ پرداخت بیشتر از مانده (${roundOmr(pending.amount)}) است.`);
+  }
+  if (!PAYMENT_METHODS.includes(payment.paymentMethod)) throw new TransactionRuleError('روش پرداخت معتبر نیست.');
+
+  // Claim the amount on the pending row first: only one concurrent payment can win this
+  const left = roundOmr(pending.amount - amount);
+  if (!(await swapPendingAmount(pending.id, pending.amount, left > 0 ? left : null))) {
+    throw new TransactionRuleError(CONCURRENT_CHANGE);
+  }
+
+  let paid: CarTransaction;
+  try {
+    paid = await saveTransaction({
+      id: newPaymentId(pending.id),
+      reservationId: pending.reservationId,
+      carId: pending.carId,
+      customerName: pending.customerName,
+      amount,
+      type: pending.type,
+      paymentStatus: 'paid',
+      paymentMethod: payment.paymentMethod,
+      description: pending.description,
+      transactionDate: payment.transactionDate || new Date().toISOString().split('T')[0],
+      recordedBy: payment.recordedBy,
+    });
+  } catch (err) {
+    // The payment row was not written: give the claimed amount back to the pending row
+    await restoreOwed(pending, amount).catch(restoreErr =>
+      console.error(`recordPayment: could not restore ${amount} to ${pending.id} after a failed payment write:`, restoreErr)
+    );
+    throw err;
+  }
+
+  return left > 0
+    ? { payment: paid, remaining: { ...pending, amount: left } }
+    : { payment: paid };
+}
+
+// Payment ids: `<pending row id>-p<random, no dashes>` (see isPaymentOf / pendingIdOfPayment)
+function newPaymentId(pendingId: string): string {
+  return `${pendingId}-p${globalThis.crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+}
+
+// The pending row a payment row was recorded against, or null for any other row. Built from the row's own
+// reservation (charge ids are `tx-<kind>-<reservation id>`), since a reservation id may itself contain "-p".
+export function pendingIdOfPayment(tx: Pick<CarTransaction, 'id' | 'reservationId'>): string | null {
+  if (!tx.reservationId) return null;
+  for (const kind of ['rent', 'dep', 'xkm', 'dmg']) {
+    const pendingId = `tx-${kind}-${tx.reservationId}`;
+    if (isPaymentOf(tx.id, pendingId) && /^[0-9a-z]+$/.test(tx.id.slice(pendingId.length + 2))) return pendingId;
+  }
+  return null;
+}
+
+// Adds `amount` back to what the customer owes on `pendingRow.id` (re-creating the pending row if it was removed)
+async function restoreOwed(pendingRow: CarTransaction, amount: number): Promise<CarTransaction> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const current = await getTransactionById(pendingRow.id);
+    if (!current) {
+      return saveTransaction({
+        id: pendingRow.id,
+        reservationId: pendingRow.reservationId,
+        carId: pendingRow.carId,
+        customerName: pendingRow.customerName,
+        amount: roundOmr(amount),
+        type: pendingRow.type,
+        paymentStatus: 'pending',
+        description: pendingRow.description,
+        transactionDate: pendingRow.transactionDate,
+      });
+    }
+    if (current.paymentStatus !== 'pending') {
+      throw new TransactionRuleError('ردیف بدهی این مبلغ دیگر در انتظار پرداخت نیست؛ مبلغ برگشت داده نشد.');
+    }
+    const next = roundOmr(current.amount + amount);
+    if (await swapPendingAmount(current.id, current.amount, next)) return { ...current, amount: next };
+  }
+  throw new TransactionRuleError(CONCURRENT_CHANGE);
+}
+
+// Deletes a transaction. Deleting a payment recorded against a reservation charge puts its amount back on
+// what the customer owes, so undoing a wrong payment never makes the debt disappear.
+export async function deleteTransactionRestoringDebt(id: string): Promise<{ restored?: CarTransaction }> {
+  const tx = await getTransactionById(id);
+  const pendingId = tx && tx.paymentStatus === 'paid' ? pendingIdOfPayment(tx) : null;
+  if (!tx || !pendingId) {
+    await deleteTransaction(id);
+    return {};
+  }
+
+  // Remove the payment only if it is still there (a second delete of the same row must not restore twice)
+  const { data, error } = await supabase.from('car_transactions').delete().eq('id', id).select('id');
+  ensureOk('car_transactions delete', error);
+  if (!(data || []).length) return {};
+
+  const restored = await restoreOwed({ ...tx, id: pendingId }, tx.amount);
+  return { restored };
+}
+
+// Confirms (or withdraws the confirmation) that the person in paymentMethod actually received the money
+export async function setTransactionReceived(id: string, received: boolean, by?: string): Promise<CarTransaction> {
+  const tx = await getTransactionById(id);
+  if (!tx) throw new TransactionRuleError('این ردیف مالی پیدا نشد؛ صفحه را تازه کنید.');
+  if (tx.paymentStatus !== 'paid' || !INCOMING_TRANSACTION_TYPES.includes(tx.type)) {
+    throw new TransactionRuleError('تأیید دریافت فقط برای مبالغ پرداخت‌شده ورودی است.');
+  }
+
+  const receivedAt = received ? new Date().toISOString() : null;
+  const receivedBy = received ? (by || null) : null;
+  const { error } = await supabase.from('car_transactions').update({ received_at: receivedAt, received_by: receivedBy }).eq('id', id);
+  ensureOk('car_transactions update', error);
+  return { ...tx, receivedAt: receivedAt || undefined, receivedBy: receivedBy || undefined };
 }
 
 export async function deleteTransaction(id: string): Promise<boolean> {
@@ -842,28 +1027,35 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
 }
 
 // Extra-km and accident amounts from the contract are their own income rows for the reservation, so the
-// original rent revenue stays untouched. A cleared amount removes its row.
+// original rent revenue stays untouched. Each is owed (pending) until paid; the pending row holds the charge
+// minus what was already paid against it, and is removed when nothing is left to pay.
 export async function syncContractExtraCharges(contract: CarContract): Promise<void> {
   if (!contract.reservationId) return;
   const charges = [
     { id: `tx-xkm-${contract.reservationId}`, amount: contract.extraKmAmount || 0, label: 'کیلومتر اضافه' },
     { id: `tx-dmg-${contract.reservationId}`, amount: contract.deductionsAmount || 0, label: 'خسارت/حادثه' },
   ];
-  const { data: rows, error } = await supabase.from('car_transactions').select('*').in('id', charges.map(c => c.id));
+  const { data: rows, error } = await supabase.from('car_transactions').select('*').eq('reservation_id', contract.reservationId);
   ensureOk('car_transactions select', error);
-  const existing = new Map((rows || []).map(r => [r.id, transactionFromRow(r)]));
+  const reservationRows = (rows || []).map(transactionFromRow);
 
   for (const charge of charges) {
-    const current = existing.get(charge.id);
-    if (charge.amount > 0) {
-      if (current?.amount === charge.amount) continue;
+    const current = reservationRows.find(t => t.id === charge.id);
+    // Recorded before payments were tracked: it already counts as paid, so leave it alone
+    if (current?.paymentStatus === 'paid') continue;
+
+    const alreadyPaid = reservationRows.filter(t => isPaymentOf(t.id, charge.id)).reduce((sum, t) => sum + t.amount, 0);
+    const owed = roundOmr(charge.amount - alreadyPaid);
+    if (owed > 0) {
+      if (current?.amount === owed) continue;
       await saveTransaction({
         id: charge.id,
         reservationId: contract.reservationId,
         carId: contract.carId,
         customerName: contract.customerName,
-        amount: charge.amount,
+        amount: owed,
         type: 'other_income',
+        paymentStatus: 'pending',
         description: `${charge.label} - قرارداد ${contract.id} (${contract.customerName})`,
         transactionDate: contract.endDate || new Date().toISOString().split('T')[0],
       });
@@ -906,9 +1098,10 @@ async function nextContractSerial(): Promise<string> {
 }
 
 // Idempotent: re-running for the same reservation never creates a duplicate contract or revenue row.
+// Rent and deposit are issued as pending (owed by the customer); "ثبت پرداخت" on the reservation turns them
+// into paid rows with the account / person that received the money.
 export async function issueContractAndRevenue(
-  reservation: CarReservation,
-  paymentMethod: CarTransaction['paymentMethod'] = 'bank_reza'
+  reservation: CarReservation
 ): Promise<{ contract: CarContract; transaction?: CarTransaction; depositTransaction?: CarTransaction }> {
   const contracts = await getContracts();
   let contract = contracts.find(c => c.reservationId === reservation.id);
@@ -933,11 +1126,16 @@ export async function issueContractAndRevenue(
     });
   }
 
+  const { data: rows, error } = await supabase.from('car_transactions').select('*').eq('reservation_id', reservation.id);
+  ensureOk('car_transactions select', error);
+  const reservationRows = (rows || []).map(transactionFromRow);
+  // Already issued if the pending row or any payment against it exists
+  const findIssued = (id: string) => reservationRows.find(t => t.id === id || isPaymentOf(t.id, id));
+
   let transaction: CarTransaction | undefined;
   if (reservation.totalPrice > 0) {
     const txId = `tx-rent-${reservation.id}`;
-    const transactions = await getTransactions();
-    transaction = transactions.find(t => t.id === txId);
+    transaction = findIssued(txId);
     if (!transaction) {
       transaction = await saveTransaction({
         id: txId,
@@ -946,7 +1144,7 @@ export async function issueContractAndRevenue(
         customerName: reservation.customerName,
         amount: reservation.totalPrice,
         type: 'rent_fee',
-        paymentMethod,
+        paymentStatus: 'pending',
         description: `درآمد اجاره ${reservation.carTitle || 'خودرو'} - قرارداد ${contract.id}`,
         transactionDate: reservation.startDate,
       });
@@ -957,8 +1155,7 @@ export async function issueContractAndRevenue(
   let depositTransaction: CarTransaction | undefined;
   if (reservation.depositPaid > 0) {
     const depId = `tx-dep-${reservation.id}`;
-    const transactions = await getTransactions();
-    depositTransaction = transactions.find(t => t.id === depId);
+    depositTransaction = findIssued(depId);
     if (!depositTransaction) {
       depositTransaction = await saveTransaction({
         id: depId,
@@ -967,8 +1164,8 @@ export async function issueContractAndRevenue(
         customerName: reservation.customerName,
         amount: reservation.depositPaid,
         type: 'deposit_in',
-        paymentMethod: 'cash_mohammadi',
-        description: `ودیعه نقد اجاره ${reservation.carTitle || 'خودرو'} (${reservation.customerName})`,
+        paymentStatus: 'pending',
+        description: `ودیعه اجاره ${reservation.carTitle || 'خودرو'} (${reservation.customerName})`,
         transactionDate: reservation.startDate,
       });
     }
