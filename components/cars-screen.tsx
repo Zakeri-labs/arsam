@@ -12,13 +12,14 @@ import {
 import { toast } from 'sonner';
 import {
   Car, CarReservation, CarTransaction, CarContract, FuelLevel, PaymentMethod,
-  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, INCOMING_TRANSACTION_TYPES, cleanCarTitle, cleanCarPlate, pendingIdOfPayment
+  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, INCOMING_TRANSACTION_TYPES, cleanCarTitle, cleanCarPlate, carModelName, pendingIdOfPayment
 } from '@/lib/db-cars';
 import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
 import CarContractModal, { ContractData } from './car-contract-modal';
 import { confirmDialog } from '@/components/confirm-dialog';
+import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 
 interface CRMClient {
   name: string;
@@ -186,6 +187,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       extraKm: cnt.extraKm,
       extraKmAmount: cnt.extraKmAmount,
       deductionsAmount: cnt.deductionsAmount,
+      checklist: cnt.checklist,
       notes: cnt.notes
     };
 
@@ -264,6 +266,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           extraKm: data.extraKm ?? '',
           extraKmAmount: data.extraKmAmount ?? '',
           deductionsAmount: data.deductionsAmount ?? '',
+          checklist: data.checklist,
         })
       });
       const result = await res.json().catch(() => ({}));
@@ -1207,6 +1210,60 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         return { label: 'غیرفعال', bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', border: 'rgba(156,163,175,0.3)' };
     }
   };
+
+  // --- COMPACT PICKER ROWS: model + year + plate, so several units of the same model stay distinguishable ---
+  const renderCarLine = (car: Car | undefined, fallbackTitle?: string) => {
+    const badge = car ? getCarStatusBadge(car.status) : undefined;
+    const plate = car ? cleanCarPlate(car.plateNumber) : '';
+    return (
+      <span className="flex items-center gap-1.5 min-w-0">
+        {badge && <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: badge.text }} title={badge.label} />}
+        <span className="truncate text-xs font-bold text-white">{car ? carModelName(car) : cleanCarTitle(fallbackTitle || 'خودرو')}</span>
+        {car?.modelYear && <span className="shrink-0 text-[10px] text-white/45 font-mono">{car.modelYear}</span>}
+        {plate && (
+          <span className="ms-auto shrink-0 rounded-md border border-gold/30 bg-black/40 px-1.5 py-px font-mono text-[10.5px] font-bold text-gold dir-ltr">
+            {plate}
+          </span>
+        )}
+      </span>
+    );
+  };
+
+  const carPickerOptions: CompactPickerOption[] = [...cars]
+    .sort((a, b) =>
+      carModelName(a).localeCompare(carModelName(b), 'fa') ||
+      (a.modelYear || '').localeCompare(b.modelYear || '') ||
+      cleanCarPlate(a.plateNumber).localeCompare(cleanCarPlate(b.plateNumber), 'en', { numeric: true })
+    )
+    .map(car => ({
+      value: car.id,
+      content: renderCarLine(car),
+      searchText: `${car.title} ${car.titleEn || ''} ${car.modelYear || ''} ${car.plateNumber}`,
+    }));
+
+  const shortDate = (d: string) => (d || '').slice(5).replace('-', '/');
+  const handoverPickerOptions: CompactPickerOption[] = activeReservations.map(r => {
+    const car = cars.find(c => c.id === r.carId);
+    return {
+      value: r.id,
+      content: (
+        <span className="block min-w-0 space-y-0.5">
+          {renderCarLine(car, r.carTitle)}
+          <span className="flex items-center gap-1.5 text-[10.5px] text-white/50 min-w-0">
+            <span className="truncate">{r.customerName}</span>
+            <span className="ms-auto shrink-0 font-mono">{shortDate(r.startDate)} تا {shortDate(r.endDate)}</span>
+          </span>
+        </span>
+      ),
+      selectedContent: (
+        <span className="flex items-center gap-1.5 min-w-0">
+          <span className="min-w-0 flex-1">{renderCarLine(car, r.carTitle)}</span>
+          <span className="shrink-0 max-w-[40%] truncate text-[10.5px] text-white/55">{r.customerName}</span>
+        </span>
+      ),
+      searchText: `${r.carTitle || ''} ${car?.plateNumber || ''} ${r.customerName} ${r.customerPhone || ''}`,
+    };
+  });
 
   return (
     <div className="space-y-5 animate-fadeIn text-white font-sans w-full max-w-full overflow-x-hidden min-w-0" dir="rtl">
@@ -2223,20 +2280,16 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 <div className="space-y-1.5">
                   <label className="block text-white/90 font-bold text-[11px] flex items-center gap-1.5">
                     <CarIcon size={14} className="text-gold" />
-                    <span>خودرو مورد نظر *</span>
+                    <span>خودرو *</span>
                   </label>
-                  <select
-                    required
+                  <CompactPicker
                     value={resForm.carId || ''}
-                    onChange={e => updateResFormPricing({ carId: e.target.value })}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
-                  >
-                    {cars.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {cleanCarTitle(c.title)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={carId => updateResFormPricing({ carId })}
+                    options={carPickerOptions}
+                    placeholder="انتخاب خودرو"
+                    searchPlaceholder="مدل یا پلاک..."
+                    emptyText="خودرویی یافت نشد"
+                  />
                 </div>
 
                 {/* 2. CUSTOMER SELECTION */}
@@ -2906,16 +2959,15 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
               <form onSubmit={handleSaveHandover} className="space-y-3.5 text-xs">
                 <div>
-                  <label className="block text-white/80 font-bold mb-1">انتخاب رزرو / خودرو مربوطه *</label>
-                  <select
-                    required
+                  <label className="block text-white/80 font-bold mb-1">رزرو / خودرو *</label>
+                  <CompactPicker
                     value={handoverForm.reservationId}
-                    onChange={e => {
-                      const res = reservations.find(r => r.id === e.target.value);
+                    onChange={reservationId => {
+                      const res = reservations.find(r => r.id === reservationId);
                       const car = cars.find(c => c.id === res?.carId);
                       setHandoverForm(prev => ({
                         ...prev,
-                        reservationId: e.target.value,
+                        reservationId,
                         carTitle: res?.carTitle || car?.title || prev.carTitle,
                         plateNumber: car?.plateNumber || prev.plateNumber,
                         customerName: res?.customerName || prev.customerName,
@@ -2923,14 +2975,11 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                         depositAmount: res?.depositPaid || car?.depositAmount || prev.depositAmount
                       }));
                     }}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                  >
-                    {activeReservations.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {r.carTitle || 'خودرو'} - {r.customerName} ({r.startDate} تا {r.endDate})
-                      </option>
-                    ))}
-                  </select>
+                    options={handoverPickerOptions}
+                    placeholder="انتخاب رزرو"
+                    searchPlaceholder="مدل، پلاک یا نام مشتری..."
+                    emptyText="رزروی یافت نشد"
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

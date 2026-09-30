@@ -7,6 +7,7 @@ import ContractFooter from './contract-footer-template';
 import { motion } from 'framer-motion';
 import { X, Printer, FileText, Save } from 'lucide-react';
 import { confirmDialog } from './confirm-dialog';
+import { HANDOVER_CHECKLIST_ITEMS } from '@/lib/db-cars';
 
 export interface ContractData {
   id: string;
@@ -52,6 +53,8 @@ export interface ContractData {
   cleanOutside?: string;
   extraKm?: string;
   extraKmAmount?: number;
+  // Handover health checklist (true = OK, false = has a problem); problems are marked on the car diagram
+  checklist?: Record<string, boolean>;
 }
 
 interface CarContractModalProps {
@@ -62,6 +65,21 @@ interface CarContractModalProps {
 
 type FuelKey = 'full' | '3/4' | 'half' | '1/4' | 'empty';
 const FUEL_ANGLES: Record<FuelKey, number> = { full: 0.2, '3/4': Math.PI * 0.25, half: Math.PI / 2, '1/4': Math.PI * 0.75, empty: Math.PI - 0.2 };
+
+// Where each handover checklist item sits on the car artwork (viewBox 1585x992): one mark per point, label beside the first
+// (on its right unless `labelSide` moves it clear of a neighbouring mark or view)
+const CHECKLIST_MARKS: Record<string, { points: [number, number][]; label: string; labelSide?: 'left' | 'above' }> = {
+  body: { points: [[1085, 548], [1255, 848]], label: 'Body' },
+  windshield: { points: [[195, 768]], label: 'Glass & mirrors', labelSide: 'above' },
+  tires: { points: [[928, 593], [1345, 593], [992, 887], [1410, 887]], label: 'Tyres' },
+  spareTire: { points: [[655, 470]], label: 'Spare tyre' },
+  tools: { points: [[655, 560]], label: 'Jack & wrench', labelSide: 'left' },
+  lights: { points: [[90, 826], [296, 826], [505, 818], [706, 818]], label: 'Lights' },
+  ac: { points: [[292, 512]], label: 'A/C' },
+  interior: { points: [[415, 515]], label: 'Interior' },
+  documents: { points: [[268, 446]], label: 'Car docs' },
+  safety: { points: [[605, 795]], label: 'Safety kit', labelSide: 'above' },
+};
 
 // Maps the handover labels (e.g. 'فول (Full)', '۳/۴', '۱/۲', 'خالی (Empty)') to a dial position
 function fuelKeyOf(text?: string): FuelKey | null {
@@ -135,6 +153,15 @@ export default function CarContractModal({ contract: initialContract, onClose, o
   const fuelKey = fuelKeyOf(contract.fuelLevel);
   // Needle angle in radians (PI = Empty, 0 = Full); null leaves the dial blank for hand marking
   const fuelAngle: number | null = fuelKey ? FUEL_ANGLES[fuelKey] : null;
+  // Only items explicitly marked as a problem get a mark (older contracts without a checklist stay blank)
+  const problemMarks = HANDOVER_CHECKLIST_ITEMS.filter(i => contract.checklist?.[i.key] === false && CHECKLIST_MARKS[i.key]).map(i => {
+    const m = CHECKLIST_MARKS[i.key];
+    const [x, y] = m.points[0];
+    const label = m.labelSide === 'left' ? { x: x - 38, y: y + 10, anchor: 'end' as const }
+      : m.labelSide === 'above' ? { x, y: y - 40, anchor: 'middle' as const }
+      : { x: x + 38, y: y + 10, anchor: 'start' as const };
+    return { ...m, labelPos: label };
+  });
   const deductions = contract.deductionsAmount || 0;
   const extraKmAmount = contract.extraKmAmount || 0;
   const netRefund = (contract.netRefundable !== undefined) 
@@ -343,6 +370,29 @@ export default function CarContractModal({ contract: initialContract, onClose, o
               </select>
             </label>
           </fieldset>
+
+          <fieldset className="space-y-1.5">
+            <legend className="text-xs font-black text-amber-400 mb-1">چک‌لیست سلامت خودرو</legend>
+            <p className="text-[10.5px] text-white/50">تیک را برای مورد مشکل‌دار بردارید تا روی همان جای ماشین در قرارداد علامت بخورد.</p>
+            {HANDOVER_CHECKLIST_ITEMS.map(item => {
+              const ok = contract.checklist?.[item.key] !== false;
+              return (
+                <label key={item.key} className={`flex items-center gap-2 rounded-lg border px-2 py-1.5 cursor-pointer ${ok ? 'border-white/10 text-white/80' : 'border-rose-500/50 bg-rose-500/10 text-rose-200'}`}>
+                  <input
+                    type="checkbox"
+                    checked={ok}
+                    onChange={e => {
+                      setContract(prev => ({ ...prev, checklist: { ...prev.checklist, [item.key]: e.target.checked } }));
+                      setDirty(true);
+                    }}
+                    className="h-3.5 w-3.5 accent-emerald-500 shrink-0"
+                  />
+                  <span className="flex-1 text-[11px]">{item.label}</span>
+                  <span className="text-[10px] font-black">{ok ? 'سالم' : 'مشکل دارد'}</span>
+                </label>
+              );
+            })}
+          </fieldset>
         </aside>
 
         <div className="contract-print-shell flex-1 min-w-0 overflow-y-auto p-3 sm:p-6 bg-slate-900">
@@ -408,6 +458,20 @@ export default function CarContractModal({ contract: initialContract, onClose, o
                         stroke="#dc2626" strokeWidth="14" strokeLinecap="round"
                       />
                     )}
+                    {problemMarks.map(m => (
+                      <g key={m.label} stroke="#dc2626" strokeWidth="7" strokeLinecap="round">
+                        {m.points.map(([x, y]) => (
+                          <g key={`${x}-${y}`}>
+                            <circle cx={x} cy={y} r="30" fill="#ffffff" fillOpacity="0.85" />
+                            <path d={`M${x - 15} ${y - 15}L${x + 15} ${y + 15}M${x - 15} ${y + 15}L${x + 15} ${y - 15}`} />
+                          </g>
+                        ))}
+                        <text
+                          x={m.labelPos.x} y={m.labelPos.y} textAnchor={m.labelPos.anchor} fontSize="28" fontFamily="sans-serif"
+                          fill="#dc2626" stroke="#ffffff" strokeWidth="8" paintOrder="stroke" strokeLinejoin="round"
+                        >{m.label}</text>
+                      </g>
+                    ))}
                   </svg>
                 </div>
 
