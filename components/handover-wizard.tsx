@@ -8,11 +8,12 @@ import {
   Download, Link2, Share2, Pencil, Loader2, Trash2, Plus, Film, IdCard, BookUser, Camera, AlertTriangle,
 } from 'lucide-react';
 import FancySelect from '@/components/ui/fancy-select';
+import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 import NumericInput from '@/components/numeric-input';
 import { confirmDialog } from '@/components/confirm-dialog';
 import {
   type Car, type CarContract, type CarReservation, type ContractAttachment, type ContractAttachmentKind, type FuelLevel,
-  HANDOVER_CHECKLIST_ITEMS, cleanCarTitle,
+  HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate, carModelName,
 } from '@/lib/db-cars';
 import { buildContractData } from '@/lib/contract-data';
 import { MAX_VIDEO_SECONDS, MediaError, compressImage, prepareVideo, uploadContractFile } from '@/lib/contract-media';
@@ -588,16 +589,47 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
     }
   };
 
-  const reservationOptions = pickable.map(r => ({
-    value: r.id,
-    label: `${r.customerName} — ${cleanCarTitle(r.carTitle || cars.find(c => c.id === r.carId)?.title || 'خودرو')}`,
-    hint: (
-      <>
-        از <bdi dir="ltr">{r.startDate}</bdi> تا <bdi dir="ltr">{r.endDate}</bdi>
-        {contracts.some(c => c.reservationId === r.id && c.handoverStatus !== 'pending_delivery') && ' · تحویل ثبت شده'}
-      </>
-    ),
-  }));
+  // Model + year + plate, so several units of the same model stay distinguishable
+  const carLine = (car: Car | undefined, fallbackTitle?: string) => {
+    const plate = car ? cleanCarPlate(car.plateNumber) : '';
+    return (
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate text-xs font-bold text-white">{car ? carModelName(car) : cleanCarTitle(fallbackTitle || 'خودرو')}</span>
+        {car?.modelYear && <span className="shrink-0 font-mono text-[10px] text-white/45">{car.modelYear}</span>}
+        {plate && (
+          <span className="ms-auto shrink-0 rounded-md border border-gold/30 bg-black/40 px-1.5 py-px font-mono text-[10.5px] font-bold text-gold dir-ltr">
+            {plate}
+          </span>
+        )}
+      </span>
+    );
+  };
+  const shortDate = (d: string) => (d || '').slice(5).replace('-', '/');
+
+  const reservationOptions: CompactPickerOption[] = pickable.map(r => {
+    const car = cars.find(c => c.id === r.carId);
+    const handedOver = contracts.some(c => c.reservationId === r.id && c.handoverStatus !== 'pending_delivery');
+    return {
+      value: r.id,
+      content: (
+        <span className="block min-w-0 space-y-0.5">
+          {carLine(car, r.carTitle)}
+          <span className="flex min-w-0 items-center gap-1.5 text-[10.5px] text-white/50">
+            <span className="truncate">{r.customerName}</span>
+            {handedOver && <span className="shrink-0 text-emerald-400/80">· تحویل ثبت شده</span>}
+            <span className="ms-auto shrink-0 font-mono">{shortDate(r.startDate)} تا {shortDate(r.endDate)}</span>
+          </span>
+        </span>
+      ),
+      selectedContent: (
+        <span className="flex min-w-0 items-center gap-1.5">
+          <span className="min-w-0 flex-1">{carLine(car, r.carTitle)}</span>
+          <span className="max-w-[40%] shrink-0 truncate text-[10.5px] text-white/55">{r.customerName}</span>
+        </span>
+      ),
+      searchText: `${r.carTitle || ''} ${car?.plateNumber || ''} ${r.customerName} ${r.customerPhone || ''}`,
+    };
+  });
 
   const StepIcon = STEPS[step].icon;
 
@@ -656,9 +688,11 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
             <div className="space-y-5">
               <Section title="رزرو">
                 <Field label="رزرو / خودرو مربوطه" required>
-                  <FancySelect
+                  <CompactPicker
                     value={draft.reservationId}
-                    placeholder="یک رزرو انتخاب کنید"
+                    placeholder="انتخاب رزرو"
+                    searchPlaceholder="مدل، پلاک یا نام مشتری..."
+                    emptyText="رزروی یافت نشد"
                     options={reservationOptions}
                     disabled={!!contract}
                     onChange={id => {
