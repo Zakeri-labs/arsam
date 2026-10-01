@@ -237,8 +237,13 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
 
       {/* SIGNATURES + DAY / DATE */}
       <div className="grid grid-cols-12 gap-2 text-[9px] font-bold">
-        <div className="col-span-5 border-2 border-gray-700 rounded-2xl h-[68px] px-2.5 py-1">
+        <div className="col-span-5 border-2 border-gray-700 rounded-2xl h-[68px] px-2.5 py-1 flex flex-col">
           <div className="flex justify-between"><span>Renter&apos;s Signature</span><span dir="rtl">توقيع المستأجر</span></div>
+          {contract.renterSignatureUrl && (
+            <div className="flex-1 min-h-0 flex items-center justify-center">
+              <img src={contract.renterSignatureUrl} crossOrigin="anonymous" alt="" className="max-h-[44px] max-w-[70%] object-contain" />
+            </div>
+          )}
         </div>
         <div className="col-span-2 flex flex-col gap-2">
           <div className="border border-gray-700 rounded-lg overflow-hidden flex-1 p-0.5">

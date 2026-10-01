@@ -162,6 +162,8 @@ export interface CarContract {
   shareVersion?: number;
   // Added by the contracts API: token of the public download link (never stored)
   shareToken?: string | null;
+  // Added by the contracts API: short-lived signed URL of the renter's signature, once signed (never stored)
+  renterSignatureUrl?: string | null;
 }
 
 // Contract detail fields: [CarContract key, column, kind]. Empty values are stored as NULL.

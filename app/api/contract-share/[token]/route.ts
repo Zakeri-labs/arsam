@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { readContractShareToken } from '@/lib/contract-share';
 import { getCarById, getContractById, getReservationById } from '@/lib/db-cars';
 import { buildContractData } from '@/lib/contract-data';
-import { getCompanySignatureUrl, presentContractAttachments } from '@/lib/storage';
+import { getCompanySignatureUrl, getRenterSignatureUrl, presentContractAttachments } from '@/lib/storage';
 import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
 
 const HEADERS = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' };
@@ -33,6 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ toke
     const car = carId ? await getCarById(carId) : undefined;
     const signatureUrl = await getCompanySignatureUrl().catch(() => null);
     const [shown] = await presentContractAttachments([contract], new Map([[contract.id, token]]));
+    shown.renterSignatureUrl = await getRenterSignatureUrl(contract.id).catch(() => null);
 
     return NextResponse.json({ contract: buildContractData(shown, reservation, car), signatureUrl }, { headers: HEADERS });
   } catch (error) {
