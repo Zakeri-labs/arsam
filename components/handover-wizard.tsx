@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   X, ChevronLeft, ChevronRight, UserRound, Car as CarIcon, CalendarClock, Images, CheckCircle2,
-  Download, Link2, Share2, Pencil, Loader2, Trash2, Plus, Film, IdCard, BookUser, Camera, AlertTriangle,
+  Download, Link2, Share2, Pencil, Loader2, Trash2, Plus, Film, IdCard, BookUser, Camera, AlertTriangle, Ban,
 } from 'lucide-react';
 import FancySelect from '@/components/ui/fancy-select';
 import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
@@ -17,7 +17,7 @@ import {
 } from '@/lib/db-cars';
 import { buildContractData } from '@/lib/contract-data';
 import { MAX_VIDEO_SECONDS, MediaError, compressImage, prepareVideo, uploadContractFile } from '@/lib/contract-media';
-import { contractShareUrl, useContractPdf } from './use-contract-pdf';
+import { contractShareUrl, revokeContractLink, REVOKE_LINK_MESSAGE, useContractPdf } from './use-contract-pdf';
 
 // Handover record + rental agreement in steps: every field printed on the contract is asked here,
 // photos/videos are optional, and the finished contract is only ever downloaded as a PDF.
@@ -522,15 +522,16 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
           if (!file.type.startsWith('video/') && !/\.(mp4|webm|mov)$/i.test(file.name)) throw new MediaError('فقط فایل ویدیو قابل انتخاب است');
           const { video, poster } = await prepareVideo(file, p => update({ progress: p }));
           update({ stage: 'upload', progress: 0 });
-          const posterUrl = poster ? await uploadContractFile(poster, false).catch(() => undefined) : undefined;
-          const url = await uploadContractFile(video, true, p => update({ progress: p }));
-          attachment = { kind, url, name: video.name, size: video.size, posterUrl };
+          const posterPath = poster ? await uploadContractFile(poster, false).catch(() => undefined) : undefined;
+          const path = await uploadContractFile(video, true, p => update({ progress: p }));
+          // Files are private: the local copy is shown until the saved contract brings back signed URLs
+          attachment = { kind, path, name: video.name, size: video.size, posterPath, posterUrl: posterPath && poster ? URL.createObjectURL(poster) : undefined };
         } else {
           if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new MediaError('فقط فایل تصویری قابل انتخاب است');
           const image = await compressImage(file);
           update({ stage: 'upload', progress: 0 });
-          const url = await uploadContractFile(image, false, p => update({ progress: p }));
-          attachment = { kind, url, name: image.name, size: image.size };
+          const path = await uploadContractFile(image, false, p => update({ progress: p }));
+          attachment = { kind, path, url: URL.createObjectURL(image), name: image.name, size: image.size };
         }
         setDraft(prev => ({ ...prev, attachments: [...prev.attachments, attachment] }));
         setDirty(true);
@@ -543,7 +544,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
   };
 
   const removeAttachment = (att: ContractAttachment) => {
-    setDraft(prev => ({ ...prev, attachments: prev.attachments.filter(a => a.url !== att.url) }));
+    setDraft(prev => ({ ...prev, attachments: prev.attachments.filter(a => a !== att) }));
     setDirty(true);
   };
 
@@ -574,6 +575,16 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
     } catch {
       window.prompt('لینک قرارداد:', shareLink);
     }
+  };
+
+  const revokeLink = async () => {
+    if (!saved || !(await confirmDialog({ title: 'باطل کردن لینک قرارداد', message: REVOKE_LINK_MESSAGE, confirmText: 'باطل کن و لینک جدید بساز' }))) return;
+    const result = await revokeContractLink(saved.id);
+    if ('error' in result) return toast.error(result.error);
+    const updated: CarContract = { ...saved, shareToken: result.shareToken, shareVersion: result.shareVersion };
+    setSaved(updated);
+    onSaved(updated);
+    toast.success('لینک‌های قبلی باطل شد؛ لینک جدید ساخته شد');
   };
 
   const shareContract = async () => {
@@ -957,8 +968,12 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
                 </button>
               </div>
               <p className="text-center text-[10.5px] leading-5 text-white/40">
-                هر کسی لینک را داشته باشد، بدون ورود فقط می‌تواند همین قرارداد را دانلود کند.
+                هر کسی لینک را داشته باشد، بدون ورود فقط می‌تواند همین قرارداد را دانلود کند. لینک ۳۰ روز اعتبار دارد.
               </p>
+              <button type="button" onClick={revokeLink} className="mx-auto flex items-center gap-1.5 text-[11px] font-bold text-rose-300/80 hover:text-rose-300">
+                <Ban size={13} />
+                باطل کردن لینک و ساخت لینک جدید
+              </button>
 
               {!signatureUrl && (
                 <div className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/[0.07] p-3 text-[11px] text-amber-200/90">

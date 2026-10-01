@@ -97,13 +97,21 @@ export const HANDOVER_CHECKLIST_ITEMS: { key: string; label: string }[] = [
 // Photos / videos attached to a contract in the handover wizard (all optional)
 export type ContractAttachmentKind = 'licence' | 'passport' | 'car_photo' | 'car_video';
 
+// Stored form: `path` (and `posterPath`) name objects in the private contract-media bucket.
+// `url` / `posterUrl` / `linkUrl` are short-lived signed URLs added by the API when the contract is
+// sent to the browser (never stored). Attachments saved before the private bucket existed carry
+// only a public `url` until the migration script rewrites them.
 export interface ContractAttachment {
   kind: ContractAttachmentKind;
-  url: string;
+  path?: string;
+  url?: string;
   name?: string;
   size?: number;
   // Videos: a still frame shown in the PDF, linked to the video itself
+  posterPath?: string;
   posterUrl?: string;
+  // Videos: stable, token-checked link printed in the PDF (redirects to a fresh signed URL)
+  linkUrl?: string;
 }
 
 export const CONTRACT_ATTACHMENT_KINDS: ContractAttachmentKind[] = ['licence', 'passport', 'car_photo', 'car_video'];
@@ -150,6 +158,8 @@ export interface CarContract {
   extraKmAmount?: number;
   deductionsAmount?: number;
   attachments?: ContractAttachment[];
+  // Bumped by "revoke link": only tokens carrying the current number are accepted
+  shareVersion?: number;
   // Added by the contracts API: token of the public download link (never stored)
   shareToken?: string | null;
 }
@@ -583,6 +593,7 @@ function contractFromRow(item: any): CarContract {
     notes: item.notes,
     createdAt: item.created_at,
     attachments: Array.isArray(item.attachments) ? item.attachments : [],
+    shareVersion: Number(item.share_version) > 0 ? Number(item.share_version) : 1,
   };
 }
 
@@ -978,6 +989,16 @@ export async function getContractById(id: string): Promise<CarContract | undefin
   return data ? contractFromRow(data) : undefined;
 }
 
+/** Revokes every link issued so far by moving the contract to the next share version. */
+export async function bumpContractShareVersion(id: string): Promise<number | undefined> {
+  const existing = await getContractById(id);
+  if (!existing) return undefined;
+  const next = (existing.shareVersion || 1) + 1;
+  const { error } = await supabase.from('car_contracts').update({ share_version: next }).eq('id', id).select('id').single();
+  ensureOk('car_contracts share_version update', error);
+  return next;
+}
+
 export async function getReservationById(id: string): Promise<CarReservation | undefined> {
   const { data, error } = await supabase.from('car_reservations').select('*').eq('id', id).maybeSingle();
   ensureOk('car_reservations select', error);
@@ -1026,6 +1047,7 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
     notes: data.notes ?? existing?.notes ?? '',
     createdAt: existing?.createdAt || data.createdAt || new Date().toISOString(),
     attachments: data.attachments ?? existing?.attachments ?? [],
+    shareVersion: existing?.shareVersion ?? 1,
   };
 
   // Details not sent in this save keep their stored value

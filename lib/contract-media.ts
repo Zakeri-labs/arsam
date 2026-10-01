@@ -234,7 +234,7 @@ export async function prepareVideo(file: File, onProgress: (p: number) => void):
   }
 }
 
-/** Uploads one prepared file through a signed URL; returns its public URL. */
+/** Uploads one prepared file through a signed URL; returns its path in the private bucket. */
 export async function uploadContractFile(file: File, video: boolean, onProgress?: (p: number) => void): Promise<string> {
   const signRes = await fetch('/api/cars/contracts/upload', {
     method: 'POST',
@@ -254,5 +254,5 @@ export async function uploadContractFile(file: File, video: boolean, onProgress?
     xhr.onerror = () => reject(new MediaError('ارتباط با سرور ذخیره‌سازی قطع شد'));
     xhr.send(file);
   });
-  return sign.publicUrl as string;
+  return sign.path as string;
 }

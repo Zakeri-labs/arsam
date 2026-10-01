@@ -7,7 +7,7 @@ import {
   Edit3, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Clock,
   AlertTriangle, Upload, FileText, UserCheck, Phone, ShieldCheck,
   CreditCard, Landmark, Wallet, Check, X, Info, ExternalLink, Image as ImageIcon,
-  Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge, Download, Link2
+  Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge, Download, Link2, Ban
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -19,7 +19,7 @@ import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/ut
 import OMRIcon from '@/components/omr-icon';
 import HandoverWizard from './handover-wizard';
 import FancySelect from '@/components/ui/fancy-select';
-import { useContractPdf, contractShareUrl } from './use-contract-pdf';
+import { useContractPdf, contractShareUrl, revokeContractLink, REVOKE_LINK_MESSAGE } from './use-contract-pdf';
 import { buildContractData } from '@/lib/contract-data';
 import { confirmDialog } from '@/components/confirm-dialog';
 import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
@@ -144,6 +144,21 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       toast.success('لینک دانلود قرارداد کپی شد');
     } catch {
       window.prompt('لینک قرارداد:', link);
+    }
+  };
+
+  const handleRevokeContractLink = async (cnt: CarContract) => {
+    if (!(await confirmDialog({ title: 'باطل کردن لینک قرارداد', message: REVOKE_LINK_MESSAGE, confirmText: 'باطل کن و لینک جدید بساز' }))) return;
+    const result = await revokeContractLink(cnt.id);
+    if ('error' in result) return toast.error(result.error);
+    setContracts(prev => prev.map(c => (c.id === cnt.id ? { ...c, shareToken: result.shareToken, shareVersion: result.shareVersion } : c)));
+    const link = contractShareUrl(result.shareToken);
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success('لینک‌های قبلی باطل شد؛ لینک جدید کپی شد');
+    } catch {
+      toast.success('لینک‌های قبلی باطل شد');
+      window.prompt('لینک جدید قرارداد:', link);
     }
   };
 
@@ -1602,6 +1617,13 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                             className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
                           >
                             <Link2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleRevokeContractLink(cnt)}
+                            title="باطل کردن لینک‌های قبلی و ساخت لینک جدید"
+                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-rose-400 hover:border-rose-400/40 transition-colors cursor-pointer"
+                          >
+                            <Ban size={14} />
                           </button>
                           <button
                             onClick={() => setWizard({ contract: cnt })}
