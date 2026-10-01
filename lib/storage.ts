@@ -1,5 +1,5 @@
 import path from 'path';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { supabase } from './supabase';
 import type { ContractAttachment } from './db-cars';
 
@@ -187,4 +187,36 @@ export async function deleteCompanySignature(): Promise<void> {
   if (!previous.length) return;
   const { error } = await supabase.storage.from(UPLOAD_BUCKET).remove(previous.map(o => `${SIGNATURE_FOLDER}/${o.name}`));
   if (error) throw error;
+}
+
+// --- Renter signature: drawn on the customer's phone, kept in the private bucket ---
+// One fixed path per contract (derived from its id), so no database column is needed.
+// It can be written once only: a signed contract cannot be re-signed through the public link.
+
+export const MAX_RENTER_SIGNATURE_BYTES = 1024 * 1024;
+const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47];
+
+export const renterSignaturePath = (contractId: string) =>
+  `contracts/renter-signature_${createHash('sha256').update(contractId).digest('hex').slice(0, 32)}.png`;
+
+export async function getRenterSignatureUrl(contractId: string): Promise<string | null> {
+  const objectPath = renterSignaturePath(contractId);
+  const signed = await signContractMedia([objectPath]);
+  return signed.get(objectPath) || null;
+}
+
+/** Saves the renter's signature PNG. Returns false when the contract was already signed. */
+export async function saveRenterSignature(contractId: string, bytes: ArrayBuffer): Promise<boolean> {
+  const view = new Uint8Array(bytes);
+  if (!view.length || view.length > MAX_RENTER_SIGNATURE_BYTES || PNG_MAGIC.some((b, i) => view[i] !== b)) {
+    throw new UploadRejected('امضا معتبر نیست.');
+  }
+  const { error } = await supabase.storage
+    .from(CONTRACT_MEDIA_BUCKET)
+    .upload(renterSignaturePath(contractId), bytes, { contentType: 'image/png', upsert: false });
+  if (error) {
+    if ((error as any).statusCode === '409' || /already exists|duplicate/i.test(error.message)) return false;
+    throw error;
+  }
+  return true;
 }

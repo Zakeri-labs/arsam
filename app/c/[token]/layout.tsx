@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Rental Agreement | ARSAM RENT A CAR',
-  description: 'Download your car rental agreement',
+  description: 'View and download your car rental agreement',
   robots: { index: false, follow: false },
 };
 

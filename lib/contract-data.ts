@@ -50,6 +50,7 @@ export interface ContractData {
   // Handover health checklist (true = OK, false = has a problem); problems are marked on the car diagram
   checklist?: Record<string, boolean>;
   attachments?: ContractAttachment[];
+  renterSignatureUrl?: string | null;
 }
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -99,5 +100,6 @@ export function buildContractData(cnt: CarContract, reservation?: CarReservation
     checklist: cnt.checklist,
     notes: cnt.notes,
     attachments: cnt.attachments || [],
+    renterSignatureUrl: cnt.renterSignatureUrl || undefined,
   };
 }
