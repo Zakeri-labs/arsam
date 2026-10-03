@@ -11,6 +11,7 @@ import FancySelect from '@/components/ui/fancy-select';
 import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 import NumericInput from '@/components/numeric-input';
 import { confirmDialog } from '@/components/confirm-dialog';
+import ContractFinanceCard from '@/components/contract-finance-card';
 import {
   type Car, type CarContract, type CarReservation, type ContractAttachment, type ContractAttachmentKind, type FuelLevel,
   HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate, carModelName,
@@ -892,6 +893,8 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
                 </div>
               </Section>
 
+              <ContractFinanceCard reservationId={draft.reservationId} refreshKey={saved} dirty={dirty} />
+
               <Section title="ملاحظات">
                 <textarea
                   rows={3}
@@ -928,6 +931,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
 
           {step === 4 && saved && (
             <div className="space-y-4">
+              <ContractFinanceCard reservationId={saved.reservationId || draft.reservationId} refreshKey={saved} />
               <div className="flex flex-col items-center gap-2 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-5 text-center">
                 <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
                   <CheckCircle2 size={26} />
