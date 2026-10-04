@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getContracts, saveContract, deleteContract, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
+import { getContracts, saveContract, deleteContract, getContractById, getReservationById, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
 import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
 import { createContractShareToken } from '@/lib/contract-share';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments } from '@/lib/storage';
@@ -57,6 +57,12 @@ export async function POST(request: Request) {
     const body = await request.json();
     if (!body.customerName || !body.carTitle || body.initialOdometer === undefined || body.initialOdometer === '') {
       return NextResponse.json({ error: 'اطلاعات ضروری صورتجلسه ناقص است' }, { status: 400 });
+    }
+    // The customer of a contract is the customer of its reservation: a contract save can never rename it
+    const linkedReservationId = body.reservationId || (body.id ? (await getContractById(body.id))?.reservationId : undefined);
+    if (linkedReservationId) {
+      const reservation = await getReservationById(linkedReservationId);
+      if (reservation) body.customerName = reservation.customerName;
     }
     body.attachments = cleanAttachments(body.attachments);
     delete body.shareToken;
