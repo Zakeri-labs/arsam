@@ -2630,7 +2630,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 space-y-2">
                           <div className="text-[11px] font-black text-emerald-300">
                             ✓ مشتری صحت این فایل‌ها را امضا کرد؛ دیگر قابل تغییر یا حذف نیستند
-                            <span className="block text-[10px] font-normal text-emerald-200/70">{new Date(sig.signedAt).toLocaleString('fa-IR')}</span>
+                            <bdi dir="ltr" className="block text-[10px] font-normal text-emerald-200/70">{new Date(sig.signedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}</bdi>
                           </div>
                           {sig.url && (
                             // eslint-disable-next-line @next/next/no-img-element
