@@ -34,8 +34,22 @@ export interface CarReservation {
   depositPaid: number;
   status: 'confirmed' | 'active' | 'completed' | 'cancelled';
   notes?: string;
+  // Photos taken when the car comes back: kept on the reservation file, never printed in the contract
+  returnPhotos?: ContractAttachment[];
+  // The customer's signature confirming the return photos/videos; cleared automatically when they change
+  returnSignature?: ReturnSignature | null;
   createdAt?: string;
 }
+
+export interface ReturnSignature {
+  path?: string;
+  url?: string; // short-lived signed URL added by the API (never stored)
+  signedAt: string;
+  fingerprint: string; // which media the customer signed for
+}
+
+export const returnMediaFingerprint = (items: ContractAttachment[] | undefined) =>
+  (items || []).map(a => a.path || a.url || '').sort().join('|');
 
 export type PaymentMethod = 'cash_reza' | 'cash_mohammadi' | 'bank_reza' | 'bank_mohammadi';
 
@@ -544,6 +558,8 @@ function reservationFromRow(item: any): CarReservation {
     depositPaid: Number(item.deposit_paid),
     status: item.status,
     notes: item.notes,
+    returnPhotos: Array.isArray(item.return_photos) ? item.return_photos : [],
+    returnSignature: item.return_signature || null,
     createdAt: item.created_at,
   };
 }
@@ -702,8 +718,23 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     depositPaid: resData.depositPaid !== undefined ? Number(resData.depositPaid) : (existing?.depositPaid || 0),
     status: resData.status ?? existing?.status ?? 'confirmed',
     notes: resData.notes ?? existing?.notes ?? '',
+    returnPhotos: resData.returnPhotos ?? existing?.returnPhotos ?? [],
+    returnSignature: existing?.returnSignature ?? null,
     createdAt: existing?.createdAt || resData.createdAt || now,
   };
+
+  // Once the customer has signed, the return media is final: it can no longer be changed, removed or re-signed
+  let writeSignature = false;
+  if (resData.returnPhotos !== undefined) {
+    const fingerprint = returnMediaFingerprint(reservation.returnPhotos);
+    if (existing?.returnSignature) {
+      if (existing.returnSignature.fingerprint !== fingerprint || resData.returnSignature?.path) throw new ReturnMediaLockedError();
+      reservation.returnSignature = existing.returnSignature;
+    } else if (resData.returnSignature?.path && fingerprint) {
+      reservation.returnSignature = { path: resData.returnSignature.path, signedAt: now, fingerprint };
+      writeSignature = true;
+    }
+  }
 
   const { error } = await supabase.from('car_reservations').upsert({
     id: reservation.id,
@@ -718,10 +749,33 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     deposit_paid: reservation.depositPaid,
     status: reservation.status,
     notes: reservation.notes,
+    // Only written when sent, so other saves keep working before the return_photos column exists
+    ...(resData.returnPhotos !== undefined ? { return_photos: reservation.returnPhotos } : {}),
+    ...(writeSignature ? { return_signature: reservation.returnSignature } : {}),
   }, { onConflict: 'id' });
   ensureOk('car_reservations upsert', error);
 
   return reservation;
+}
+
+export class ReturnMediaLockedError extends Error {
+  constructor() {
+    super('return media was signed by the customer and is locked');
+  }
+}
+
+export const RETURN_SIGNED_MESSAGE = 'مشتری تصاویر و ویدیوهای عودت این رزرو را امضا کرده است؛ قرارداد و رزرو آن دیگر قابل حذف نیستند.';
+
+export class ReturnSignedError extends Error {
+  constructor() {
+    super('return media was signed by the customer');
+  }
+}
+
+async function hasReturnSignature(reservationId: string): Promise<boolean> {
+  const { data, error } = await supabase.from('car_reservations').select('return_signature').eq('id', reservationId).maybeSingle();
+  ensureOk('car_reservations select', error);
+  return !!data?.return_signature;
 }
 
 export class ReservationDeleteBlockedError extends Error {
@@ -743,6 +797,7 @@ export async function findHandedOverContractId(reservationId: string): Promise<s
 // with it. After handover it can neither be deleted nor cancelled until its contract has been deleted,
 // which also removes its accounting rows (see deleteContract).
 export async function deleteReservation(id: string): Promise<{ contractIds: string[]; transactionIds: string[] }> {
+  if (await hasReturnSignature(id)) throw new ReturnSignedError();
   const handedOverId = await findHandedOverContractId(id);
   if (handedOverId) throw new ReservationDeleteBlockedError(handedOverId);
 
@@ -1130,6 +1185,7 @@ export async function deleteContract(id: string): Promise<{ contractIds: string[
   const { data: row, error: selectError } = await supabase.from('car_contracts').select('id, reservation_id').eq('id', id).maybeSingle();
   ensureOk('car_contracts select', selectError);
   if (!row) return { contractIds: [], transactionIds: [] };
+  if (row.reservation_id && (await hasReturnSignature(row.reservation_id))) throw new ReturnSignedError();
 
   let transactionIds: string[] = [];
   if (row.reservation_id) {
