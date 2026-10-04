@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useRef, useState } from 'react';
 import { Download, Loader2, FileText, AlertTriangle } from 'lucide-react';
 import type { ContractData } from '@/lib/contract-data';
 import { useContractPdf } from '@/components/use-contract-pdf';
@@ -47,6 +47,39 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
       setFailed(true);
     }
   };
+
+  // The customer opened the link to get the file: start the download as soon as the contract
+  // has loaded (once). The button stays as a retry.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!contract || autoStarted.current) return;
+    autoStarted.current = true;
+    download();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract]);
+
+  // Once the pages are rendered, show the contract itself (the file has been downloaded too)
+  if (contract && pdf.previews.length && !pdf.busy) {
+    return (
+      <main className="min-h-dvh bg-[#0b1426] px-3 py-4 font-sans text-white">
+        <div className="mx-auto flex max-w-3xl flex-col gap-3">
+          <button
+            type="button"
+            onClick={download}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#c9a04a] to-amber-500 py-3 text-[14px] font-black text-black shadow-lg"
+          >
+            <Download size={18} />
+            Download PDF · دانلود قرارداد
+          </button>
+          {failed && <p className="text-center text-[12px] text-rose-300">Download failed, please try again.</p>}
+          {pdf.previews.map((src, i) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={i} src={src} alt={`Page ${i + 1}`} className="w-full rounded-lg bg-white shadow-xl" />
+          ))}
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-[#070e1b] via-[#0f1e37] to-[#162a4a] px-4 py-10 font-sans text-white">

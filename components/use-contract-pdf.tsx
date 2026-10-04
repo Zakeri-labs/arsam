@@ -20,6 +20,7 @@ interface Job {
 export function useContractPdf() {
   const [job, setJob] = useState<Job | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
+  const [previews, setPreviews] = useState<string[]>([]); // rendered page images, kept after the download for on-screen viewing
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -27,7 +28,12 @@ export function useContractPdf() {
     let cancelled = false;
     (async () => {
       try {
-        const blob = await renderContractPdf(ref.current!, (done, total) => !cancelled && setProgress({ done, total }));
+        setPreviews([]);
+        const blob = await renderContractPdf(
+          ref.current!,
+          (done, total) => !cancelled && setProgress({ done, total }),
+          url => !cancelled && setPreviews(p => [...p, url])
+        );
         saveBlob(blob, contractPdfFileName(job.data.id));
         job.resolve();
       } catch (err) {
@@ -58,7 +64,7 @@ export function useContractPdf() {
         )
       : null;
 
-  return { download, busy: !!job, progress, element };
+  return { download, busy: !!job, progress, element, previews };
 }
 
 export const contractShareUrl = (token: string) => `${window.location.origin}/c/${token}`;

@@ -147,7 +147,11 @@ async function waitForImages(root: HTMLElement) {
 }
 
 /** Renders every [data-pdf-page] under `root` into one PDF Blob. */
-export async function renderContractPdf(root: HTMLElement, onProgress?: (done: number, total: number) => void): Promise<Blob> {
+export async function renderContractPdf(
+  root: HTMLElement,
+  onProgress?: (done: number, total: number) => void,
+  onPage?: (dataUrl: string) => void
+): Promise<Blob> {
   const { toJpeg, getFontEmbedCSS } = await import('html-to-image');
   await waitForImages(root);
   const nodes = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-page]'));
@@ -155,24 +159,41 @@ export async function renderContractPdf(root: HTMLElement, onProgress?: (done: n
   // Fonts are embedded once and reused for every page
   const fontEmbedCSS = await getFontEmbedCSS(nodes[0]).catch(() => undefined);
 
+  const render = (node: HTMLElement) =>
+    toJpeg(node, {
+      quality: 0.9,
+      pixelRatio: PIXEL_RATIO,
+      backgroundColor: '#ffffff',
+      width: node.offsetWidth,
+      height: node.offsetHeight,
+      fontEmbedCSS,
+    });
+
+  // html-to-image often returns a blank first page: images/fonts are fetched and inlined
+  // lazily, so the first pass can finish before they are ready. A discarded warm-up pass
+  // fills its cache, and any page that still comes out blank is rendered again.
+  await new Promise(r => requestAnimationFrame(() => r(null)));
+  await render(nodes[0]).catch(() => undefined);
+
+  // A blank page is a tiny JPEG compared to a page with content
+  const isBlank = (url: string, node: HTMLElement) => url.length < node.offsetWidth * node.offsetHeight * 0.02;
+
   const pages: PdfPage[] = [];
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const cssWidth = node.offsetWidth;
     const cssHeight = node.offsetHeight;
-    const dataUrl = await toJpeg(node, {
-      quality: 0.9,
-      pixelRatio: PIXEL_RATIO,
-      backgroundColor: '#ffffff',
-      width: cssWidth,
-      height: cssHeight,
-      fontEmbedCSS,
-    });
+    let dataUrl = await render(node);
+    for (let attempt = 0; attempt < 2 && isBlank(dataUrl, node); attempt++) {
+      await new Promise(r => setTimeout(r, 300));
+      dataUrl = await render(node);
+    }
     const box = node.getBoundingClientRect();
     const links = Array.from(node.querySelectorAll<HTMLElement>('[data-pdf-link]')).map(el => {
       const r = el.getBoundingClientRect();
       return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height, url: el.dataset.pdfLink || '' };
     }).filter(l => l.url);
+    onPage?.(dataUrl);
     const jpeg = dataUrlToBytes(dataUrl);
     const size = jpegSize(jpeg);
     pages.push({
