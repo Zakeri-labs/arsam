@@ -762,6 +762,20 @@ export class ReturnMediaLockedError extends Error {
   }
 }
 
+export const RETURN_SIGNED_MESSAGE = 'مشتری تصاویر و ویدیوهای عودت این رزرو را امضا کرده است؛ قرارداد و رزرو آن دیگر قابل حذف نیستند.';
+
+export class ReturnSignedError extends Error {
+  constructor() {
+    super('return media was signed by the customer');
+  }
+}
+
+async function hasReturnSignature(reservationId: string): Promise<boolean> {
+  const { data, error } = await supabase.from('car_reservations').select('return_signature').eq('id', reservationId).maybeSingle();
+  ensureOk('car_reservations select', error);
+  return !!data?.return_signature;
+}
+
 export class ReservationDeleteBlockedError extends Error {
   contractId: string;
   constructor(contractId: string) {
@@ -781,6 +795,7 @@ export async function findHandedOverContractId(reservationId: string): Promise<s
 // with it. After handover it can neither be deleted nor cancelled until its contract has been deleted,
 // which also removes its accounting rows (see deleteContract).
 export async function deleteReservation(id: string): Promise<{ contractIds: string[]; transactionIds: string[] }> {
+  if (await hasReturnSignature(id)) throw new ReturnSignedError();
   const handedOverId = await findHandedOverContractId(id);
   if (handedOverId) throw new ReservationDeleteBlockedError(handedOverId);
 
@@ -1168,6 +1183,7 @@ export async function deleteContract(id: string): Promise<{ contractIds: string[
   const { data: row, error: selectError } = await supabase.from('car_contracts').select('id, reservation_id').eq('id', id).maybeSingle();
   ensureOk('car_contracts select', selectError);
   if (!row) return { contractIds: [], transactionIds: [] };
+  if (row.reservation_id && (await hasReturnSignature(row.reservation_id))) throw new ReturnSignedError();
 
   let transactionIds: string[] = [];
   if (row.reservation_id) {

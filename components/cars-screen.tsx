@@ -167,6 +167,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const handleDeleteContract = async (cnt: CarContract) => {
     // Deleting the contract also removes its accounting rows; the reservation can then be cancelled or deleted
     const linkedTx = cnt.reservationId ? transactions.filter(t => t.reservationId === cnt.reservationId) : [];
+    if (reservations.find(r => r.id === cnt.reservationId)?.returnSignature) {
+      toast.error('مشتری تصاویر و ویدیوهای عودت این رزرو را امضا کرده است؛ این قرارداد دیگر قابل حذف نیست');
+      return;
+    }
     const handedOver = cnt.handoverStatus !== 'pending_delivery';
     const lines = [
       `قرارداد ${cnt.id} (${cnt.customerName} - ${cleanCarTitle(cnt.carTitle)}) برای همیشه حذف می‌شود.`,
@@ -1715,7 +1719,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                           >
                             <Edit3 size={14} />
                           </button>
-                          {canDeleteContracts && (
+                          {canDeleteContracts && !reservations.find(r => r.id === cnt.reservationId)?.returnSignature && (
                             <button
                               onClick={() => handleDeleteContract(cnt)}
                               title="حذف قرارداد (مدیر کل)"
@@ -2708,7 +2712,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       لغو رزرو
                     </button>
                   )}
-                  {!handedOverContractForDetails && (
+                  {!handedOverContractForDetails && !selectedResDetails.returnSignature && (
                     <button
                       onClick={() => handleDeleteReservation(selectedResDetails.id)}
                       className="px-4 py-2 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30"

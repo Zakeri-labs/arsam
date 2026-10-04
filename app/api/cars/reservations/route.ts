@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError, ReturnMediaLockedError, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError, ReturnMediaLockedError, ReturnSignedError, RETURN_SIGNED_MESSAGE, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signContractMedia } from '@/lib/storage';
 
 const HANDED_OVER_MESSAGE = (contractId: string) =>
@@ -111,6 +111,9 @@ export async function DELETE(request: Request) {
   } catch (error: any) {
     if (error instanceof ReservationDeleteBlockedError) {
       return NextResponse.json({ error: HANDED_OVER_MESSAGE(error.contractId) }, { status: 409 });
+    }
+    if (error instanceof ReturnSignedError) {
+      return NextResponse.json({ error: RETURN_SIGNED_MESSAGE }, { status: 409 });
     }
     console.error('Error deleting reservation:', error);
     return NextResponse.json({ error: 'خطا در حذف رزرو' }, { status: 500 });
