@@ -164,6 +164,59 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
   };
 
+  const renderContractActions = (cnt: CarContract) => (
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          <button
+            onClick={() => handleDownloadContract(cnt)}
+            disabled={contractPdf.busy}
+            title="دانلود قرارداد PDF"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer disabled:opacity-50"
+          >
+            {contractPdf.busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            <span>PDF</span>
+          </button>
+          <button
+            onClick={() => handleCopyContractLink(cnt)}
+            title="کپی لینک دانلود قرارداد برای مشتری"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+          >
+            <Link2 size={14} />
+          </button>
+          <button
+            onClick={() => handleRevokeContractLink(cnt)}
+            title="باطل کردن لینک‌های قبلی و ساخت لینک جدید"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-rose-400 hover:border-rose-400/40 transition-colors cursor-pointer"
+          >
+            <Ban size={14} />
+          </button>
+          {cnt.reservationId && reservations.some(r => r.id === cnt.reservationId) && (
+            <button
+              onClick={() => setReturnModalResId(cnt.reservationId)}
+              title="ثبت عودت: تصاویر و ویدیوهای بازگشت خودرو و امضای مشتری"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+            >
+              <Camera size={14} />
+            </button>
+          )}
+          <button
+            onClick={() => setWizard({ contract: cnt })}
+            title="ویرایش صورتجلسه، اطلاعات قرارداد و تصاویر"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+          >
+            <Edit3 size={14} />
+          </button>
+          {canDeleteContracts && !reservations.find(r => r.id === cnt.reservationId)?.returnSignature && (
+            <button
+              onClick={() => handleDeleteContract(cnt)}
+              title="حذف قرارداد (مدیر کل)"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+  );
+
   const handleDeleteContract = async (cnt: CarContract) => {
     // Deleting the contract also removes its accounting rows; the reservation can then be cancelled or deleted
     const linkedTx = cnt.reservationId ? transactions.filter(t => t.reservationId === cnt.reservationId) : [];
@@ -1634,7 +1687,45 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
           {/* CONTRACTS TABLE */}
           <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden w-full">
-            <div className="overflow-x-auto w-full">
+            {/* Phones: one card per contract */}
+            <div className="md:hidden divide-y divide-white/10">
+              {contracts.map(cnt => (
+                <div key={cnt.id} className="space-y-2.5 p-4 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      onClick={() => setWizard({ contract: cnt, startAtDone: true })}
+                      className="font-mono font-bold text-gold hover:underline cursor-pointer"
+                    >
+                      {cnt.id}
+                    </button>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${HANDOVER_STATUS_BADGES[cnt.handoverStatus].cls}`}>
+                      {HANDOVER_STATUS_BADGES[cnt.handoverStatus].label}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-white block">{cnt.carTitle}</span>
+                    <span className="text-[10px] text-white/50 font-mono">{cnt.plateNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-white">{cnt.customerName}</span>
+                    <span className="text-[10px] text-white/50 dir-ltr">{cnt.customerPhone}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#07111f] p-2.5 text-[11px]">
+                    <div><span className="block text-white/40">کیلومتر تحویل/عودت</span><span dir="ltr" className="font-mono text-white/80 inline-block">{cnt.initialOdometer.toLocaleString()} / {cnt.returnOdometer ? cnt.returnOdometer.toLocaleString() : '—'} KM</span></div>
+                    <div><span className="block text-white/40">بنزین</span><span className="font-bold text-blue-400">{FUEL_LEVEL_LABELS[cnt.fuelLevel] || cnt.fuelLevel}</span></div>
+                    <div className="col-span-2"><span className="block text-white/40">ودیعه</span><span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">{cnt.depositAmount.toLocaleString()} OMR ({DEPOSIT_STATUS_LABELS[cnt.depositStatus]})</span></div>
+                  </div>
+                  {cnt.checklist && (
+                    <span className="block text-[10px] text-white/50">
+                      چک‌لیست: {HANDOVER_CHECKLIST_ITEMS.filter(i => cnt.checklist?.[i.key]).length}/{HANDOVER_CHECKLIST_ITEMS.length} مورد سالم
+                    </span>
+                  )}
+                  {renderContractActions(cnt)}
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto w-full">
               <table className="w-full min-w-[700px] text-right border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-white/10 text-gold font-extrabold text-[11px] bg-[#07111f]">
@@ -1690,56 +1781,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                         )}
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleDownloadContract(cnt)}
-                            disabled={contractPdf.busy}
-                            title="دانلود قرارداد PDF"
-                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer disabled:opacity-50"
-                          >
-                            {contractPdf.busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                            <span>PDF</span>
-                          </button>
-                          <button
-                            onClick={() => handleCopyContractLink(cnt)}
-                            title="کپی لینک دانلود قرارداد برای مشتری"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
-                          >
-                            <Link2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleRevokeContractLink(cnt)}
-                            title="باطل کردن لینک‌های قبلی و ساخت لینک جدید"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-rose-400 hover:border-rose-400/40 transition-colors cursor-pointer"
-                          >
-                            <Ban size={14} />
-                          </button>
-                          {cnt.reservationId && reservations.some(r => r.id === cnt.reservationId) && (
-                            <button
-                              onClick={() => setReturnModalResId(cnt.reservationId)}
-                              title="ثبت عودت: تصاویر و ویدیوهای بازگشت خودرو و امضای مشتری"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
-                            >
-                              <Camera size={14} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => setWizard({ contract: cnt })}
-                            title="ویرایش صورتجلسه، اطلاعات قرارداد و تصاویر"
-                            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
-                          >
-                            <Edit3 size={14} />
-                          </button>
-                          {canDeleteContracts && !reservations.find(r => r.id === cnt.reservationId)?.returnSignature && (
-                            <button
-                              onClick={() => handleDeleteContract(cnt)}
-                              title="حذف قرارداد (مدیر کل)"
-                              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                        </div>
+                        {renderContractActions(cnt)}
                       </td>
                     </tr>
                   ))}
