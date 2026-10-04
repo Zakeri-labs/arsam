@@ -105,6 +105,16 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
     }
   };
 
+  // The customer opened the link to get the file: start the download as soon as the contract has loaded
+  // (once). The download button stays as a retry.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!contract || autoStarted.current) return;
+    autoStarted.current = true;
+    download();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contract]);
+
   if (error || !contract) {
     return (
       <main className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-[#070e1b] via-[#0f1e37] to-[#162a4a] px-4 py-10 font-sans text-white">
