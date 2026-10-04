@@ -22,7 +22,8 @@ import FancySelect from '@/components/ui/fancy-select';
 import { useContractPdf, contractShareUrl, revokeContractLink, REVOKE_LINK_MESSAGE } from './use-contract-pdf';
 import { buildContractData } from '@/lib/contract-data';
 import { confirmDialog } from '@/components/confirm-dialog';
-import { MediaError, compressImage, uploadContractFile } from '@/lib/contract-media';
+import { MediaError, compressImage, prepareVideo, uploadContractFile } from '@/lib/contract-media';
+import SignaturePadModal from '@/components/signature-pad-modal';
 import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 
 interface CRMClient {
@@ -319,33 +320,51 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const activeReservations = useMemo(() => reservations.filter(r => r.status !== 'cancelled'), [reservations]);
 
   // Contract of the reservation open in the details window once its car was handed over (blocks cancel/delete)
-  // Photos taken at car return live on the reservation file (never in the contract)
+  // Photos/videos taken at car return live on the reservation file (never in the contract); the customer
+  // signs to confirm them, and any later change to the media voids that signature on the server.
   const [uploadingReturnPhotos, setUploadingReturnPhotos] = useState(0);
+  const [returnSignOpen, setReturnSignOpen] = useState(false);
+  const [signingReturn, setSigningReturn] = useState(false);
 
-  const saveReturnPhotos = async (reservation: CarReservation, photos: NonNullable<CarReservation['returnPhotos']>) => {
+  const saveReturnMedia = async (reservation: CarReservation, photos: NonNullable<CarReservation['returnPhotos']>, signaturePath?: string) => {
     const res = await fetch('/api/cars/reservations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...reservation, returnPhotos: photos }),
+      body: JSON.stringify({ ...reservation, returnPhotos: photos, returnSignature: signaturePath ? { path: signaturePath } : undefined }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) throw new Error(data.error || 'ذخیره تصاویر عودت ناموفق بود');
     const saved: CarReservation = data.reservation;
-    setReservations(prev => prev.map(r => (r.id === saved.id ? { ...r, returnPhotos: saved.returnPhotos } : r)));
-    setSelectedResDetails(cur => (cur && cur.id === saved.id ? { ...cur, returnPhotos: saved.returnPhotos } : cur));
+    const patch = { returnPhotos: saved.returnPhotos, returnSignature: saved.returnSignature };
+    setReservations(prev => prev.map(r => (r.id === saved.id ? { ...r, ...patch } : r)));
+    setSelectedResDetails(cur => (cur && cur.id === saved.id ? { ...cur, ...patch } : cur));
   };
 
-  const handleAddReturnPhotos = async (reservation: CarReservation, files: FileList | null) => {
+  const confirmVoidSignature = async (reservation: CarReservation) => {
+    if (!reservation.returnSignature) return true;
+    return confirmDialog({ title: 'ابطال امضا', message: 'با تغییر تصاویر و ویدیوها، امضای تأیید مشتری باطل می‌شود و باید دوباره امضا شود. ادامه می‌دهید؟', confirmText: 'ادامه' });
+  };
+
+  const handleAddReturnMedia = async (reservation: CarReservation, files: FileList | null) => {
     if (!files?.length) return;
     const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    if (!(await confirmVoidSignature(current))) return;
     const added: NonNullable<CarReservation['returnPhotos']> = [];
     setUploadingReturnPhotos(n => n + files.length);
     for (const file of Array.from(files)) {
       try {
-        if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new MediaError('فقط فایل تصویری قابل انتخاب است');
-        const image = await compressImage(file);
-        const path = await uploadContractFile(image, false);
-        added.push({ kind: 'car_photo', path, name: image.name, size: image.size });
+        const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name);
+        if (isVideo) {
+          const { video, poster } = await prepareVideo(file, () => {});
+          const posterPath = poster ? await uploadContractFile(poster, false).catch(() => undefined) : undefined;
+          const path = await uploadContractFile(video, true);
+          added.push({ kind: 'car_video', path, name: video.name, size: video.size, posterPath });
+        } else {
+          if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new MediaError('فقط فایل تصویری یا ویدیو قابل انتخاب است');
+          const image = await compressImage(file);
+          const path = await uploadContractFile(image, false);
+          added.push({ kind: 'car_photo', path, name: image.name, size: image.size });
+        }
       } catch (err) {
         toast.error(err instanceof MediaError ? err.message : `آپلود «${file.name}» ناموفق بود`);
       } finally {
@@ -354,20 +373,35 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
     if (!added.length) return;
     try {
-      await saveReturnPhotos(current, [...(current.returnPhotos || []), ...added]);
-      toast.success('تصاویر عودت در پرونده رزرو ثبت شد');
+      await saveReturnMedia(current, [...(current.returnPhotos || []), ...added]);
+      toast.success('فایل‌های عودت در پرونده رزرو ثبت شد');
     } catch (err: any) {
       toast.error(err.message);
     }
   };
 
-  const handleRemoveReturnPhoto = async (reservation: CarReservation, index: number) => {
-    if (!(await confirmDialog({ title: 'حذف تصویر', message: 'این تصویر از پرونده رزرو حذف شود؟', confirmText: 'حذف' }))) return;
+  const handleRemoveReturnMedia = async (reservation: CarReservation, index: number) => {
     const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    if (!(await confirmDialog({ title: 'حذف فایل', message: 'این فایل از پرونده رزرو حذف شود؟' + (current.returnSignature ? ' امضای مشتری هم باطل می‌شود.' : ''), confirmText: 'حذف' }))) return;
     try {
-      await saveReturnPhotos(current, (current.returnPhotos || []).filter((_, i) => i !== index));
+      await saveReturnMedia(current, (current.returnPhotos || []).filter((_, i) => i !== index));
     } catch (err: any) {
       toast.error(err.message);
+    }
+  };
+
+  const handleSignReturn = async (reservation: CarReservation, png: File) => {
+    const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    setSigningReturn(true);
+    try {
+      const path = await uploadContractFile(png, false);
+      await saveReturnMedia(current, current.returnPhotos || [], path);
+      setReturnSignOpen(false);
+      toast.success('امضای مشتری ثبت شد');
+    } catch (err: any) {
+      toast.error(err.message || 'ثبت امضا ناموفق بود');
+    } finally {
+      setSigningReturn(false);
     }
   };
 
@@ -2475,6 +2509,15 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       {/* ==================================================================== */}
       {/* MODAL 3: RESERVATION DETAILS & ACTIONS                               */}
       {/* ==================================================================== */}
+      {returnSignOpen && selectedResDetails && (
+        <SignaturePadModal
+          title={`تأیید صحت تصاویر و ویدیوهای عودت — ${selectedResDetails.customerName}`}
+          description="با امضای زیر، مشتری تأیید می‌کند که تصاویر و ویدیوهای ثبت‌شده هنگام عودت خودرو صحیح است."
+          busy={signingReturn}
+          onCancel={() => setReturnSignOpen(false)}
+          onSave={png => handleSignReturn(selectedResDetails, png)}
+        />
+      )}
       <AnimatePresence>
         {selectedResDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
@@ -2567,53 +2610,84 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 );
               })()}
 
-              {/* RETURN PHOTOS: kept on the reservation file, not printed in the contract */}
+              {/* RETURN MEDIA: kept on the reservation file, not printed in the contract; the customer signs to confirm */}
               {(() => {
-                const photos = (reservations.find(r => r.id === selectedResDetails.id) ?? selectedResDetails).returnPhotos || [];
+                const cur = reservations.find(r => r.id === selectedResDetails.id) ?? selectedResDetails;
+                const media = cur.returnPhotos || [];
+                const sig = cur.returnSignature;
+                const nVideos = media.filter(m => m.kind === 'car_video').length;
                 return (
                   <div className="space-y-2 text-xs bg-[#07111f] p-4 rounded-2xl border border-white/10">
                     <div className="flex justify-between items-center">
-                      <span className="font-black text-white">تصاویر عودت خودرو</span>
-                      <span className="text-[10px] text-white/40">{photos.length} تصویر</span>
+                      <span className="font-black text-white">تصاویر و ویدیوهای عودت خودرو</span>
+                      <span className="text-[10px] text-white/40">{media.length - nVideos} تصویر · {nVideos} ویدیو</span>
                     </div>
-                    <p className="text-[10.5px] leading-5 text-white/45">این تصاویر فقط در پرونده رزرو نگهداری می‌شوند و در قرارداد نمی‌آیند.</p>
-                    {photos.length > 0 && (
+                    <p className="text-[10.5px] leading-5 text-white/45">این فایل‌ها فقط در پرونده رزرو نگهداری می‌شوند و در قرارداد نمی‌آیند.</p>
+                    {media.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
-                        {photos.map((p, i) => (
-                          <div key={`${i}-${p.path || p.url}`} className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-black/40">
-                            {p.url && (
-                              <a href={p.url} target="_blank" rel="noreferrer">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={p.url} alt="" className="h-full w-full object-cover" />
+                        {media.map((m, i) => {
+                          const video = m.kind === 'car_video';
+                          const thumb = video ? m.posterUrl : m.url;
+                          return (
+                            <div key={`${i}-${m.path || m.url}`} className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                              <a href={m.url} target="_blank" rel="noreferrer" className="flex h-full w-full items-center justify-center text-white/50">
+                                {thumb ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={thumb} alt="" className="h-full w-full object-cover" />
+                                ) : <span className="text-[10px]">ویدیو</span>}
                               </a>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveReturnPhoto(selectedResDetails, i)}
-                              className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-rose-300 hover:bg-rose-600 hover:text-white"
-                              title="حذف"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        ))}
+                              {video && <span className="absolute bottom-1 left-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">ویدیو</span>}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveReturnMedia(selectedResDetails, i)}
+                                className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-rose-300 hover:bg-rose-600 hover:text-white"
+                                title="حذف"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                     <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/10 px-3 py-2.5 text-[11px] font-bold text-gold cursor-pointer hover:bg-gold/20 ${uploadingReturnPhotos > 0 ? 'opacity-60 pointer-events-none' : ''}`}>
                       {uploadingReturnPhotos > 0 ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                      <span>{uploadingReturnPhotos > 0 ? 'در حال آپلود...' : 'افزودن تصویر عودت'}</span>
+                      <span>{uploadingReturnPhotos > 0 ? 'در حال آپلود (برای ویدیو صبر کنید)...' : 'افزودن تصویر یا ویدیوی عودت'}</span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/*,video/*"
                         multiple
                         className="hidden"
                         onChange={e => {
                           const input = e.currentTarget;
-                          const files = input.files;
-                          handleAddReturnPhotos(selectedResDetails, files).finally(() => { input.value = ''; });
+                          handleAddReturnMedia(selectedResDetails, input.files).finally(() => { input.value = ''; });
                         }}
                       />
                     </label>
+
+                    {media.length > 0 && (
+                      sig ? (
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 space-y-2">
+                          <div className="text-[11px] font-black text-emerald-300">
+                            ✓ مشتری صحت این فایل‌ها را امضا کرد
+                            <span className="block text-[10px] font-normal text-emerald-200/70">{new Date(sig.signedAt).toLocaleString('fa-IR')}</span>
+                          </div>
+                          {sig.url && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={sig.url} alt="امضای مشتری" className="h-20 rounded-lg bg-white p-1" />
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setReturnSignOpen(true)}
+                          disabled={uploadingReturnPhotos > 0}
+                          className="w-full rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-3 py-2.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
+                        >
+                          امضای مشتری برای تأیید صحت تصاویر و ویدیوها
+                        </button>
+                      )
+                    )}
                   </div>
                 );
               })()}

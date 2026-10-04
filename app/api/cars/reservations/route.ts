@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
-import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments } from '@/lib/storage';
+import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signContractMedia } from '@/lib/storage';
 
 const HANDED_OVER_MESSAGE = (contractId: string) =>
   `خودرو برای این رزرو تحویل شده است (قرارداد ${contractId}). برای لغو یا حذف رزرو، ابتدا قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم خودکار حذف می‌شوند).`;
@@ -12,7 +12,12 @@ const MAX_RETURN_PHOTOS = 30;
 async function presentReturnPhotos(reservations: CarReservation[]): Promise<CarReservation[]> {
   const shown = await presentContractAttachments(reservations.map(r => ({ id: r.id, attachments: r.returnPhotos })));
   const byId = new Map(shown.map(r => [r.id, r.attachments]));
-  return reservations.map(r => ({ ...r, returnPhotos: byId.get(r.id) }));
+  const signed = await signContractMedia(reservations.map(r => r.returnSignature?.path || ''));
+  return reservations.map(r => ({
+    ...r,
+    returnPhotos: byId.get(r.id),
+    returnSignature: r.returnSignature ? { ...r.returnSignature, url: r.returnSignature.path ? signed.get(r.returnSignature.path) : undefined } : null,
+  }));
 }
 
 // Only photos uploaded to our own buckets are accepted; any signed URL the browser sends back is ignored.
@@ -22,12 +27,13 @@ function cleanReturnPhotos(value: unknown): ContractAttachment[] | undefined {
   const out: ContractAttachment[] = [];
   for (const a of value as any[]) {
     if (!a) continue;
+    const video = a.kind === 'car_video';
     const base = {
-      kind: 'car_photo' as const,
+      kind: video ? ('car_video' as const) : ('car_photo' as const),
       name: typeof a.name === 'string' ? a.name.slice(0, 200) : undefined,
       size: Number.isFinite(Number(a.size)) ? Number(a.size) : undefined,
     };
-    if (isContractMediaPath(a.path)) out.push({ ...base, path: a.path });
+    if (isContractMediaPath(a.path)) out.push({ ...base, path: a.path, posterPath: video && isContractMediaPath(a.posterPath) ? a.posterPath : undefined });
     else if (isOwnUploadUrl(a.url)) out.push({ ...base, url: a.url });
   }
   return out.slice(0, MAX_RETURN_PHOTOS);
@@ -64,6 +70,8 @@ export async function POST(request: Request) {
       }
     }
     body.returnPhotos = cleanReturnPhotos(body.returnPhotos);
+    // Only a freshly drawn signature (a path in our private bucket) is accepted; stored ones are never taken from the browser
+    body.returnSignature = isContractMediaPath(body.returnSignature?.path) ? { path: body.returnSignature.path } : undefined;
     const reservation = await saveReservation(body);
     if (!isNew) {
       const [shown] = await presentReturnPhotos([reservation]);
