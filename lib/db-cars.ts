@@ -1210,6 +1210,61 @@ async function nextContractSerial(): Promise<string> {
   return `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
 }
 
+// After a reservation is edited (dates, price, deposit), brings its contract and its owed rent/deposit rows in
+// line. Each pending row holds the new amount minus what was already paid against it; fully paid rows are kept.
+export async function syncReservationFinancials(reservation: CarReservation): Promise<{ contract?: CarContract; transactions: CarTransaction[] }> {
+  const contracts = await getContracts();
+  const existingContract = contracts.find(c => c.reservationId === reservation.id);
+  if (!existingContract) return { transactions: [] };
+
+  const contract = await saveContract({
+    id: existingContract.id,
+    customerName: reservation.customerName,
+    customerPhone: reservation.customerPhone,
+    customerNationalId: reservation.customerNationalId,
+    depositAmount: reservation.depositPaid,
+    startDate: reservation.startDate,
+    endDate: reservation.endDate,
+    totalPrice: reservation.totalPrice,
+  });
+
+  const { data: rows, error } = await supabase.from('car_transactions').select('*').eq('reservation_id', reservation.id);
+  ensureOk('car_transactions select', error);
+  const reservationRows = (rows || []).map(transactionFromRow);
+
+  const charges = [
+    { id: `tx-rent-${reservation.id}`, amount: reservation.totalPrice || 0, type: 'rent_fee' as const, label: `درآمد اجاره ${reservation.carTitle || 'خودرو'} - قرارداد ${contract.id}` },
+    { id: `tx-dep-${reservation.id}`, amount: reservation.depositPaid || 0, type: 'deposit_in' as const, label: `ودیعه اجاره ${reservation.carTitle || 'خودرو'} (${reservation.customerName})` },
+  ];
+
+  const transactions: CarTransaction[] = [];
+  for (const charge of charges) {
+    const current = reservationRows.find(t => t.id === charge.id);
+    // Recorded before payments were tracked: it already counts as paid, so leave it alone
+    if (current?.paymentStatus === 'paid') continue;
+
+    const alreadyPaid = reservationRows.filter(t => isPaymentOf(t.id, charge.id)).reduce((sum, t) => sum + t.amount, 0);
+    const owed = roundOmr(charge.amount - alreadyPaid);
+    if (owed > 0) {
+      if (current?.amount === owed && current.transactionDate === reservation.startDate) continue;
+      transactions.push(await saveTransaction({
+        id: charge.id,
+        reservationId: reservation.id,
+        carId: reservation.carId,
+        customerName: reservation.customerName,
+        amount: owed,
+        type: charge.type,
+        paymentStatus: 'pending',
+        description: charge.label,
+        transactionDate: reservation.startDate,
+      }));
+    } else if (current) {
+      await deleteTransaction(charge.id);
+    }
+  }
+  return { contract, transactions };
+}
+
 // Idempotent: re-running for the same reservation never creates a duplicate contract or revenue row.
 // Rent and deposit are issued as pending (owed by the customer); "ثبت پرداخت" on the reservation turns them
 // into paid rows with the account / person that received the money.
