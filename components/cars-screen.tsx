@@ -321,7 +321,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
   // Contract of the reservation open in the details window once its car was handed over (blocks cancel/delete)
   // Photos/videos taken at car return live on the reservation file (never in the contract); the customer
-  // signs to confirm them, and any later change to the media voids that signature on the server.
+  // signs to confirm them, after which the media is locked (enforced on the server too).
   const [uploadingReturnPhotos, setUploadingReturnPhotos] = useState(0);
   const [returnSignOpen, setReturnSignOpen] = useState(false);
   const [signingReturn, setSigningReturn] = useState(false);
@@ -340,15 +340,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     setSelectedResDetails(cur => (cur && cur.id === saved.id ? { ...cur, ...patch } : cur));
   };
 
-  const confirmVoidSignature = async (reservation: CarReservation) => {
-    if (!reservation.returnSignature) return true;
-    return confirmDialog({ title: 'ابطال امضا', message: 'با تغییر تصاویر و ویدیوها، امضای تأیید مشتری باطل می‌شود و باید دوباره امضا شود. ادامه می‌دهید؟', confirmText: 'ادامه' });
-  };
-
   const handleAddReturnMedia = async (reservation: CarReservation, files: FileList | null) => {
     if (!files?.length) return;
     const current = reservations.find(r => r.id === reservation.id) ?? reservation;
-    if (!(await confirmVoidSignature(current))) return;
+    if (current.returnSignature) return;
     const added: NonNullable<CarReservation['returnPhotos']> = [];
     setUploadingReturnPhotos(n => n + files.length);
     for (const file of Array.from(files)) {
@@ -382,7 +377,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
   const handleRemoveReturnMedia = async (reservation: CarReservation, index: number) => {
     const current = reservations.find(r => r.id === reservation.id) ?? reservation;
-    if (!(await confirmDialog({ title: 'حذف فایل', message: 'این فایل از پرونده رزرو حذف شود؟' + (current.returnSignature ? ' امضای مشتری هم باطل می‌شود.' : ''), confirmText: 'حذف' }))) return;
+    if (current.returnSignature) return;
+    if (!(await confirmDialog({ title: 'حذف فایل', message: 'این فایل از پرونده رزرو حذف شود؟', confirmText: 'حذف' }))) return;
     try {
       await saveReturnMedia(current, (current.returnPhotos || []).filter((_, i) => i !== index));
     } catch (err: any) {
@@ -2637,20 +2633,20 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                                 ) : <span className="text-[10px]">ویدیو</span>}
                               </a>
                               {video && <span className="absolute bottom-1 left-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">ویدیو</span>}
-                              <button
+                              {!sig && <button
                                 type="button"
                                 onClick={() => handleRemoveReturnMedia(selectedResDetails, i)}
                                 className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-rose-300 hover:bg-rose-600 hover:text-white"
                                 title="حذف"
                               >
                                 <Trash2 size={13} />
-                              </button>
+                              </button>}
                             </div>
                           );
                         })}
                       </div>
                     )}
-                    <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/10 px-3 py-2.5 text-[11px] font-bold text-gold cursor-pointer hover:bg-gold/20 ${uploadingReturnPhotos > 0 ? 'opacity-60 pointer-events-none' : ''}`}>
+                    {!sig && <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/10 px-3 py-2.5 text-[11px] font-bold text-gold cursor-pointer hover:bg-gold/20 ${uploadingReturnPhotos > 0 ? 'opacity-60 pointer-events-none' : ''}`}>
                       {uploadingReturnPhotos > 0 ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
                       <span>{uploadingReturnPhotos > 0 ? 'در حال آپلود (برای ویدیو صبر کنید)...' : 'افزودن تصویر یا ویدیوی عودت'}</span>
                       <input
@@ -2663,13 +2659,13 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                           handleAddReturnMedia(selectedResDetails, input.files).finally(() => { input.value = ''; });
                         }}
                       />
-                    </label>
+                    </label>}
 
                     {media.length > 0 && (
                       sig ? (
                         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 space-y-2">
                           <div className="text-[11px] font-black text-emerald-300">
-                            ✓ مشتری صحت این فایل‌ها را امضا کرد
+                            ✓ مشتری صحت این فایل‌ها را امضا کرد؛ دیگر قابل تغییر یا حذف نیستند
                             <span className="block text-[10px] font-normal text-emerald-200/70">{new Date(sig.signedAt).toLocaleString('fa-IR')}</span>
                           </div>
                           {sig.url && (
@@ -2684,7 +2680,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                           disabled={uploadingReturnPhotos > 0}
                           className="w-full rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-3 py-2.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
                         >
-                          امضای مشتری برای تأیید صحت تصاویر و ویدیوها
+                          امضای مشتری برای تأیید صحت تصاویر و ویدیوها (پس از امضا قابل تغییر نیست)
                         </button>
                       )
                     )}

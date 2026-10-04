@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError, ReturnMediaLockedError, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signContractMedia } from '@/lib/storage';
 
 const HANDED_OVER_MESSAGE = (contractId: string) =>
@@ -87,6 +87,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, reservation, chainError: true });
     }
   } catch (error: any) {
+    if (error instanceof ReturnMediaLockedError) {
+      return NextResponse.json({ error: 'تصاویر و ویدیوهای عودت توسط مشتری امضا شده‌اند و دیگر قابل تغییر یا حذف نیستند' }, { status: 409 });
+    }
     console.error('Error saving reservation:', error);
     return NextResponse.json({ error: 'خطا در ذخیره‌سازی رزرو' }, { status: 500 });
   }

@@ -721,15 +721,15 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     createdAt: existing?.createdAt || resData.createdAt || now,
   };
 
-  // The signature only counts for the media it was given for: signing stores it, any later change clears it
+  // Once the customer has signed, the return media is final: it can no longer be changed, removed or re-signed
   let writeSignature = false;
   if (resData.returnPhotos !== undefined) {
     const fingerprint = returnMediaFingerprint(reservation.returnPhotos);
-    if (resData.returnSignature?.path && fingerprint) {
+    if (existing?.returnSignature) {
+      if (existing.returnSignature.fingerprint !== fingerprint || resData.returnSignature?.path) throw new ReturnMediaLockedError();
+      reservation.returnSignature = existing.returnSignature;
+    } else if (resData.returnSignature?.path && fingerprint) {
       reservation.returnSignature = { path: resData.returnSignature.path, signedAt: now, fingerprint };
-      writeSignature = true;
-    } else if (existing?.returnSignature && existing.returnSignature.fingerprint !== fingerprint) {
-      reservation.returnSignature = null;
       writeSignature = true;
     }
   }
@@ -754,6 +754,12 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
   ensureOk('car_reservations upsert', error);
 
   return reservation;
+}
+
+export class ReturnMediaLockedError extends Error {
+  constructor() {
+    super('return media was signed by the customer and is locked');
+  }
 }
 
 export class ReservationDeleteBlockedError extends Error {
