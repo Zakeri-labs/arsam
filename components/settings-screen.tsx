@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { PenLine, Trash2, Upload, Loader2, Settings } from 'lucide-react';
+import { PenLine, Trash2, Upload, Loader2, Settings, Check } from 'lucide-react';
+import SignaturePad from '@/components/signature-pad';
 import { confirmDialog } from '@/components/confirm-dialog';
 
 // General-manager settings. Company signature: printed in the "In charge signature" box of every contract.
@@ -66,6 +67,8 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [drawing, setDrawing] = useState(false);
+  const [drawn, setDrawn] = useState<Blob | null>(null);
 
   useEffect(() => {
     fetch('/api/settings/signature')
@@ -75,10 +78,10 @@ export default function SettingsScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  const upload = async (file: File) => {
+  const upload = async (file: File, alreadyPng = false): Promise<boolean> => {
     setBusy(true);
     try {
-      const png = await toTransparentSignature(file);
+      const png = alreadyPng ? file : await toTransparentSignature(file);
       const form = new FormData();
       form.append('file', png);
       const res = await fetch('/api/settings/signature', { method: 'POST', body: form });
@@ -86,8 +89,10 @@ export default function SettingsScreen() {
       if (!res.ok || !data.url) throw new Error(data.error || 'خطا در ذخیره امضا');
       setUrl(data.url);
       toast.success('امضای شرکت ذخیره شد و زیر همه قراردادها قرار می‌گیرد');
+      return true;
     } catch (err: any) {
       toast.error(err?.message || 'خطا در ذخیره امضا');
+      return false;
     } finally {
       setBusy(false);
     }
@@ -153,6 +158,15 @@ export default function SettingsScreen() {
             {busy ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
             {url ? 'جایگزینی فایل امضا' : 'بارگذاری فایل امضا'}
           </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => { setDrawn(null); setDrawing(d => !d); }}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-gold/40 bg-gold/10 py-3 text-[12.5px] font-black text-gold hover:bg-gold/20 disabled:opacity-60"
+          >
+            <PenLine size={16} />
+            امضا با انگشت یا قلم
+          </button>
           {url && (
             <button
               type="button"
@@ -165,6 +179,23 @@ export default function SettingsScreen() {
             </button>
           )}
         </div>
+        {drawing && (
+          <div className="mt-4 rounded-2xl bg-white p-3">
+            <SignaturePad onChange={setDrawn} />
+            <button
+              type="button"
+              disabled={busy || !drawn}
+              onClick={async () => {
+                if (!drawn) return;
+                if (await upload(new File([drawn], 'signature.png', { type: 'image/png' }), true)) setDrawing(false);
+              }}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-gold to-amber-500 py-3 text-[12.5px] font-black text-black disabled:opacity-50"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+              ذخیره امضا
+            </button>
+          </div>
+        )}
         <input
           ref={inputRef}
           type="file"

@@ -1,7 +1,8 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
-import { Download, Loader2, FileText, AlertTriangle } from 'lucide-react';
+import { Download, Loader2, FileText, AlertTriangle, PenLine, CheckCircle2 } from 'lucide-react';
+import SignaturePad from '@/components/signature-pad';
 import type { ContractData } from '@/lib/contract-data';
 import { useContractPdf } from '@/components/use-contract-pdf';
 
@@ -25,9 +26,13 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
   const [error, setError] = useState<'expired' | 'revoked' | 'invalid' | null>(null);
   const [failed, setFailed] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [drawn, setDrawn] = useState<Blob | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [signError, setSignError] = useState(false);
   const pdf = useContractPdf();
 
-  useEffect(() => {
+  const loadContract = () =>
     fetch(`/api/contract-share/${encodeURIComponent(token)}`)
       .then(async r => {
         const data = await r.json().catch(() => ({}));
@@ -36,7 +41,29 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
         setSignatureUrl(data.signatureUrl || null);
       })
       .catch(err => setError(err instanceof LinkError ? err.code : 'invalid'));
+
+  useEffect(() => {
+    loadContract();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+
+  const submitSignature = async () => {
+    if (!drawn) return;
+    setSaving(true);
+    setSignError(false);
+    try {
+      const form = new FormData();
+      form.append('file', new File([drawn], 'signature.png', { type: 'image/png' }));
+      const res = await fetch(`/api/contract-share/${encodeURIComponent(token)}/sign`, { method: 'POST', body: form });
+      if (!res.ok && res.status !== 409) throw new Error();
+      setSigning(false);
+      await loadContract();
+    } catch {
+      setSignError(true);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const download = async () => {
     if (!contract) return;
@@ -91,6 +118,40 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
                 </div>
               ))}
             </dl>
+
+            {contract.renterSignatureUrl ? (
+              <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/10 py-3 text-[12.5px] font-bold text-emerald-300">
+                <CheckCircle2 size={16} />
+                Signed · تم التوقيع · امضا شده
+              </div>
+            ) : signing ? (
+              <div className="mt-5 rounded-2xl bg-white p-3 text-left text-gray-800">
+                <div className="mb-2 flex justify-between text-[12px] font-bold">
+                  <span>Sign with your finger</span>
+                  <span dir="rtl">با انگشت امضا کنید</span>
+                </div>
+                <SignaturePad onChange={setDrawn} height={170} clearLabel="Clear · پاک کردن" hint="Sign here · اینجا امضا کنید" />
+                <button
+                  type="button"
+                  onClick={submitSignature}
+                  disabled={!drawn || saving}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0f1e37] py-3 text-[13px] font-black text-white disabled:opacity-50"
+                >
+                  {saving && <Loader2 size={16} className="animate-spin" />}
+                  Confirm signature · تأیید امضا
+                </button>
+                {signError && <p className="mt-2 text-[12px] text-rose-600">Could not save, please try again. · ذخیره نشد، دوباره تلاش کنید.</p>}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setSigning(true)}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#c9a04a]/60 bg-[#c9a04a]/10 py-3.5 text-[14px] font-black text-[#c9a04a] active:scale-[0.99]"
+              >
+                <PenLine size={18} />
+                Sign contract · امضای قرارداد
+              </button>
+            )}
 
             <button
               type="button"
