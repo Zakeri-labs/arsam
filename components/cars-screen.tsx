@@ -19,6 +19,7 @@ import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/ut
 import OMRIcon from '@/components/omr-icon';
 import CarContractModal, { ContractData } from './car-contract-modal';
 import { confirmDialog } from '@/components/confirm-dialog';
+import { businessToday, PAST_RESERVATION_MESSAGE } from '@/lib/business-day';
 
 interface CRMClient {
   name: string;
@@ -617,7 +618,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     const selectedCar = cars.find(c => c.id === (preselectedCarId || cars[0]?.id));
     const rate = selectedCar ? selectedCar.dailyRate : 10;
     const defaultDays = 3;
-    const sDate = new Date().toISOString().split('T')[0];
+    const sDate = businessToday();
     const eDate = new Date(Date.now() + defaultDays * 86400000).toISOString().split('T')[0];
 
     const calc = calculatePricing(selectedCar?.id || '', sDate, eDate, rate, 'amount', 0);
@@ -651,6 +652,11 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
     if (!resForm.carId || !resForm.customerName || !resForm.startDate || !resForm.endDate) {
       toast.error('لطفا تمامی فیلدهای الزامی رزرو را تکمیل نمایید');
+      return;
+    }
+
+    if (resForm.startDate < businessToday()) {
+      toast.error(PAST_RESERVATION_MESSAGE);
       return;
     }
 
@@ -2141,6 +2147,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       type="date"
                       required
                       value={resForm.startDate || ''}
+                      min={businessToday()}
                       onChange={e => updateResFormPricing({ startDate: e.target.value })}
                       className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
                     />

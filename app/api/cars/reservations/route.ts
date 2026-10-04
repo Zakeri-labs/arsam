@@ -4,6 +4,7 @@ import { getReservations, saveReservation, deleteReservation, issueContractAndRe
 const HANDED_OVER_MESSAGE = (contractId: string) =>
   `خودرو برای این رزرو تحویل شده است (قرارداد ${contractId}). برای لغو یا حذف رزرو، ابتدا قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم خودکار حذف می‌شوند).`;
 import { requireAdmin } from '@/lib/auth-check';
+import { businessToday, PAST_RESERVATION_MESSAGE } from '@/lib/business-day';
 
 export async function GET() {
   try {
@@ -29,6 +30,9 @@ export async function POST(request: Request) {
     }
 
     const isNew = !body.id;
+    if (isNew && String(body.startDate).slice(0, 10) < businessToday()) {
+      return NextResponse.json({ error: PAST_RESERVATION_MESSAGE }, { status: 400 });
+    }
     if (!isNew && body.status === 'cancelled') {
       const handedOverId = await findHandedOverContractId(body.id);
       if (handedOverId) {
