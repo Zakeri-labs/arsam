@@ -34,6 +34,8 @@ export interface CarReservation {
   depositPaid: number;
   status: 'confirmed' | 'active' | 'completed' | 'cancelled';
   notes?: string;
+  // Photos taken when the car comes back: kept on the reservation file, never printed in the contract
+  returnPhotos?: ContractAttachment[];
   createdAt?: string;
 }
 
@@ -542,6 +544,7 @@ function reservationFromRow(item: any): CarReservation {
     depositPaid: Number(item.deposit_paid),
     status: item.status,
     notes: item.notes,
+    returnPhotos: Array.isArray(item.return_photos) ? item.return_photos : [],
     createdAt: item.created_at,
   };
 }
@@ -700,6 +703,7 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     depositPaid: resData.depositPaid !== undefined ? Number(resData.depositPaid) : (existing?.depositPaid || 0),
     status: resData.status ?? existing?.status ?? 'confirmed',
     notes: resData.notes ?? existing?.notes ?? '',
+    returnPhotos: resData.returnPhotos ?? existing?.returnPhotos ?? [],
     createdAt: existing?.createdAt || resData.createdAt || now,
   };
 
@@ -716,6 +720,8 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     deposit_paid: reservation.depositPaid,
     status: reservation.status,
     notes: reservation.notes,
+    // Only written when sent, so other saves keep working before the return_photos column exists
+    ...(resData.returnPhotos !== undefined ? { return_photos: reservation.returnPhotos } : {}),
   }, { onConflict: 'id' });
   ensureOk('car_reservations upsert', error);
 

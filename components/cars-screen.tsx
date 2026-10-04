@@ -22,6 +22,7 @@ import FancySelect from '@/components/ui/fancy-select';
 import { useContractPdf, contractShareUrl, revokeContractLink, REVOKE_LINK_MESSAGE } from './use-contract-pdf';
 import { buildContractData } from '@/lib/contract-data';
 import { confirmDialog } from '@/components/confirm-dialog';
+import { MediaError, compressImage, uploadContractFile } from '@/lib/contract-media';
 import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 
 interface CRMClient {
@@ -318,6 +319,58 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const activeReservations = useMemo(() => reservations.filter(r => r.status !== 'cancelled'), [reservations]);
 
   // Contract of the reservation open in the details window once its car was handed over (blocks cancel/delete)
+  // Photos taken at car return live on the reservation file (never in the contract)
+  const [uploadingReturnPhotos, setUploadingReturnPhotos] = useState(0);
+
+  const saveReturnPhotos = async (reservation: CarReservation, photos: NonNullable<CarReservation['returnPhotos']>) => {
+    const res = await fetch('/api/cars/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reservation, returnPhotos: photos }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error(data.error || 'ذخیره تصاویر عودت ناموفق بود');
+    const saved: CarReservation = data.reservation;
+    setReservations(prev => prev.map(r => (r.id === saved.id ? { ...r, returnPhotos: saved.returnPhotos } : r)));
+    setSelectedResDetails(cur => (cur && cur.id === saved.id ? { ...cur, returnPhotos: saved.returnPhotos } : cur));
+  };
+
+  const handleAddReturnPhotos = async (reservation: CarReservation, files: FileList | null) => {
+    if (!files?.length) return;
+    const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    const added: NonNullable<CarReservation['returnPhotos']> = [];
+    setUploadingReturnPhotos(n => n + files.length);
+    for (const file of Array.from(files)) {
+      try {
+        if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new MediaError('فقط فایل تصویری قابل انتخاب است');
+        const image = await compressImage(file);
+        const path = await uploadContractFile(image, false);
+        added.push({ kind: 'car_photo', path, name: image.name, size: image.size });
+      } catch (err) {
+        toast.error(err instanceof MediaError ? err.message : `آپلود «${file.name}» ناموفق بود`);
+      } finally {
+        setUploadingReturnPhotos(n => n - 1);
+      }
+    }
+    if (!added.length) return;
+    try {
+      await saveReturnPhotos(current, [...(current.returnPhotos || []), ...added]);
+      toast.success('تصاویر عودت در پرونده رزرو ثبت شد');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleRemoveReturnPhoto = async (reservation: CarReservation, index: number) => {
+    if (!(await confirmDialog({ title: 'حذف تصویر', message: 'این تصویر از پرونده رزرو حذف شود؟', confirmText: 'حذف' }))) return;
+    const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    try {
+      await saveReturnPhotos(current, (current.returnPhotos || []).filter((_, i) => i !== index));
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
   const handedOverContractForDetails = selectedResDetails
     ? contracts.find(c => c.reservationId === selectedResDetails.id && c.handoverStatus !== 'pending_delivery')
     : undefined;
@@ -704,7 +757,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       const res = await fetch('/api/cars/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...reservation, status: 'cancelled' })
+        body: JSON.stringify({ ...reservation, returnPhotos: undefined, status: 'cancelled' })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
@@ -2510,6 +2563,57 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                         </span>
                       </div>
                     ))}
+                  </div>
+                );
+              })()}
+
+              {/* RETURN PHOTOS: kept on the reservation file, not printed in the contract */}
+              {(() => {
+                const photos = (reservations.find(r => r.id === selectedResDetails.id) ?? selectedResDetails).returnPhotos || [];
+                return (
+                  <div className="space-y-2 text-xs bg-[#07111f] p-4 rounded-2xl border border-white/10">
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-white">تصاویر عودت خودرو</span>
+                      <span className="text-[10px] text-white/40">{photos.length} تصویر</span>
+                    </div>
+                    <p className="text-[10.5px] leading-5 text-white/45">این تصاویر فقط در پرونده رزرو نگهداری می‌شوند و در قرارداد نمی‌آیند.</p>
+                    {photos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {photos.map((p, i) => (
+                          <div key={`${i}-${p.path || p.url}`} className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                            {p.url && (
+                              <a href={p.url} target="_blank" rel="noreferrer">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={p.url} alt="" className="h-full w-full object-cover" />
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveReturnPhoto(selectedResDetails, i)}
+                              className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-rose-300 hover:bg-rose-600 hover:text-white"
+                              title="حذف"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/10 px-3 py-2.5 text-[11px] font-bold text-gold cursor-pointer hover:bg-gold/20 ${uploadingReturnPhotos > 0 ? 'opacity-60 pointer-events-none' : ''}`}>
+                      {uploadingReturnPhotos > 0 ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                      <span>{uploadingReturnPhotos > 0 ? 'در حال آپلود...' : 'افزودن تصویر عودت'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={e => {
+                          const input = e.currentTarget;
+                          const files = input.files;
+                          handleAddReturnPhotos(selectedResDetails, files).finally(() => { input.value = ''; });
+                        }}
+                      />
+                    </label>
                   </div>
                 );
               })()}
