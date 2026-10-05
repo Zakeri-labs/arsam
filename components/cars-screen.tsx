@@ -7,19 +7,25 @@ import {
   Edit3, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Clock,
   AlertTriangle, Upload, FileText, UserCheck, Phone, ShieldCheck,
   CreditCard, Landmark, Wallet, Check, X, Info, ExternalLink, Image as ImageIcon,
-  Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge
+  Camera, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge, Download, Link2, Ban
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  Car, CarReservation, CarTransaction, CarContract, FuelLevel,
-  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate
+  Car, CarReservation, CarTransaction, CarContract, FuelLevel, PaymentMethod,
+  FUEL_LEVEL_LABELS, HANDOVER_CHECKLIST_ITEMS, INCOMING_TRANSACTION_TYPES, cleanCarTitle, cleanCarPlate, carModelName, pendingIdOfPayment
 } from '@/lib/db-cars';
 import NumericInput from '@/components/numeric-input';
 import { normalizeDigits, parseFormattedNumber, toEnglishDigits } from '@/lib/utils';
 import OMRIcon from '@/components/omr-icon';
-import CarContractModal, { ContractData } from './car-contract-modal';
+import HandoverWizard from './handover-wizard';
+import FancySelect from '@/components/ui/fancy-select';
+import { useContractPdf, contractShareUrl, revokeContractLink, REVOKE_LINK_MESSAGE } from './use-contract-pdf';
+import { buildContractData } from '@/lib/contract-data';
 import { confirmDialog } from '@/components/confirm-dialog';
 import { businessToday, PAST_RESERVATION_MESSAGE } from '@/lib/business-day';
+import { MediaError, compressImage, prepareVideo, uploadContractFile } from '@/lib/contract-media';
+import SignaturePadModal from '@/components/signature-pad-modal';
+import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 
 interface CRMClient {
   name: string;
@@ -41,7 +47,26 @@ const DEPOSIT_STATUS_LABELS: Record<CarContract['depositStatus'], string> = {
   partially_refunded: 'استرداد با کسر جریمه',
 };
 
-const allChecked = () => Object.fromEntries(HANDOVER_CHECKLIST_ITEMS.map(i => [i.key, true]));
+const TX_TYPE_LABELS: Record<CarTransaction['type'], string> = {
+  rent_fee: 'کرایه خودرو',
+  deposit_in: 'دریافت ودیعه',
+  deposit_refund: 'عودت ودیعه',
+  maintenance_expense: 'هزینه سرویس',
+  other_income: 'درآمد متفرقه',
+};
+
+const PAYMENT_METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
+  { value: 'bank_reza', label: '🏦 واریز به حساب - حساب رضا اماره' },
+  { value: 'bank_mohammadi', label: '🏦 واریز به حساب - حساب محمدی' },
+  { value: 'cash_reza', label: '💵 نقد - نقد به رضا اماره' },
+  { value: 'cash_mohammadi', label: '💵 نقد - نقد به محمدی' },
+];
+
+const formatDateTime = (iso?: string) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : d.toLocaleString('fa-IR', { dateStyle: 'short', timeStyle: 'short' });
+};
 
 interface CarsScreenProps {
   initialTab?: 'calendar' | 'fleet' | 'contracts' | 'accounting';
@@ -74,7 +99,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
   // Contracts Mock Data & State
   const [contracts, setContracts] = useState<CarContract[]>([]);
-  const [savingHandover, setSavingHandover] = useState(false);
   const [savingCar, setSavingCar] = useState(false);
   const [savingRes, setSavingRes] = useState(false);
   // Synchronous locks: a state flag only updates on the next render, so a fast double-click could still slip through
@@ -100,81 +124,107 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
-  const [selectedContractForPdf, setSelectedContractForPdf] = useState<ContractData | null>(null);
+  // Handover wizard: new handover (contract null), edit (step 1) or the finished contract (download / share)
+  const [wizard, setWizard] = useState<{ contract: CarContract | null; startAtDone?: boolean; reservationId?: string } | null>(null);
+  const contractPdf = useContractPdf();
 
-  // Handover Modal State
-  const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
-  const [handoverForm, setHandoverForm] = useState({
-    reservationId: '',
-    carTitle: '',
-    plateNumber: '',
-    customerName: '',
-    customerPhone: '',
-    initialOdometer: 0,
-    returnOdometer: 0,
-    fuelLevel: 'full' as FuelLevel,
-    depositAmount: 40,
-    depositStatus: 'held' as CarContract['depositStatus'],
-    handoverStatus: 'delivered' as CarContract['handoverStatus'],
-    checklist: allChecked() as Record<string, boolean>,
-    notes: ''
-  });
-
-  const handleOpenContractPdf = (cnt: CarContract) => {
-    const matchingRes = reservations.find(r => r.id === cnt.reservationId);
-    const matchingCar = cars.find(c => c.id === matchingRes?.carId || c.title === cnt.carTitle);
-
-    // Values saved on the contract win; otherwise they come from the reservation and the car (never invented)
-    const sDate = cnt.startDate || matchingRes?.startDate || new Date().toISOString().split('T')[0];
-    const eDate = cnt.endDate || matchingRes?.endDate || sDate;
-    const diffTime = Math.abs(new Date(eDate).getTime() - new Date(sDate).getTime());
-    const calculatedDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
-
-    const contractData: ContractData = {
-      id: cnt.id,
-      contractNo: cnt.id.toUpperCase(),
-      date: cnt.contractDate || (cnt.createdAt ? new Date(cnt.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
-      carTitle: cnt.carTitle,
-      carTitleEn: cnt.carTitleEn || matchingCar?.titleEn || cnt.carTitle,
-      brand: matchingCar?.brand,
-      modelYear: matchingCar?.modelYear,
-      plateNumber: cnt.plateNumber,
-      color: cnt.color || matchingCar?.color,
-      customerName: cnt.customerName,
-      customerNameEn: cnt.customerNameEn,
-      customerPhone: cnt.customerPhone,
-      customerNationalId: cnt.customerNationalId || matchingRes?.customerNationalId || '',
-      customerNationality: cnt.customerNationality,
-      customerAddress: cnt.customerAddress,
-      workAddress: cnt.workAddress,
-      whatsapp: cnt.whatsapp,
-      licenceType: cnt.licenceType,
-      licenceNo: cnt.licenceNo,
-      cleanInside: cnt.cleanInside,
-      cleanOutside: cnt.cleanOutside,
-      startDate: sDate,
-      endDate: eDate,
-      rentalDays: cnt.rentalDays ?? calculatedDays,
-      dailyRate: cnt.dailyRate,
-      totalPrice: cnt.totalPrice ?? matchingRes?.totalPrice ?? 0,
-      depositPaid: cnt.depositAmount || 0,
-      initialOdometer: cnt.initialOdometer,
-      fuelLevel: FUEL_LEVEL_LABELS[cnt.fuelLevel] || FUEL_LEVEL_LABELS.full,
-      departureTime: cnt.departureTime || (cnt.createdAt ? new Date(cnt.createdAt).toTimeString().slice(0, 5) : undefined),
-      returnTime: cnt.returnTime,
-      returnOdometer: cnt.returnOdometer,
-      extraKm: cnt.extraKm,
-      extraKmAmount: cnt.extraKmAmount,
-      deductionsAmount: cnt.deductionsAmount,
-      notes: cnt.notes
-    };
-
-    setSelectedContractForPdf(contractData);
+  const handleDownloadContract = async (cnt: CarContract) => {
+    const res = reservations.find(r => r.id === cnt.reservationId);
+    const car = cars.find(c => c.id === (cnt.carId || res?.carId));
+    try {
+      const sig = await fetch('/api/settings/signature').then(r => (r.ok ? r.json() : null)).catch(() => null);
+      await contractPdf.download(buildContractData(cnt, res, car), sig?.url || null);
+    } catch {
+      toast.error('ساخت فایل PDF ناموفق بود؛ دوباره تلاش کنید');
+    }
   };
+
+  const handleCopyContractLink = async (cnt: CarContract) => {
+    if (!cnt.shareToken) return toast.error('لینک قرارداد در دسترس نیست');
+    const link = contractShareUrl(cnt.shareToken);
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success('لینک دانلود قرارداد کپی شد');
+    } catch {
+      window.prompt('لینک قرارداد:', link);
+    }
+  };
+
+  const handleRevokeContractLink = async (cnt: CarContract) => {
+    if (!(await confirmDialog({ title: 'باطل کردن لینک قرارداد', message: REVOKE_LINK_MESSAGE, confirmText: 'باطل کن و لینک جدید بساز' }))) return;
+    const result = await revokeContractLink(cnt.id);
+    if ('error' in result) return toast.error(result.error);
+    setContracts(prev => prev.map(c => (c.id === cnt.id ? { ...c, shareToken: result.shareToken, shareVersion: result.shareVersion } : c)));
+    const link = contractShareUrl(result.shareToken);
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success('لینک‌های قبلی باطل شد؛ لینک جدید کپی شد');
+    } catch {
+      toast.success('لینک‌های قبلی باطل شد');
+      window.prompt('لینک جدید قرارداد:', link);
+    }
+  };
+
+  const renderContractActions = (cnt: CarContract) => (
+        <div className="flex flex-wrap items-center justify-center gap-1.5">
+          <button
+            onClick={() => handleDownloadContract(cnt)}
+            disabled={contractPdf.busy}
+            title="دانلود قرارداد PDF"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer disabled:opacity-50"
+          >
+            {contractPdf.busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            <span>PDF</span>
+          </button>
+          <button
+            onClick={() => handleCopyContractLink(cnt)}
+            title="کپی لینک دانلود قرارداد برای مشتری"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+          >
+            <Link2 size={14} />
+          </button>
+          <button
+            onClick={() => handleRevokeContractLink(cnt)}
+            title="باطل کردن لینک‌های قبلی و ساخت لینک جدید"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-rose-400 hover:border-rose-400/40 transition-colors cursor-pointer"
+          >
+            <Ban size={14} />
+          </button>
+          {cnt.reservationId && reservations.some(r => r.id === cnt.reservationId) && (
+            <button
+              onClick={() => setReturnModalResId(cnt.reservationId)}
+              title="ثبت عودت: تصاویر و ویدیوهای بازگشت خودرو و امضای مشتری"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+            >
+              <Camera size={14} />
+            </button>
+          )}
+          <button
+            onClick={() => setWizard({ contract: cnt })}
+            title="ویرایش صورتجلسه، اطلاعات قرارداد و تصاویر"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+          >
+            <Edit3 size={14} />
+          </button>
+          {canDeleteContracts && !reservations.find(r => r.id === cnt.reservationId)?.returnSignature && (
+            <button
+              onClick={() => handleDeleteContract(cnt)}
+              title="حذف قرارداد (مدیر کل)"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
+  );
 
   const handleDeleteContract = async (cnt: CarContract) => {
     // Deleting the contract also removes its accounting rows; the reservation can then be cancelled or deleted
     const linkedTx = cnt.reservationId ? transactions.filter(t => t.reservationId === cnt.reservationId) : [];
+    if (reservations.find(r => r.id === cnt.reservationId)?.returnSignature) {
+      toast.error('مشتری تصاویر و ویدیوهای عودت این رزرو را امضا کرده است؛ این قرارداد دیگر قابل حذف نیست');
+      return;
+    }
     const handedOver = cnt.handoverStatus !== 'pending_delivery';
     const lines = [
       `قرارداد ${cnt.id} (${cnt.customerName} - ${cleanCarTitle(cnt.carTitle)}) برای همیشه حذف می‌شود.`,
@@ -199,70 +249,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       toast.success(`قرارداد ${cnt.id} و ${data.transactionIds.length} سند مالی آن حذف شد`);
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
-    }
-  };
-
-  // Saves what was entered in the contract window; extra-km / accident amounts become their own income rows
-  const handleSaveContractDetails = async (data: ContractData): Promise<boolean> => {
-    const fuelMap: Record<string, FuelLevel> = { full: 'full', '3/4': 'three_quarters', half: 'half', '1/4': 'quarter', empty: 'empty' };
-    const fuelFromLabel = (Object.keys(FUEL_LEVEL_LABELS) as FuelLevel[]).find(k => FUEL_LEVEL_LABELS[k] === data.fuelLevel);
-    try {
-      const res = await fetch('/api/cars/contracts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: data.id,
-          customerName: data.customerName,
-          carTitle: data.carTitle,
-          customerPhone: data.customerPhone,
-          plateNumber: data.plateNumber,
-          initialOdometer: data.initialOdometer ?? 0,
-          returnOdometer: data.returnOdometer,
-          fuelLevel: fuelMap[data.fuelLevel || ''] || fuelFromLabel,
-          depositAmount: data.depositPaid,
-          notes: data.notes ?? '',
-          customerNameEn: data.customerNameEn ?? '',
-          customerNationalId: data.customerNationalId ?? '',
-          customerNationality: data.customerNationality ?? '',
-          customerAddress: data.customerAddress ?? '',
-          workAddress: data.workAddress ?? '',
-          whatsapp: data.whatsapp ?? '',
-          licenceType: data.licenceType ?? '',
-          licenceNo: data.licenceNo ?? '',
-          carTitleEn: data.carTitleEn ?? '',
-          color: data.color ?? '',
-          cleanInside: data.cleanInside ?? '',
-          cleanOutside: data.cleanOutside ?? '',
-          contractDate: data.date ?? '',
-          startDate: data.startDate ?? '',
-          departureTime: data.departureTime ?? '',
-          endDate: data.endDate ?? '',
-          returnTime: data.returnTime ?? '',
-          rentalDays: data.rentalDays ?? '',
-          dailyRate: data.dailyRate ?? '',
-          totalPrice: data.totalPrice ?? '',
-          extraKm: data.extraKm ?? '',
-          extraKmAmount: data.extraKmAmount ?? '',
-          deductionsAmount: data.deductionsAmount ?? '',
-        })
-      });
-      const result = await res.json().catch(() => ({}));
-      if (!res.ok || !result.success) {
-        toast.error(result.error || 'خطا در ذخیره اطلاعات قرارداد');
-        return false;
-      }
-      setContracts(prev => prev.map(c => c.id === result.contract.id ? result.contract : c));
-      if (result.chargesError) {
-        toast.error('قرارداد ذخیره شد اما ثبت مبالغ اضافه در حسابداری ناموفق بود');
-      } else {
-        toast.success('اطلاعات قرارداد ذخیره شد');
-      }
-      // Extra-km / accident rows may have changed in accounting
-      fetch('/api/cars/transactions').then(r => r.json()).then(tx => { if (Array.isArray(tx)) setTransactions(tx); }).catch(() => {});
-      return true;
-    } catch (err) {
-      toast.error('خطای ارتباط با سرور');
-      return false;
     }
   };
 
@@ -315,7 +301,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const [txForm, setTxForm] = useState<{
     amount: number;
     type: CarTransaction['type'];
-    paymentMethod: CarTransaction['paymentMethod'];
+    paymentMethod: PaymentMethod;
     description: string;
     customerName: string;
     carId: string;
@@ -334,6 +320,16 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     file: null
   });
   const [uploadingTxFile, setUploadingTxFile] = useState(false);
+
+  // Record Payment Modal (pays a pending row issued with a reservation / contract)
+  const [payTarget, setPayTarget] = useState<CarTransaction | null>(null);
+  const [payForm, setPayForm] = useState<{ amount: number; paymentMethod: PaymentMethod; transactionDate: string }>({
+    amount: 0,
+    paymentMethod: 'bank_reza',
+    transactionDate: new Date().toISOString().split('T')[0]
+  });
+  const [savingPay, setSavingPay] = useState(false);
+  const [receivingTxId, setReceivingTxId] = useState<string | null>(null);
 
   // Fetch initial data
   useEffect(() => {
@@ -382,6 +378,89 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const activeReservations = useMemo(() => reservations.filter(r => r.status !== 'cancelled'), [reservations]);
 
   // Contract of the reservation open in the details window once its car was handed over (blocks cancel/delete)
+  // Photos/videos taken at car return live on the reservation file (never in the contract); the customer
+  // signs to confirm them, after which the media is locked (enforced on the server too).
+  const [uploadingReturnPhotos, setUploadingReturnPhotos] = useState(0);
+  const [returnModalResId, setReturnModalResId] = useState<string | null>(null);
+  const returnRes = returnModalResId ? reservations.find(r => r.id === returnModalResId) ?? null : null;
+  const [returnSignOpen, setReturnSignOpen] = useState(false);
+  const [signingReturn, setSigningReturn] = useState(false);
+
+  const saveReturnMedia = async (reservation: CarReservation, photos: NonNullable<CarReservation['returnPhotos']>, signaturePath?: string) => {
+    const res = await fetch('/api/cars/reservations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...reservation, returnPhotos: photos, returnSignature: signaturePath ? { path: signaturePath } : undefined }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) throw new Error(data.error || 'ذخیره تصاویر عودت ناموفق بود');
+    const saved: CarReservation = data.reservation;
+    const patch = { returnPhotos: saved.returnPhotos, returnSignature: saved.returnSignature };
+    setReservations(prev => prev.map(r => (r.id === saved.id ? { ...r, ...patch } : r)));
+    setSelectedResDetails(cur => (cur && cur.id === saved.id ? { ...cur, ...patch } : cur));
+  };
+
+  const handleAddReturnMedia = async (reservation: CarReservation, files: FileList | null) => {
+    if (!files?.length) return;
+    const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    if (current.returnSignature) return;
+    const added: NonNullable<CarReservation['returnPhotos']> = [];
+    setUploadingReturnPhotos(n => n + files.length);
+    for (const file of Array.from(files)) {
+      try {
+        const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name);
+        if (isVideo) {
+          const { video, poster } = await prepareVideo(file, () => {});
+          const posterPath = poster ? await uploadContractFile(poster, false).catch(() => undefined) : undefined;
+          const path = await uploadContractFile(video, true);
+          added.push({ kind: 'car_video', path, name: video.name, size: video.size, posterPath });
+        } else {
+          if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new MediaError('فقط فایل تصویری یا ویدیو قابل انتخاب است');
+          const image = await compressImage(file);
+          const path = await uploadContractFile(image, false);
+          added.push({ kind: 'car_photo', path, name: image.name, size: image.size });
+        }
+      } catch (err) {
+        toast.error(err instanceof MediaError ? err.message : `آپلود «${file.name}» ناموفق بود`);
+      } finally {
+        setUploadingReturnPhotos(n => n - 1);
+      }
+    }
+    if (!added.length) return;
+    try {
+      await saveReturnMedia(current, [...(current.returnPhotos || []), ...added]);
+      toast.success('فایل‌های عودت در پرونده رزرو ثبت شد');
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleRemoveReturnMedia = async (reservation: CarReservation, index: number) => {
+    const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    if (current.returnSignature) return;
+    if (!(await confirmDialog({ title: 'حذف فایل', message: 'این فایل از پرونده رزرو حذف شود؟', confirmText: 'حذف' }))) return;
+    try {
+      await saveReturnMedia(current, (current.returnPhotos || []).filter((_, i) => i !== index));
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  const handleSignReturn = async (reservation: CarReservation, png: File) => {
+    const current = reservations.find(r => r.id === reservation.id) ?? reservation;
+    setSigningReturn(true);
+    try {
+      const path = await uploadContractFile(png, false);
+      await saveReturnMedia(current, current.returnPhotos || [], path);
+      setReturnSignOpen(false);
+      toast.success('امضای مشتری ثبت شد');
+    } catch (err: any) {
+      toast.error(err.message || 'ثبت امضا ناموفق بود');
+    } finally {
+      setSigningReturn(false);
+    }
+  };
+
   const handedOverContractForDetails = selectedResDetails
     ? contracts.find(c => c.reservationId === selectedResDetails.id && c.handoverStatus !== 'pending_delivery')
     : undefined;
@@ -722,7 +801,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         if (data.chainError) {
           toast.error('رزرو ثبت شد اما صدور قرارداد و ثبت درآمد ناموفق بود');
         } else if (data.contract) {
-          toast.success(`قرارداد ${data.contract.id} صادر و درآمد اجاره ثبت شد`);
+          toast.success(`قرارداد ${data.contract.id} صادر شد؛ مبلغ اجاره تا ثبت پرداخت، «در انتظار پرداخت» است`);
         }
 
         // Wait for the follow-up writes so the refresh below can't overwrite them with stale data
@@ -773,7 +852,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       const res = await fetch('/api/cars/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...reservation, status: 'cancelled' })
+        body: JSON.stringify({ ...reservation, returnPhotos: undefined, status: 'cancelled' })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
@@ -861,11 +940,19 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const handleDeleteTransaction = async (id: string) => {
     // Rows issued automatically with a reservation (rent revenue / deposit) are part of that reservation's chain
     const tx = transactions.find(t => t.id === id);
-    const isAutoIssued = ['tx-rent-', 'tx-dep-', 'tx-xkm-', 'tx-dmg-'].some(prefix => id.startsWith(prefix));
+    // A payment recorded against a reservation charge: deleting it puts the amount back on what the customer owes
+    const isRecordedPayment = !!tx && tx.paymentStatus === 'paid' && !!pendingIdOfPayment(tx);
+    const isAutoIssued = !isRecordedPayment && ['tx-rent-', 'tx-dep-', 'tx-xkm-', 'tx-dmg-'].some(prefix => id.startsWith(prefix));
     const linkedRes = tx?.reservationId ? reservations.find(r => r.id === tx.reservationId) : undefined;
     const linkedContract = tx?.reservationId ? contracts.find(c => c.reservationId === tx.reservationId) : undefined;
 
-    const confirmed = isAutoIssued && linkedRes
+    const confirmed = isRecordedPayment
+      ? await confirmDialog({
+          title: 'حذف پرداخت ثبت‌شده',
+          message: `این پرداخت (${tx!.amount.toLocaleString()} OMR - ${getPaymentBadge(tx!.paymentMethod).label}) حذف می‌شود و همین مبلغ دوباره به «در انتظار پرداخت» مشتری${linkedRes ? ` (${linkedRes.customerName})` : ''} برمی‌گردد.\nآیا پرداخت حذف شود؟`,
+          confirmText: 'حذف پرداخت',
+        })
+      : isAutoIssued && linkedRes
       ? await confirmDialog({
           title: 'این ردیف مربوط به یک رزرو است',
           message: `این ردیف به‌صورت خودکار برای رزرو «${linkedRes.customerName} - ${cleanCarTitle(linkedRes.carTitle || '')}»${linkedContract ? ` و قرارداد ${linkedContract.id}` : ''} ثبت شده است. با حذف آن فقط همین ردیف مالی پاک می‌شود و رزرو و قرارداد باقی می‌مانند.\nبرای حذف کامل: اگر خودرو هنوز تحویل نشده، کافی است خود رزرو را از تب «تقویم و رزروها» حذف کنید؛ اگر تحویل شده، قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم حذف می‌شوند) و سپس رزرو را.\nآیا این ردیف حذف شود؟`,
@@ -877,8 +964,15 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     try {
       const res = await fetch(`/api/cars/transactions?id=${id}`, { method: 'DELETE' });
       if (res.ok) {
-        toast.success('تراکنش حذف گردید');
-        setTransactions(prev => prev.filter(t => t.id !== id));
+        const data = await res.json().catch(() => ({}));
+        const restored: CarTransaction | undefined = data.restored;
+        setTransactions(prev => {
+          const rest = prev.filter(t => t.id !== id && t.id !== restored?.id);
+          return restored ? [restored, ...rest] : rest;
+        });
+        toast.success(restored
+          ? `پرداخت حذف شد؛ ${tx?.amount.toLocaleString()} OMR دوباره در انتظار پرداخت است`
+          : 'تراکنش حذف گردید');
       } else {
         const data = await res.json().catch(() => ({}));
         toast.error(data.error || 'خطا در حذف تراکنش');
@@ -888,86 +982,96 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
   };
 
-  const handleOpenAddHandover = (resId?: string) => {
-    const res = activeReservations.find(r => r.id === resId) || activeReservations[0];
-    const car = cars.find(c => c.id === res?.carId);
-
-    const plate = car?.plateNumber || '';
-    // Start from the last recorded odometer of the same vehicle
-    const lastCnt = contracts.find(c => plate && c.plateNumber === plate);
-
-    setHandoverForm({
-      reservationId: res?.id || '',
-      carTitle: res?.carTitle || car?.title || '',
-      plateNumber: plate,
-      customerName: res?.customerName || '',
-      customerPhone: res?.customerPhone || '',
-      initialOdometer: lastCnt ? (lastCnt.returnOdometer || lastCnt.initialOdometer) : 0,
-      returnOdometer: 0,
-      fuelLevel: 'full',
-      depositAmount: res?.depositPaid || car?.depositAmount || 0,
-      depositStatus: 'held',
-      handoverStatus: 'delivered',
-      checklist: allChecked(),
-      notes: ''
-    });
-    setIsHandoverModalOpen(true);
+  // --- PAYMENT HANDLERS ---
+  const handleOpenRecordPayment = (tx: CarTransaction) => {
+    setPayForm({ amount: tx.amount, paymentMethod: 'bank_reza', transactionDate: new Date().toISOString().split('T')[0] });
+    setPayTarget(tx);
   };
 
-  const handleSaveHandover = async (e: React.FormEvent) => {
+  const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const initialKm = Number(handoverForm.initialOdometer);
-    const returnKm = Number(handoverForm.returnOdometer);
-    if (!handoverForm.customerName.trim() || !handoverForm.carTitle) {
-      toast.error('انتخاب رزرو و نام مشتری الزامی است');
+    if (!payTarget) return;
+    if (!payForm.amount || payForm.amount <= 0) {
+      toast.error('مبلغ پرداخت را وارد کنید');
       return;
     }
-    if (!initialKm || initialKm < 0) {
-      toast.error('کیلومتر تحویل را وارد کنید');
+    if (payForm.amount > payTarget.amount) {
+      toast.error(`مبلغ پرداخت بیشتر از مانده (${payTarget.amount.toLocaleString()}) است`);
       return;
     }
-    if (returnKm && returnKm < initialKm) {
-      toast.error('کیلومتر عودت نمی‌تواند کمتر از کیلومتر تحویل باشد');
-      return;
-    }
-
-    setSavingHandover(true);
+    if (savingPay) return;
+    setSavingPay(true);
     try {
-      const res = await fetch('/api/cars/contracts', {
-        method: 'POST',
+      const res = await fetch('/api/cars/transactions', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reservationId: handoverForm.reservationId,
-          carTitle: handoverForm.carTitle,
-          plateNumber: handoverForm.plateNumber,
-          customerName: handoverForm.customerName.trim(),
-          customerPhone: handoverForm.customerPhone,
-          initialOdometer: initialKm,
-          returnOdometer: returnKm || undefined,
-          fuelLevel: handoverForm.fuelLevel,
-          depositAmount: Number(handoverForm.depositAmount) || 0,
-          depositStatus: handoverForm.depositStatus,
-          handoverStatus: handoverForm.handoverStatus,
-          checklist: handoverForm.checklist,
-          notes: handoverForm.notes
-        })
+        body: JSON.stringify({ action: 'pay', id: payTarget.id, ...payForm })
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        const saved: CarContract = data.contract;
-        setContracts(prev => [saved, ...prev.filter(c => c.id !== saved.id)]);
-        setIsHandoverModalOpen(false);
-        toast.success('صورتجلسه تحویل با موفقیت ثبت شد');
-        handleOpenContractPdf(saved);
-      } else {
-        toast.error(data.error || 'خطا در ثبت صورتجلسه');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'خطا در ثبت پرداخت');
+        return;
       }
+      const paid: CarTransaction = data.payment;
+      const remaining: CarTransaction | undefined = data.remaining;
+      setTransactions(prev => [
+        paid,
+        ...prev.flatMap(t => t.id !== payTarget.id ? [t] : remaining ? [remaining] : [])
+      ]);
+      setPayTarget(null);
+      toast.success(remaining
+        ? `پرداخت ثبت شد؛ مانده: ${remaining.amount.toLocaleString()} OMR`
+        : 'پرداخت کامل ثبت شد');
     } catch (err) {
-      toast.error('خطای برقراری ارتباط با سرور');
+      toast.error('خطای ارتباط با سرور');
     } finally {
-      setSavingHandover(false);
+      setSavingPay(false);
     }
+  };
+
+  const handleSetReceived = async (tx: CarTransaction, received: boolean) => {
+    if (!received && !(await confirmDialog({
+      title: 'لغو تأیید دریافت',
+      message: `تأیید دریافت ${tx.amount.toLocaleString()} OMR (${getPaymentBadge(tx.paymentMethod).label}) برداشته شود؟`,
+      confirmText: 'بله، برداشته شود',
+    }))) return;
+    if (receivingTxId) return;
+    setReceivingTxId(tx.id);
+    try {
+      const res = await fetch('/api/cars/transactions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: received ? 'confirm_received' : 'undo_received', id: tx.id })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'خطا در ثبت تأیید دریافت');
+        return;
+      }
+      const updated: CarTransaction = data.transaction;
+      setTransactions(prev => prev.map(t => t.id === updated.id ? updated : t));
+      toast.success(received ? 'دریافت مبلغ تأیید شد' : 'تأیید دریافت برداشته شد');
+    } catch (err) {
+      toast.error('خطای ارتباط با سرور');
+    } finally {
+      setReceivingTxId(null);
+    }
+  };
+
+  // Starts on the first reservation still waiting for its handover (the wizard continues its auto-issued contract)
+  const handleOpenAddHandover = (resId?: string) => {
+    const pending = (r: CarReservation) => {
+      const c = contracts.find(x => x.reservationId === r.id);
+      return !c || c.handoverStatus === 'pending_delivery';
+    };
+    const res = activeReservations.find(r => r.id === resId) || activeReservations.find(pending) || activeReservations[0];
+    setWizard({ contract: null, reservationId: res?.id });
+  };
+
+  const handleWizardSaved = (saved: CarContract) => {
+    setContracts(prev => [saved, ...prev.filter(c => c.id !== saved.id)]);
+    // Extra-km / accident amounts become their own accounting rows
+    fetch('/api/cars/transactions').then(r => r.json()).then(tx => { if (Array.isArray(tx)) setTransactions(tx); }).catch(() => {});
   };
 
   // --- CRM AUTOSUGGEST FILTER ---
@@ -988,8 +1092,24 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     let bankMohammadi = 0;
     let cashReza = 0;
     let cashMohammadi = 0;
+    // Still owed by customers (pending rows): not in any balance until paid
+    let receivables = 0;
+    let pendingDeposits = 0;
+    // Paid in, but the account holder has not confirmed receiving it yet
+    let unconfirmedTotal = 0;
+    let unconfirmedCount = 0;
 
     for (const tx of transactions) {
+      if (tx.paymentStatus === 'pending') {
+        if (tx.type === 'deposit_in') pendingDeposits += tx.amount;
+        else if (INCOMING_TRANSACTION_TYPES.includes(tx.type)) receivables += tx.amount;
+        continue;
+      }
+      if (INCOMING_TRANSACTION_TYPES.includes(tx.type) && !tx.receivedAt) {
+        unconfirmedTotal += tx.amount;
+        unconfirmedCount++;
+      }
+
       if (tx.type === 'rent_fee' || tx.type === 'other_income') {
         netRentalIncome += tx.amount;
         netCashBalance += tx.amount;
@@ -1012,12 +1132,43 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       else if (tx.paymentMethod === 'cash_mohammadi') cashMohammadi += val;
     }
 
-    return { netRentalIncome, totalDepositsHeld, netCashBalance, bankReza, bankMohammadi, cashReza, cashMohammadi };
+    return {
+      netRentalIncome, totalDepositsHeld, netCashBalance, bankReza, bankMohammadi, cashReza, cashMohammadi,
+      receivables, pendingDeposits, unconfirmedTotal, unconfirmedCount
+    };
   }, [transactions]);
+
+  // Payment state per reservation, from its incoming accounting rows (rent, deposit, extra charges)
+  const reservationPayments = useMemo(() => {
+    const map = new Map<string, { paid: number; owed: number; pendingRows: CarTransaction[]; paidRows: CarTransaction[] }>();
+    for (const tx of transactions) {
+      if (!tx.reservationId || !INCOMING_TRANSACTION_TYPES.includes(tx.type)) continue;
+      const entry = map.get(tx.reservationId) || { paid: 0, owed: 0, pendingRows: [], paidRows: [] };
+      if (tx.paymentStatus === 'pending') {
+        entry.owed += tx.amount;
+        entry.pendingRows.push(tx);
+      } else {
+        entry.paid += tx.amount;
+        entry.paidRows.push(tx);
+      }
+      map.set(tx.reservationId, entry);
+    }
+    return map;
+  }, [transactions]);
+
+  const getReservationPaymentBadge = (reservationId: string) => {
+    const p = reservationPayments.get(reservationId);
+    if (!p) return null;
+    if (p.owed <= 0) return { label: 'پرداخت کامل', cls: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' };
+    if (p.paid > 0) return { label: 'پرداخت ناقص', cls: 'bg-amber-500/20 text-amber-300 border-amber-500/40' };
+    return { label: 'پرداخت‌نشده', cls: 'bg-rose-500/20 text-rose-300 border-rose-500/40' };
+  };
 
   // Payment method badges map
   const getPaymentBadge = (method: CarTransaction['paymentMethod']) => {
     switch (method) {
+      case null:
+        return { label: '⏳ در انتظار پرداخت', bg: 'rgba(244,63,94,0.12)', text: '#fda4af', border: 'rgba(244,63,94,0.35)' };
       case 'bank_reza':
         return { label: '🏦 واریز: حساب رضا اماره', bg: 'rgba(59,130,246,0.15)', text: '#60a5fa', border: 'rgba(59,130,246,0.3)' };
       case 'bank_mohammadi':
@@ -1044,6 +1195,36 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         return { label: 'غیرفعال', bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', border: 'rgba(156,163,175,0.3)' };
     }
   };
+
+  // --- COMPACT PICKER ROWS: model + year + plate, so several units of the same model stay distinguishable ---
+  const renderCarLine = (car: Car | undefined, fallbackTitle?: string) => {
+    const badge = car ? getCarStatusBadge(car.status) : undefined;
+    const plate = car ? cleanCarPlate(car.plateNumber) : '';
+    return (
+      <span className="flex items-center gap-1.5 min-w-0">
+        {badge && <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: badge.text }} title={badge.label} />}
+        <span className="truncate text-xs font-bold text-white">{car ? carModelName(car) : cleanCarTitle(fallbackTitle || 'خودرو')}</span>
+        {car?.modelYear && <span className="shrink-0 text-[10px] text-white/45 font-mono">{car.modelYear}</span>}
+        {plate && (
+          <span className="ms-auto shrink-0 rounded-md border border-gold/30 bg-black/40 px-1.5 py-px font-mono text-[10.5px] font-bold text-gold dir-ltr">
+            {plate}
+          </span>
+        )}
+      </span>
+    );
+  };
+
+  const carPickerOptions: CompactPickerOption[] = [...cars]
+    .sort((a, b) =>
+      carModelName(a).localeCompare(carModelName(b), 'fa') ||
+      (a.modelYear || '').localeCompare(b.modelYear || '') ||
+      cleanCarPlate(a.plateNumber).localeCompare(cleanCarPlate(b.plateNumber), 'en', { numeric: true })
+    )
+    .map(car => ({
+      value: car.id,
+      content: renderCarLine(car),
+      searchText: `${car.title} ${car.titleEn || ''} ${car.modelYear || ''} ${car.plateNumber}`,
+    }));
 
   return (
     <div className="space-y-5 animate-fadeIn text-white font-sans w-full max-w-full overflow-x-hidden min-w-0" dir="rtl">
@@ -1338,7 +1519,13 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-1">
+                    <div className="flex justify-between items-center gap-2 pt-1">
+                      {(() => {
+                        const payBadge = getReservationPaymentBadge(res.id);
+                        return payBadge ? (
+                          <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${payBadge.cls}`}>{payBadge.label}</span>
+                        ) : <span />;
+                      })()}
                       <button
                         onClick={() => setSelectedResDetails(res)}
                         className="text-[10px] font-extrabold text-gold hover:underline"
@@ -1506,7 +1693,45 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
           {/* CONTRACTS TABLE */}
           <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden w-full">
-            <div className="overflow-x-auto w-full">
+            {/* Phones: one card per contract */}
+            <div className="md:hidden divide-y divide-white/10">
+              {contracts.map(cnt => (
+                <div key={cnt.id} className="space-y-2.5 p-4 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      onClick={() => setWizard({ contract: cnt, startAtDone: true })}
+                      className="font-mono font-bold text-gold hover:underline cursor-pointer"
+                    >
+                      {cnt.id}
+                    </button>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${HANDOVER_STATUS_BADGES[cnt.handoverStatus].cls}`}>
+                      {HANDOVER_STATUS_BADGES[cnt.handoverStatus].label}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-bold text-white block">{cnt.carTitle}</span>
+                    <span className="text-[10px] text-white/50 font-mono">{cnt.plateNumber}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-white">{cnt.customerName}</span>
+                    <span className="text-[10px] text-white/50 dir-ltr">{cnt.customerPhone}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#07111f] p-2.5 text-[11px]">
+                    <div><span className="block text-white/40">کیلومتر تحویل/عودت</span><span dir="ltr" className="font-mono text-white/80 inline-block">{cnt.initialOdometer.toLocaleString()} / {cnt.returnOdometer ? cnt.returnOdometer.toLocaleString() : '—'} KM</span></div>
+                    <div><span className="block text-white/40">بنزین</span><span className="font-bold text-blue-400">{FUEL_LEVEL_LABELS[cnt.fuelLevel] || cnt.fuelLevel}</span></div>
+                    <div className="col-span-2"><span className="block text-white/40">ودیعه</span><span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300">{cnt.depositAmount.toLocaleString()} OMR ({DEPOSIT_STATUS_LABELS[cnt.depositStatus]})</span></div>
+                  </div>
+                  {cnt.checklist && (
+                    <span className="block text-[10px] text-white/50">
+                      چک‌لیست: {HANDOVER_CHECKLIST_ITEMS.filter(i => cnt.checklist?.[i.key]).length}/{HANDOVER_CHECKLIST_ITEMS.length} مورد سالم
+                    </span>
+                  )}
+                  {renderContractActions(cnt)}
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block overflow-x-auto w-full">
               <table className="w-full min-w-[700px] text-right border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-white/10 text-gold font-extrabold text-[11px] bg-[#07111f]">
@@ -1517,13 +1742,21 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                     <th className="py-3.5 px-4">بنزین</th>
                     <th className="py-3.5 px-4">وضعیت ودیعه</th>
                     <th className="py-3.5 px-4">وضعیت تحویل</th>
-                    <th className="py-3.5 px-4 text-center">قرارداد رسمی PDF</th>
+                    <th className="py-3.5 px-4 text-center">قرارداد</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {contracts.map(cnt => (
                     <tr key={cnt.id} className="hover:bg-white/5 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-gold">{cnt.id}</td>
+                      <td className="py-3.5 px-4">
+                        <button
+                          onClick={() => setWizard({ contract: cnt, startAtDone: true })}
+                          className="font-mono font-bold text-gold hover:underline cursor-pointer"
+                          title="دانلود و اشتراک‌گذاری قرارداد"
+                        >
+                          {cnt.id}
+                        </button>
+                      </td>
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-white block">{cnt.carTitle}</span>
                         <span className="text-[10px] text-white/50 font-mono">{cnt.plateNumber}</span>
@@ -1553,23 +1786,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                           </span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <button
-                          onClick={() => handleOpenContractPdf(cnt)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer"
-                        >
-                          <FileText size={14} />
-                          <span>خروجی PDF</span>
-                        </button>
-                        {canDeleteContracts && (
-                          <button
-                            onClick={() => handleDeleteContract(cnt)}
-                            title="حذف قرارداد (مدیر کل)"
-                            className="mr-1.5 inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer align-middle"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
+                      <td className="py-3.5 px-4">
+                        {renderContractActions(cnt)}
                       </td>
                     </tr>
                   ))}
@@ -1640,20 +1858,46 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
             </div>
           </div>
 
+          {/* OWED / NOT YET CONFIRMED */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setPaymentFilter('pending')}
+              className="bg-[#0b172a] p-4 rounded-2xl border border-rose-500/30 shadow-lg text-right hover:border-rose-400/60 transition-colors cursor-pointer"
+            >
+              <p className="text-[11px] font-bold text-rose-300 mb-1">مانده طلب از مشتریان (پرداخت‌نشده)</p>
+              <div className="flex items-center gap-2 text-xl font-black text-white">{accountingStats.receivables.toLocaleString()} <OMRIcon size="sm" /></div>
+              {accountingStats.pendingDeposits > 0 && (
+                <p className="text-[10px] text-white/50 mt-1 inline-flex items-center gap-1">+ ودیعه دریافت‌نشده: {accountingStats.pendingDeposits.toLocaleString()} <OMRIcon size="sm" /></p>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentFilter('unconfirmed')}
+              className="bg-[#0b172a] p-4 rounded-2xl border border-sky-500/30 shadow-lg text-right hover:border-sky-400/60 transition-colors cursor-pointer"
+            >
+              <p className="text-[11px] font-bold text-sky-300 mb-1">پرداخت‌شده، دریافت هنوز تأیید نشده ({accountingStats.unconfirmedCount} ردیف)</p>
+              <div className="flex items-center gap-2 text-xl font-black text-white">{accountingStats.unconfirmedTotal.toLocaleString()} <OMRIcon size="sm" /></div>
+            </button>
+          </div>
+
           {/* TRANSACTIONS FILTER & NEW BUTTON */}
           <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <select
+            <div className="w-full sm:w-64">
+              <FancySelect
                 value={paymentFilter}
-                onChange={e => setPaymentFilter(e.target.value)}
-                className="bg-[#07111f] border border-white/15 rounded-xl px-3 py-2 text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
-              >
-                <option value="all">همه روش‌های پرداخت</option>
-                <option value="bank_reza">واریز: حساب رضا اماره</option>
-                <option value="bank_mohammadi">واریز: حساب محمدی</option>
-                <option value="cash_reza">نقد: رضا اماره</option>
-                <option value="cash_mohammadi">نقد: محمدی</option>
-              </select>
+                onChange={setPaymentFilter}
+                ariaLabel="فیلتر روش پرداخت"
+                options={[
+                  { value: 'all', label: 'همه روش‌های پرداخت', icon: <Filter size={14} className="text-white/50" /> },
+                  { value: 'bank_reza', label: 'واریز به حساب رضا اماره', icon: <Landmark size={14} className="text-blue-400" /> },
+                  { value: 'bank_mohammadi', label: 'واریز به حساب محمدی', icon: <Landmark size={14} className="text-purple-400" /> },
+                  { value: 'cash_reza', label: 'نقد به رضا اماره', icon: <Wallet size={14} className="text-teal-400" /> },
+                  { value: 'cash_mohammadi', label: 'نقد به محمدی', icon: <Wallet size={14} className="text-orange-400" /> },
+                  { value: 'pending', label: 'در انتظار پرداخت مشتری', icon: <Clock size={14} className="text-amber-400" /> },
+                  { value: 'unconfirmed', label: 'دریافت تأییدنشده', icon: <CheckCircle2 size={14} className="text-sky-400" /> },
+                ]}
+              />
             </div>
 
             <button
@@ -1668,7 +1912,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           {/* TRANSACTIONS TABLE */}
           <div className="rounded-2xl border border-white/10 bg-[#0b172a] shadow-xl overflow-hidden w-full">
             <div className="overflow-x-auto w-full">
-              <table className="w-full min-w-[700px] text-right border-collapse text-xs">
+              <table className="w-full min-w-[820px] text-right border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-white/10 text-gold font-extrabold text-[11px] bg-[#07111f]">
                     <th className="py-3 px-4">تاریخ</th>
@@ -1679,19 +1923,26 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       <span className="inline-flex items-center gap-1">مبلغ <OMRIcon size="sm" /></span>
                     </th>
                     <th className="py-3 px-4">حساب / روش پرداخت</th>
+                    <th className="py-3 px-4 text-center">تأیید دریافت</th>
                     <th className="py-3 px-4 text-center">رسید / پیوست</th>
                     <th className="py-3 px-4 text-center">عملیات</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {transactions
-                    .filter(t => paymentFilter === 'all' || t.paymentMethod === paymentFilter)
+                    .filter(t =>
+                      paymentFilter === 'all' ? true :
+                      paymentFilter === 'pending' ? t.paymentStatus === 'pending' :
+                      paymentFilter === 'unconfirmed' ? t.paymentStatus === 'paid' && INCOMING_TRANSACTION_TYPES.includes(t.type) && !t.receivedAt :
+                      t.paymentMethod === paymentFilter
+                    )
                     .map(tx => {
                       const badge = getPaymentBadge(tx.paymentMethod);
                       const isNegative = tx.type === 'deposit_refund' || tx.type === 'maintenance_expense';
+                      const isPending = tx.paymentStatus === 'pending';
 
                       return (
-                        <tr key={tx.id} className="hover:bg-white/5 transition-colors">
+                        <tr key={tx.id} className={`hover:bg-white/5 transition-colors ${isPending ? 'opacity-80' : ''}`}>
                           <td className="py-3 px-4 text-white/70">{tx.transactionDate}</td>
                           <td className="py-3 px-4 font-bold text-white">{tx.description}</td>
                           <td className="py-3 px-4 text-white/80">{tx.customerName || '-'}</td>
@@ -1700,25 +1951,65 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                               tx.type === 'rent_fee' ? 'bg-emerald-500/20 text-emerald-300' :
                               tx.type === 'deposit_in' ? 'bg-blue-500/20 text-blue-300' :
                               tx.type === 'deposit_refund' ? 'bg-rose-500/20 text-rose-300' :
+                              tx.type === 'other_income' ? 'bg-teal-500/20 text-teal-300' :
                               'bg-amber-500/20 text-amber-300'
                             }`}>
-                              {tx.type === 'rent_fee' ? 'کرایه خودرو' :
-                               tx.type === 'deposit_in' ? 'دریافت ودیعه' :
-                               tx.type === 'deposit_refund' ? 'عودت ودیعه' : 'هزینه سرویس'}
+                              {TX_TYPE_LABELS[tx.type] || tx.type}
                             </span>
                           </td>
-                          <td className={`py-3 px-4 font-extrabold text-sm ${isNegative ? 'text-rose-400' : 'text-emerald-400'}`}>
+                          <td className={`py-3 px-4 font-extrabold text-sm ${isPending ? 'text-white/50' : isNegative ? 'text-rose-400' : 'text-emerald-400'}`}>
                             <span className="inline-flex items-center gap-1">
-                              {isNegative ? '-' : '+'}{tx.amount.toLocaleString()} <OMRIcon size="sm" />
+                              {isPending ? '' : isNegative ? '-' : '+'}{tx.amount.toLocaleString()} <OMRIcon size="sm" />
                             </span>
                           </td>
                           <td className="py-3 px-4">
-                            <span
-                              className="px-2.5 py-0.5 rounded-full text-[10px] font-black border inline-block"
-                              style={{ background: badge.bg, color: badge.text, borderColor: badge.border }}
-                            >
-                              {badge.label}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span
+                                className="px-2.5 py-0.5 rounded-full text-[10px] font-black border inline-block"
+                                style={{ background: badge.bg, color: badge.text, borderColor: badge.border }}
+                              >
+                                {badge.label}
+                              </span>
+                              {isPending && (
+                                <button
+                                  onClick={() => handleOpenRecordPayment(tx)}
+                                  className="px-2 py-0.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold hover:bg-emerald-500/25"
+                                >
+                                  ثبت پرداخت
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {isPending || !INCOMING_TRANSACTION_TYPES.includes(tx.type) ? (
+                              <span className="text-white/30 text-[10px]">-</span>
+                            ) : tx.receivedAt ? (
+                              <div className="inline-flex flex-col items-center gap-0.5">
+                                <span className="inline-flex items-center gap-1 text-emerald-300 text-[10px] font-bold">
+                                  <CheckCircle2 size={12} />
+                                  <span>دریافت شد</span>
+                                </span>
+                                <span className="text-white/45 text-[9.5px]">
+                                  {tx.receivedBy ? `${tx.receivedBy} · ` : ''}{formatDateTime(tx.receivedAt)}
+                                </span>
+                                <button
+                                  onClick={() => handleSetReceived(tx, false)}
+                                  disabled={receivingTxId === tx.id}
+                                  className="text-white/35 hover:text-rose-300 text-[9.5px] underline disabled:opacity-50"
+                                >
+                                  لغو تأیید
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleSetReceived(tx, true)}
+                                disabled={receivingTxId === tx.id}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-500/15 text-sky-300 border border-sky-500/40 text-[10px] font-bold hover:bg-sky-500/25 disabled:opacity-50"
+                              >
+                                {receivingTxId === tx.id ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                <span>تأیید دریافت</span>
+                              </button>
+                            )}
                           </td>
                           <td className="py-3 px-4 text-center">
                             {tx.receiptFileUrl ? (
@@ -1839,14 +2130,14 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
                   <div>
                     <label className="block text-white/80 font-bold mb-1">گیربکس</label>
-                    <select
+                    <FancySelect<Car['transmission']>
                       value={carForm.transmission || 'automatic'}
-                      onChange={e => setCarForm({ ...carForm, transmission: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="automatic">اتوماتیک</option>
-                      <option value="manual">دستی</option>
-                    </select>
+                      onChange={v => setCarForm({ ...carForm, transmission: v })}
+                      options={[
+                        { value: 'automatic', label: 'اتوماتیک' },
+                        { value: 'manual', label: 'دستی' },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -1878,16 +2169,16 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
                   <div>
                     <label className="block text-white/80 font-bold mb-1">وضعیت خودرو</label>
-                    <select
+                    <FancySelect<Car['status']>
                       value={carForm.status || 'available'}
-                      onChange={e => setCarForm({ ...carForm, status: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="available">آماده رزرو</option>
-                      <option value="rented">در حال اجاره</option>
-                      <option value="maintenance">در حال سرویس</option>
-                      <option value="disabled">غیرفعال</option>
-                    </select>
+                      onChange={v => setCarForm({ ...carForm, status: v })}
+                      options={[
+                        { value: 'available', label: 'آماده رزرو', icon: <span className="block h-2 w-2 rounded-full bg-emerald-400" /> },
+                        { value: 'rented', label: 'در حال اجاره', icon: <span className="block h-2 w-2 rounded-full bg-rose-400" /> },
+                        { value: 'maintenance', label: 'در حال سرویس', icon: <span className="block h-2 w-2 rounded-full bg-amber-400" /> },
+                        { value: 'disabled', label: 'غیرفعال', icon: <span className="block h-2 w-2 rounded-full bg-gray-400" /> },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -1982,20 +2273,16 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 <div className="space-y-1.5">
                   <label className="block text-white/90 font-bold text-[11px] flex items-center gap-1.5">
                     <CarIcon size={14} className="text-gold" />
-                    <span>خودرو مورد نظر *</span>
+                    <span>خودرو *</span>
                   </label>
-                  <select
-                    required
+                  <CompactPicker
                     value={resForm.carId || ''}
-                    onChange={e => updateResFormPricing({ carId: e.target.value })}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs font-bold text-white outline-none focus:border-gold cursor-pointer"
-                  >
-                    {cars.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {cleanCarTitle(c.title)}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={carId => updateResFormPricing({ carId })}
+                    options={carPickerOptions}
+                    placeholder="انتخاب خودرو"
+                    searchPlaceholder="مدل یا پلاک..."
+                    emptyText="خودرویی یافت نشد"
+                  />
                 </div>
 
                 {/* 2. CUSTOMER SELECTION */}
@@ -2282,6 +2569,111 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       {/* ==================================================================== */}
       {/* MODAL 3: RESERVATION DETAILS & ACTIONS                               */}
       {/* ==================================================================== */}
+      {returnRes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-[#0b172a] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <h3 className="text-base font-black text-white">ثبت عودت — {returnRes.customerName}</h3>
+              <button onClick={() => setReturnModalResId(null)} className="text-white/40 hover:text-white"><X size={18} /></button>
+            </div>
+            <div className="text-[11px] text-white/50">{cleanCarTitle(returnRes.carTitle || '')} · {returnRes.startDate} الی {returnRes.endDate}</div>
+              {/* RETURN MEDIA: kept on the reservation file, not printed in the contract; the customer signs to confirm */}
+            {(() => {
+                const cur = returnRes;
+                const media = cur.returnPhotos || [];
+                const sig = cur.returnSignature;
+                const nVideos = media.filter(m => m.kind === 'car_video').length;
+                return (
+                  <div className="space-y-2 text-xs bg-[#07111f] p-4 rounded-2xl border border-white/10">
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-white">تصاویر و ویدیوهای عودت خودرو</span>
+                      <span className="text-[10px] text-white/40">{media.length - nVideos} تصویر · {nVideos} ویدیو</span>
+                    </div>
+                    <p className="text-[10.5px] leading-5 text-white/45">این فایل‌ها فقط در پرونده رزرو نگهداری می‌شوند و در قرارداد نمی‌آیند.</p>
+                    {media.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {media.map((m, i) => {
+                          const video = m.kind === 'car_video';
+                          const thumb = video ? m.posterUrl : m.url;
+                          return (
+                            <div key={`${i}-${m.path || m.url}`} className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                              <a href={m.url} target="_blank" rel="noreferrer" className="flex h-full w-full items-center justify-center text-white/50">
+                                {thumb ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={thumb} alt="" className="h-full w-full object-cover" />
+                                ) : <span className="text-[10px]">ویدیو</span>}
+                              </a>
+                              {video && <span className="absolute bottom-1 left-1 rounded-md bg-black/70 px-1.5 py-0.5 text-[9px] font-bold text-white">ویدیو</span>}
+                              {!sig && <button
+                                type="button"
+                                onClick={() => handleRemoveReturnMedia(returnRes, i)}
+                                className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-rose-300 hover:bg-rose-600 hover:text-white"
+                                title="حذف"
+                              >
+                                <Trash2 size={13} />
+                              </button>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {!sig && <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/10 px-3 py-2.5 text-[11px] font-bold text-gold cursor-pointer hover:bg-gold/20 ${uploadingReturnPhotos > 0 ? 'opacity-60 pointer-events-none' : ''}`}>
+                      {uploadingReturnPhotos > 0 ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                      <span>{uploadingReturnPhotos > 0 ? 'در حال آپلود (برای ویدیو صبر کنید)...' : 'افزودن تصویر یا ویدیوی عودت'}</span>
+                      <input
+                        type="file"
+                        accept="image/*,video/*"
+                        multiple
+                        className="hidden"
+                        onChange={e => {
+                          const input = e.currentTarget;
+                          handleAddReturnMedia(returnRes, input.files).finally(() => { input.value = ''; });
+                        }}
+                      />
+                    </label>}
+
+                    {media.length > 0 && (
+                      sig ? (
+                        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 space-y-2">
+                          <div className="text-[11px] font-black text-emerald-300">
+                            ✓ مشتری صحت این فایل‌ها را امضا کرد؛ دیگر قابل تغییر یا حذف نیستند
+                            <bdi dir="ltr" className="block text-[10px] font-normal text-emerald-200/70">{new Date(sig.signedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}</bdi>
+                          </div>
+                          {sig.url && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={sig.url} alt="امضای مشتری" className="h-20 rounded-lg bg-white p-1" />
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setReturnSignOpen(true)}
+                          disabled={uploadingReturnPhotos > 0}
+                          className="w-full rounded-xl bg-emerald-500/15 border border-emerald-500/40 px-3 py-2.5 text-[11px] font-bold text-emerald-300 hover:bg-emerald-500/25 disabled:opacity-40"
+                        >
+                          امضای مشتری برای تأیید صحت تصاویر و ویدیوها (پس از امضا قابل تغییر نیست)
+                        </button>
+                      )
+                    )}
+                  </div>
+                );
+              })()}
+
+            <div className="flex justify-end pt-1">
+              <button onClick={() => setReturnModalResId(null)} className="px-4 py-2 rounded-xl bg-white/10 text-white text-xs font-bold">بستن</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {returnSignOpen && returnRes && (
+        <SignaturePadModal
+          title={`تأیید صحت تصاویر و ویدیوهای عودت — ${returnRes.customerName}`}
+          description="با امضای زیر، مشتری تأیید می‌کند که تصاویر و ویدیوهای ثبت‌شده هنگام عودت خودرو صحیح است."
+          busy={signingReturn}
+          onCancel={() => setReturnSignOpen(false)}
+          onSave={png => handleSignReturn(returnRes, png)}
+        />
+      )}
       <AnimatePresence>
         {selectedResDetails && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
@@ -2289,7 +2681,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md rounded-3xl border border-white/15 bg-[#0b172a] p-6 shadow-2xl space-y-4"
+              className="w-full max-w-md rounded-3xl border border-white/15 bg-[#0b172a] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
                 <h3 className="text-base font-black text-white">اطلاعات رزرو {selectedResDetails.customerName}</h3>
@@ -2321,6 +2713,73 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 </div>
               </div>
 
+              {/* PAYMENTS: what the customer still owes, and what was paid to whom */}
+              {(() => {
+                const pay = reservationPayments.get(selectedResDetails.id);
+                if (!pay) return null;
+                const payBadge = getReservationPaymentBadge(selectedResDetails.id);
+                return (
+                  <div className="space-y-2 text-xs bg-[#07111f] p-4 rounded-2xl border border-white/10">
+                    <div className="flex justify-between items-center">
+                      <span className="font-black text-white">وضعیت پرداخت</span>
+                      {payBadge && <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${payBadge.cls}`}>{payBadge.label}</span>}
+                    </div>
+                    <div className="flex justify-between text-white/70">
+                      <span>پرداخت‌شده:</span>
+                      <span className="inline-flex items-center gap-1 font-bold text-emerald-400">{pay.paid.toLocaleString()} <OMRIcon size="sm" /></span>
+                    </div>
+                    <div className="flex justify-between text-white/70">
+                      <span>مانده:</span>
+                      <span className={`inline-flex items-center gap-1 font-bold ${pay.owed > 0 ? 'text-rose-300' : 'text-white/50'}`}>{pay.owed.toLocaleString()} <OMRIcon size="sm" /></span>
+                    </div>
+
+                    {pay.pendingRows.map(tx => (
+                      <div key={tx.id} className="flex justify-between items-center gap-2 pt-2 border-t border-white/5">
+                        <span className="text-white/80">
+                          {TX_TYPE_LABELS[tx.type]}: <span className="font-bold text-white inline-flex items-center gap-1">{tx.amount.toLocaleString()} <OMRIcon size="sm" /></span>
+                        </span>
+                        <button
+                          onClick={() => handleOpenRecordPayment(tx)}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold hover:bg-emerald-500/25 inline-flex items-center gap-1"
+                        >
+                          <Wallet size={13} />
+                          <span>ثبت پرداخت</span>
+                        </button>
+                      </div>
+                    ))}
+
+                    {pay.paidRows.map(tx => (
+                      <div key={tx.id} className="flex justify-between items-center gap-2 pt-2 border-t border-white/5 text-[11px]">
+                        <span className="text-white/70">
+                          {TX_TYPE_LABELS[tx.type]} · {tx.transactionDate}
+                          <span className="block text-white/45">{getPaymentBadge(tx.paymentMethod).label}</span>
+                        </span>
+                        <span className="text-left">
+                          <span className="font-bold text-emerald-400 inline-flex items-center gap-1">{tx.amount.toLocaleString()} <OMRIcon size="sm" /></span>
+                          <span className={`block text-[10px] ${tx.receivedAt ? 'text-emerald-300' : 'text-sky-300'}`}>
+                            {tx.receivedAt ? `✓ دریافت تأیید شد${tx.receivedBy ? ` (${tx.receivedBy})` : ''}` : 'دریافت هنوز تأیید نشده'}
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* Return photos/videos are managed from the contracts tab; here they are only summarised */}
+              {(() => {
+                const cur = reservations.find(r => r.id === selectedResDetails.id) ?? selectedResDetails;
+                const media = cur.returnPhotos || [];
+                if (!media.length && !cur.returnSignature) return null;
+                const nVideos = media.filter(m => m.kind === 'car_video').length;
+                return (
+                  <div className="flex items-center justify-between gap-2 text-xs bg-[#07111f] p-3 rounded-2xl border border-white/10">
+                    <span className="text-white/70">تصاویر عودت: {media.length - nVideos} تصویر · {nVideos} ویدیو</span>
+                    <span className={cur.returnSignature ? 'font-bold text-emerald-300' : 'text-white/40'}>{cur.returnSignature ? '✓ امضا شده' : 'بدون امضا'}</span>
+                  </div>
+                );
+              })()}
+
               {handedOverContractForDetails && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-6 text-amber-200 space-y-1">
                   <p>
@@ -2341,7 +2800,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       لغو رزرو
                     </button>
                   )}
-                  {!handedOverContractForDetails && (
+                  {!handedOverContractForDetails && !selectedResDetails.returnSignature && (
                     <button
                       onClick={() => handleDeleteReservation(selectedResDetails.id)}
                       className="px-4 py-2 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30"
@@ -2357,6 +2816,90 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                   بستن
                 </button>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+
+      {/* ==================================================================== */}
+      {/* MODAL 3.5: RECORD A CUSTOMER PAYMENT AGAINST A PENDING ROW           */}
+      {/* ==================================================================== */}
+      <AnimatePresence>
+        {payTarget && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" dir="rtl">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-md rounded-3xl border border-white/15 bg-[#0b172a] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Wallet className="text-gold" size={18} />
+                  <span>ثبت پرداخت {TX_TYPE_LABELS[payTarget.type]}</span>
+                </h3>
+                <button onClick={() => setPayTarget(null)} disabled={savingPay} className="text-white/40 hover:text-white disabled:opacity-40"><X size={18} /></button>
+              </div>
+
+              <div className="text-[11px] text-white/70 bg-[#07111f] p-3 rounded-xl border border-white/10 space-y-1">
+                <p className="font-bold text-white">{payTarget.customerName}</p>
+                <p>{payTarget.description}</p>
+                <p className="inline-flex items-center gap-1">مانده قابل پرداخت: <span className="font-black text-rose-300">{payTarget.amount.toLocaleString()}</span> <OMRIcon size="sm" /></p>
+              </div>
+
+              <form onSubmit={handleRecordPayment} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block text-white/80 font-bold mb-1 flex items-center gap-1">مبلغ پرداختی <OMRIcon size="sm" /> *</label>
+                  <NumericInput
+                    required
+                    value={payForm.amount}
+                    onValueChange={v => setPayForm({ ...payForm, amount: v })}
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold text-sm"
+                  />
+                  <p className="text-white/40 text-[10px] mt-1">اگر کمتر از مانده باشد، باقی‌مانده «در انتظار پرداخت» می‌ماند.</p>
+                </div>
+
+                <div>
+                  <label className="block text-white/80 font-bold mb-1">پول به کجا / به چه کسی رسید؟ *</label>
+                  <select
+                    required
+                    value={payForm.paymentMethod}
+                    onChange={e => setPayForm({ ...payForm, paymentMethod: e.target.value as PaymentMethod })}
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 outline-none focus:border-gold font-bold text-gold"
+                  >
+                    {PAYMENT_METHOD_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-white/80 font-bold mb-1">تاریخ پرداخت</label>
+                  <input
+                    type="date"
+                    value={payForm.transactionDate}
+                    onChange={e => setPayForm({ ...payForm, transactionDate: e.target.value })}
+                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
+                  />
+                </div>
+
+                <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPayTarget(null)}
+                    disabled={savingPay}
+                    className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold disabled:opacity-60"
+                  >
+                    انصراف
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingPay}
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                  >
+                    {savingPay ? (<><Loader2 size={16} className="animate-spin" /><span>در حال ثبت...</span></>) : 'ثبت پرداخت'}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </div>
         )}
@@ -2400,32 +2943,31 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 {/* EXACT ACCOUNTS SELECTION REQUIRED BY USER */}
                 <div>
                   <label className="block text-white/80 font-bold mb-1">روش پرداخت و حساب مقصد *</label>
-                  <select
-                    required
+                  <FancySelect<PaymentMethod>
                     value={txForm.paymentMethod}
-                    onChange={e => setTxForm({ ...txForm, paymentMethod: e.target.value as any })}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold font-bold text-gold"
-                  >
-                    <option value="bank_reza">🏦 واریز به حساب - حساب رضا اماره</option>
-                    <option value="bank_mohammadi">🏦 واریز به حساب - حساب محمدی</option>
-                    <option value="cash_reza">💵 نقد - نقد به رضا اماره</option>
-                    <option value="cash_mohammadi">💵 نقد - نقد به محمدی</option>
-                  </select>
+                    onChange={v => setTxForm({ ...txForm, paymentMethod: v })}
+                    options={[
+                      { value: 'bank_reza', label: 'واریز به حساب رضا اماره', icon: <Landmark size={14} className="text-blue-400" /> },
+                      { value: 'bank_mohammadi', label: 'واریز به حساب محمدی', icon: <Landmark size={14} className="text-purple-400" /> },
+                      { value: 'cash_reza', label: 'نقد به رضا اماره', icon: <Wallet size={14} className="text-teal-400" /> },
+                      { value: 'cash_mohammadi', label: 'نقد به محمدی', icon: <Wallet size={14} className="text-orange-400" /> },
+                    ]}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-white/80 font-bold mb-1">نوع تراکنش</label>
-                    <select
+                    <FancySelect<CarTransaction['type']>
                       value={txForm.type}
-                      onChange={e => setTxForm({ ...txForm, type: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-white outline-none focus:border-gold"
-                    >
-                      <option value="rent_fee">درآمد کرایه خودرو</option>
-                      <option value="deposit_in">دریافت ودیعه</option>
-                      <option value="deposit_refund">عودت ودیعه (منفی)</option>
-                      <option value="maintenance_expense">هزینه سرویس و تعمیرات (منفی)</option>
-                    </select>
+                      onChange={v => setTxForm({ ...txForm, type: v })}
+                      options={[
+                        { value: 'rent_fee', label: 'درآمد کرایه خودرو', icon: <ArrowUpRight size={14} className="text-emerald-400" /> },
+                        { value: 'deposit_in', label: 'دریافت ودیعه', icon: <ArrowUpRight size={14} className="text-blue-400" /> },
+                        { value: 'deposit_refund', label: 'عودت ودیعه', hint: 'از موجودی کم می‌شود', icon: <ArrowDownRight size={14} className="text-rose-400" /> },
+                        { value: 'maintenance_expense', label: 'هزینه سرویس و تعمیرات', hint: 'از موجودی کم می‌شود', icon: <ArrowDownRight size={14} className="text-amber-400" /> },
+                      ]}
+                    />
                   </div>
 
                   <div>
@@ -2494,219 +3036,22 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         )}
       </AnimatePresence>
 
-      {/* BILINGUAL CONTRACT PDF MODAL */}
+      {/* HANDOVER WIZARD (handover record + contract, photos, PDF / share) */}
       <AnimatePresence>
-        {selectedContractForPdf && (
-          <CarContractModal
-            contract={selectedContractForPdf}
-            onClose={() => setSelectedContractForPdf(null)}
-            onSave={handleSaveContractDetails}
+        {wizard && (
+          <HandoverWizard
+            contract={wizard.contract}
+            startAtDone={wizard.startAtDone}
+            defaultReservationId={wizard.reservationId}
+            reservations={reservations}
+            cars={cars}
+            contracts={contracts}
+            onSaved={handleWizardSaved}
+            onClose={() => setWizard(null)}
           />
         )}
       </AnimatePresence>
-
-      {/* ==================================================================== */}
-      {/* MODAL 4: HANDOVER & CONTRACT CREATION                                 */}
-      {/* ==================================================================== */}
-      <AnimatePresence>
-        {isHandoverModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              className="w-full max-w-xl rounded-t-3xl sm:rounded-3xl border border-gold/30 bg-[#0b172a] p-4 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
-            >
-              <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <h3 className="text-sm sm:text-base font-black text-white flex items-center gap-2">
-                  <ClipboardList className="text-gold" size={18} />
-                  <span>ثبت صورتجلسه تحویل / عودت و صدور قرارداد</span>
-                </h3>
-                <button onClick={() => setIsHandoverModalOpen(false)} className="p-1 rounded-lg text-white/40 hover:text-white hover:bg-white/10 transition-colors">
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveHandover} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block text-white/80 font-bold mb-1">انتخاب رزرو / خودرو مربوطه *</label>
-                  <select
-                    required
-                    value={handoverForm.reservationId}
-                    onChange={e => {
-                      const res = reservations.find(r => r.id === e.target.value);
-                      const car = cars.find(c => c.id === res?.carId);
-                      setHandoverForm(prev => ({
-                        ...prev,
-                        reservationId: e.target.value,
-                        carTitle: res?.carTitle || car?.title || prev.carTitle,
-                        plateNumber: car?.plateNumber || prev.plateNumber,
-                        customerName: res?.customerName || prev.customerName,
-                        customerPhone: res?.customerPhone || prev.customerPhone,
-                        depositAmount: res?.depositPaid || car?.depositAmount || prev.depositAmount
-                      }));
-                    }}
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                  >
-                    {activeReservations.map(r => (
-                      <option key={r.id} value={r.id}>
-                        {r.carTitle || 'خودرو'} - {r.customerName} ({r.startDate} تا {r.endDate})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">نام مشتری *</label>
-                    <input
-                      type="text"
-                      required
-                      value={handoverForm.customerName}
-                      onChange={e => setHandoverForm({ ...handoverForm, customerName: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">شماره تماس *</label>
-                    <input
-                      type="text"
-                      required
-                      value={handoverForm.customerPhone}
-                      onChange={e => setHandoverForm({ ...handoverForm, customerPhone: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold font-mono dir-ltr"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">کیلومتر تحویل (Initial KM) *</label>
-                    <NumericInput
-                      required
-                      value={handoverForm.initialOdometer}
-                      onValueChange={v => setHandoverForm({ ...handoverForm, initialOdometer: v })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">کیلومتر عودت (Return KM)</label>
-                    <NumericInput
-                      value={handoverForm.returnOdometer}
-                      onValueChange={v => setHandoverForm({ ...handoverForm, returnOdometer: v })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white font-mono outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">وضعیت بنزین تحویلی</label>
-                    <select
-                      value={handoverForm.fuelLevel}
-                      onChange={e => setHandoverForm({ ...handoverForm, fuelLevel: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="full">فول (Full)</option>
-                      <option value="three_quarters">۳/۴ (3/4)</option>
-                      <option value="half">۱/۲ (1/2)</option>
-                      <option value="quarter">۱/۴ (1/4)</option>
-                      <option value="empty">خالی (Empty)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">وضعیت تحویل خودرو</label>
-                    <select
-                      value={handoverForm.handoverStatus}
-                      onChange={e => setHandoverForm({ ...handoverForm, handoverStatus: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="delivered">تحویل داده شد (Delivered)</option>
-                      <option value="pending_delivery">در انتظار تحویل (Pending)</option>
-                      <option value="returned">عودت داده شد (Returned)</option>
-                      <option value="inspection_required">نیازمند بررسی بدنه (Inspection)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold mb-1">وضعیت ودیعه ضمانت</label>
-                    <select
-                      value={handoverForm.depositStatus}
-                      onChange={e => setHandoverForm({ ...handoverForm, depositStatus: e.target.value as any })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold cursor-pointer"
-                    >
-                      <option value="held">نزد شرکت (امانی)</option>
-                      <option value="refunded">مسترد شد به مشتری</option>
-                      <option value="partially_refunded">کسر جریمه و استرداد مانده</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white/80 font-bold mb-1.5">چک‌لیست سلامت خودرو</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {HANDOVER_CHECKLIST_ITEMS.map(item => {
-                      const ok = !!handoverForm.checklist[item.key];
-                      return (
-                        <label
-                          key={item.key}
-                          className={`flex items-center gap-2 rounded-xl border p-2.5 cursor-pointer transition-colors ${
-                            ok ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/40 bg-rose-500/10 text-rose-200'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={ok}
-                            onChange={e => setHandoverForm(prev => ({
-                              ...prev,
-                              checklist: { ...prev.checklist, [item.key]: e.target.checked }
-                            }))}
-                            className="h-4 w-4 accent-emerald-500 shrink-0"
-                          />
-                          <span className="flex-1 text-[11px] font-bold">{item.label}</span>
-                          <span className="text-[10px] font-black">{ok ? 'سالم' : 'مشکل دارد'}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-white/80 font-bold mb-1">ملاحظات و سلامت بدنه</label>
-                  <textarea
-                    rows={2}
-                    value={handoverForm.notes}
-                    onChange={e => setHandoverForm({ ...handoverForm, notes: e.target.value })}
-                    placeholder="نکات تحویل، چک‌لیست خط‌وخش بدنه، جریمه‌ها..."
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2.5 text-sm sm:text-xs text-white outline-none focus:border-gold resize-none"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={() => setIsHandoverModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl bg-white/5 text-white/70 hover:text-white hover:bg-white/10 text-xs font-bold transition-all"
-                  >
-                    انصراف
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingHandover}
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    <CheckCircle2 size={16} />
-                    <span>{savingHandover ? 'در حال ذخیره...' : 'ثبت صورتجلسه و نمایش قرارداد'}</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {contractPdf.element}
 
     </div>
   );
