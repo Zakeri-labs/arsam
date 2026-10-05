@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getContracts, saveContract, deleteContract, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
+import { getContracts, saveContract, deleteContract, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
 import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
 import { createContractShareToken } from '@/lib/contract-share';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments } from '@/lib/storage';
@@ -104,6 +104,9 @@ export async function DELETE(request: Request) {
     const removed = await deleteContract(id);
     return NextResponse.json({ success: true, ...removed });
   } catch (error: any) {
+    if (error instanceof ReturnSignedError) {
+      return NextResponse.json({ error: RETURN_SIGNED_MESSAGE }, { status: 409 });
+    }
     console.error('Error deleting contract:', error);
     return NextResponse.json({ error: 'خطا در حذف صورتجلسه' }, { status: 500 });
   }
