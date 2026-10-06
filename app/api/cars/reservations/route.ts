@@ -5,6 +5,7 @@ import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signCo
 const HANDED_OVER_MESSAGE = (contractId: string) =>
   `خودرو برای این رزرو تحویل شده است (قرارداد ${contractId}). برای لغو یا حذف رزرو، ابتدا قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم خودکار حذف می‌شوند).`;
 import { requireAdmin } from '@/lib/auth-check';
+import { businessToday, PAST_RESERVATION_MESSAGE } from '@/lib/business-day';
 
 const SIGNED_CONTRACT_MESSAGE = (contractId: string) =>
   `مشتری قرارداد ${contractId} را امضا کرده است؛ تاریخ، خودرو، مبلغ اجاره و ودیعه دیگر قابل تغییر نیست. برای تغییر، ابتدا امضای مشتری را از قرارداد حذف کنید.`;
@@ -66,6 +67,9 @@ export async function POST(request: Request) {
     }
 
     const isNew = !body.id;
+    if (isNew && String(body.startDate).slice(0, 10) < businessToday()) {
+      return NextResponse.json({ error: PAST_RESERVATION_MESSAGE }, { status: 400 });
+    }
     if (!isNew && body.status === 'cancelled') {
       const handedOverId = await findHandedOverContractId(body.id);
       if (handedOverId) {
@@ -97,7 +101,7 @@ export async function POST(request: Request) {
       // Edited dates / price / deposit must carry through to the contract and the accounting rows
       try {
         const synced = await syncReservationFinancials(reservation);
-        return NextResponse.json({ success: true, reservation: shown, contract: synced.contract, transactions: synced.transactions });
+        return NextResponse.json({ success: true, reservation: shown, contract: synced.contract, transactions: synced.transactions, overpaid: synced.overpaid });
       } catch (syncErr) {
         console.error('Error syncing contract/accounting for edited reservation:', syncErr);
         return NextResponse.json({ success: true, reservation: shown, syncError: true });
