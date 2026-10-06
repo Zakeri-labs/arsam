@@ -5,12 +5,13 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
   X, ChevronLeft, ChevronRight, UserRound, Car as CarIcon, CalendarClock, Images, CheckCircle2,
-  Download, Link2, Share2, Pencil, Loader2, Trash2, Plus, Film, IdCard, BookUser, Camera, AlertTriangle, Ban,
+  Download, Link2, Share2, Pencil, Loader2, Trash2, Plus, Film, IdCard, BookUser, Camera, AlertTriangle, Ban, PenLine,
 } from 'lucide-react';
 import FancySelect from '@/components/ui/fancy-select';
 import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
 import NumericInput from '@/components/numeric-input';
 import { confirmDialog } from '@/components/confirm-dialog';
+import SignaturePad from '@/components/signature-pad';
 import ContractFinanceCard from '@/components/contract-finance-card';
 import {
   type Car, type CarContract, type CarReservation, type ContractAttachment, type ContractAttachmentKind, type FuelLevel,
@@ -380,6 +381,10 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
   const [dirty, setDirty] = useState(false);
   const [jobs, setJobs] = useState<UploadJob[]>([]);
   const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
+  // Renter's signature taken on this device
+  const [signing, setSigning] = useState(false);
+  const [drawn, setDrawn] = useState<Blob | null>(null);
+  const [signSaving, setSignSaving] = useState(false);
   const pdf = useContractPdf();
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -563,6 +568,33 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
       await pdf.download(contractData(), signatureUrl);
     } catch {
       toast.error('ساخت فایل PDF ناموفق بود؛ دوباره تلاش کنید');
+    }
+  };
+
+  const submitRenterSignature = async () => {
+    if (!saved || !drawn) return;
+    setSignSaving(true);
+    try {
+      const form = new FormData();
+      form.append('id', saved.id);
+      form.append('file', new File([drawn], 'signature.png', { type: 'image/png' }));
+      const res = await fetch('/api/cars/contracts/signature', { method: 'POST', body: form });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'ثبت امضا ناموفق بود');
+        if (data.code === 'signed') setSigning(false);
+        return;
+      }
+      const updated: CarContract = { ...saved, renterSignatureUrl: data.renterSignatureUrl };
+      setSaved(updated);
+      onSaved(updated);
+      setSigning(false);
+      setDrawn(null);
+      toast.success('امضای مشتری ثبت شد');
+    } catch {
+      toast.error('خطای ارتباط با سرور');
+    } finally {
+      setSignSaving(false);
     }
   };
 
@@ -946,6 +978,49 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
                   {signatureUrl ? ' · با امضای شرکت' : ' · امضای شرکت در تنظیمات ثبت نشده'}
                 </div>
               </div>
+
+              {saved.renterSignatureUrl ? (
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-3">
+                  <div className="flex items-center gap-2 text-[12px] font-bold text-emerald-300">
+                    <CheckCircle2 size={16} />
+                    امضای مشتری ثبت شده است
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={saved.renterSignatureUrl} alt="" className="h-10 max-w-[40%] rounded-lg bg-white object-contain px-2 py-0.5" />
+                </div>
+              ) : signing ? (
+                <div className="rounded-2xl bg-white p-3 text-gray-800">
+                  <div className="mb-2 text-[12px] font-bold">امضای مشتری ({saved.customerName})</div>
+                  <SignaturePad onChange={setDrawn} height={170} />
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setSigning(false); setDrawn(null); }}
+                      className="rounded-xl border border-gray-300 py-2.5 text-[12px] font-bold text-gray-700"
+                    >
+                      انصراف
+                    </button>
+                    <button
+                      type="button"
+                      onClick={submitRenterSignature}
+                      disabled={!drawn || signSaving}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-[#0f1e37] py-2.5 text-[12px] font-black text-white disabled:opacity-50"
+                    >
+                      {signSaving && <Loader2 size={14} className="animate-spin" />}
+                      تأیید و ثبت امضا
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSigning(true)}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gold/60 bg-gold/10 py-3.5 text-[13px] font-black text-gold active:scale-[0.99]"
+                >
+                  <PenLine size={17} />
+                  گرفتن امضای مشتری
+                </button>
+              )}
 
               <button
                 type="button"

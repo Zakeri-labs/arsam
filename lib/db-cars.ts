@@ -176,6 +176,8 @@ export interface CarContract {
   shareVersion?: number;
   // Added by the contracts API: token of the public download link (never stored)
   shareToken?: string | null;
+  // Added by the contracts API: short-lived signed URL of the renter's signature, once signed (never stored)
+  renterSignatureUrl?: string | null;
 }
 
 // Contract detail fields: [CarContract key, column, kind]. Empty values are stored as NULL.
@@ -801,8 +803,9 @@ export async function deleteReservation(id: string): Promise<{ contractIds: stri
 
   const { data: txRows, error: txError } = await supabase.from('car_transactions').delete().eq('reservation_id', id).select('id');
   ensureOk('car_transactions delete', txError);
-  const { data: deletedContracts, error: cntError } = await supabase.from('car_contracts').delete().eq('reservation_id', id).select('id');
+  const { data: deletedContracts, error: cntError } = await supabase.from('car_contracts').delete().eq('reservation_id', id).select('id, attachments');
   ensureOk('car_contracts delete', cntError);
+  await removeContractFiles(deletedContracts || []);
   const { error } = await supabase.from('car_reservations').delete().eq('id', id);
   ensureOk('car_reservations delete', error);
 
@@ -1192,9 +1195,25 @@ export async function deleteContract(id: string): Promise<{ contractIds: string[
     transactionIds = (txRows || []).map(t => t.id);
   }
 
-  const { error } = await supabase.from('car_contracts').delete().eq('id', id);
+  const { data: deleted, error } = await supabase.from('car_contracts').delete().eq('id', id).select('id, attachments');
   ensureOk('car_contracts delete', error);
+  await removeContractFiles(deleted || []);
   return { contractIds: [id], transactionIds };
+}
+
+// A deleted contract's files (renter signature, licence/passport/car photos) must go with it: contract ids are
+// sequential, so the next contract would otherwise reuse the id and show the previous renter's signature.
+// Best effort: the rows are already gone, a storage error is only logged.
+async function removeContractFiles(contracts: { id: string; attachments?: unknown }[]) {
+  // Loaded on use: this module is also bundled for the browser (shared constants), storage is server-only
+  const { CONTRACT_MEDIA_BUCKET, isContractMediaPath, renterSignaturePath } = await import('./storage');
+  const paths = contracts.flatMap(c => [
+    renterSignaturePath(c.id),
+    ...(Array.isArray(c.attachments) ? c.attachments : []).flatMap((a: any) => [a?.path, a?.posterPath]),
+  ]).filter(isContractMediaPath);
+  if (!paths.length) return;
+  const { error } = await supabase.storage.from(CONTRACT_MEDIA_BUCKET).remove(paths);
+  if (error) console.error('Failed to remove files of deleted contracts:', error);
 }
 
 // --- RESERVATION CHAIN: reservation -> contract -> accounting revenue ---
@@ -1207,7 +1226,10 @@ async function nextContractSerial(): Promise<string> {
     const n = parseInt(c.id.slice(prefix.length), 10);
     return Number.isNaN(n) ? max : Math.max(max, n);
   }, 0);
-  return `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+  const id = `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+  // A new contract never inherits a signature left behind by a deleted contract with the same id
+  await removeContractFiles([{ id }]);
+  return id;
 }
 
 // After a reservation is edited (dates, price, deposit), brings its contract and its owed rent/deposit rows in
