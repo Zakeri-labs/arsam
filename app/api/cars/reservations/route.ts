@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       // Edited dates / price / deposit must carry through to the contract and the accounting rows
       try {
         const synced = await syncReservationFinancials(reservation);
-        return NextResponse.json({ success: true, reservation: shown, contract: synced.contract, transactions: synced.transactions });
+        return NextResponse.json({ success: true, reservation: shown, contract: synced.contract, transactions: synced.transactions, overpaid: synced.overpaid });
       } catch (syncErr) {
         console.error('Error syncing contract/accounting for edited reservation:', syncErr);
         return NextResponse.json({ success: true, reservation: shown, syncError: true });

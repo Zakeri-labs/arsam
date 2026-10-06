@@ -794,6 +794,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         }
         if (data.syncError) {
           toast.error('رزرو ذخیره شد اما به‌روزرسانی قرارداد و حسابداری ناموفق بود');
+        } else if (data.overpaid > 0) {
+          toast.warning(`مشتری ${data.overpaid.toLocaleString()} OMR بیشتر از مبلغ جدید پرداخت کرده است؛ این مبلغ باید عودت داده شود`);
         } else if (data.chainError) {
           toast.error('رزرو ثبت شد اما صدور قرارداد و ثبت درآمد ناموفق بود');
         } else if (data.contract) {
