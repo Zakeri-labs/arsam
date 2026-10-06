@@ -195,9 +195,51 @@ export async function deleteCompanySignature(): Promise<void> {
 
 export const MAX_RENTER_SIGNATURE_BYTES = 1024 * 1024;
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47];
+// A signature must have some size: a stray dot or tick is not accepted. Width/height are read from the PNG header.
+export const MIN_SIGNATURE_WIDTH = 40;
+export const MIN_SIGNATURE_HEIGHT = 16;
 
 export const renterSignaturePath = (contractId: string) =>
   `contracts/renter-signature_${createHash('sha256').update(contractId).digest('hex').slice(0, 32)}.png`;
+
+const RENTER_SIGNATURE_FOLDER = 'contracts';
+const RENTER_SIGNATURE_PREFIX = 'renter-signature_';
+
+/** Paths of every renter signature that exists (one listing, instead of probing each contract). */
+async function listRenterSignaturePaths(): Promise<Set<string>> {
+  const found = new Set<string>();
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await supabase.storage
+      .from(CONTRACT_MEDIA_BUCKET)
+      .list(RENTER_SIGNATURE_FOLDER, { limit: 1000, offset, search: RENTER_SIGNATURE_PREFIX });
+    if (error) throw error;
+    for (const o of data || []) if (o.name.startsWith(RENTER_SIGNATURE_PREFIX)) found.add(`${RENTER_SIGNATURE_FOLDER}/${o.name}`);
+    if ((data || []).length < 1000) return found;
+  }
+}
+
+/** Signed URLs of the signatures that exist, keyed by contract id. Contracts without a signature are left out. */
+export async function getRenterSignatureUrls(contractIds: string[]): Promise<Map<string, string>> {
+  const existing = await listRenterSignaturePaths();
+  const wanted = contractIds.filter(id => existing.has(renterSignaturePath(id)));
+  const signed = await signContractMedia(wanted.map(renterSignaturePath));
+  const out = new Map<string, string>();
+  for (const id of wanted) {
+    const url = signed.get(renterSignaturePath(id));
+    if (url) out.set(id, url);
+  }
+  return out;
+}
+
+export async function hasRenterSignature(contractId: string): Promise<boolean> {
+  return (await getRenterSignatureUrl(contractId).catch(() => null)) !== null;
+}
+
+/** Removes the renter's signature so the contract can be signed again (staff only). */
+export async function deleteRenterSignature(contractId: string): Promise<void> {
+  const { error } = await supabase.storage.from(CONTRACT_MEDIA_BUCKET).remove([renterSignaturePath(contractId)]);
+  if (error) throw error;
+}
 
 export async function getRenterSignatureUrl(contractId: string): Promise<string | null> {
   const objectPath = renterSignaturePath(contractId);
@@ -210,6 +252,11 @@ export async function saveRenterSignature(contractId: string, bytes: ArrayBuffer
   const view = new Uint8Array(bytes);
   if (!view.length || view.length > MAX_RENTER_SIGNATURE_BYTES || PNG_MAGIC.some((b, i) => view[i] !== b)) {
     throw new UploadRejected('امضا معتبر نیست.');
+  }
+  // PNG header: width and height are big-endian 32-bit integers at bytes 16 and 20
+  const dv = new DataView(bytes);
+  if (bytes.byteLength < 24 || dv.getUint32(16) < MIN_SIGNATURE_WIDTH || dv.getUint32(20) < MIN_SIGNATURE_HEIGHT) {
+    throw new UploadRejected('امضا خیلی کوچک است؛ لطفاً کامل‌تر امضا کنید.');
   }
   const { error } = await supabase.storage
     .from(CONTRACT_MEDIA_BUCKET)

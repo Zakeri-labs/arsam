@@ -571,6 +571,21 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
     }
   };
 
+  const removeRenterSignature = async () => {
+    if (!saved) return;
+    if (!(await confirmDialog({ title: 'حذف امضای مشتری', message: 'امضای مشتری حذف شود تا دوباره امضا کند؟', confirmText: 'حذف امضا' }))) return;
+    try {
+      const res = await fetch(`/api/cars/contracts/signature?id=${encodeURIComponent(saved.id)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      const updated: CarContract = { ...saved, renterSignatureUrl: null };
+      setSaved(updated);
+      onSaved(updated);
+      toast.success('امضای مشتری حذف شد');
+    } catch {
+      toast.error('حذف امضا ناموفق بود');
+    }
+  };
+
   const submitRenterSignature = async () => {
     if (!saved || !drawn) return;
     setSignSaving(true);
@@ -987,6 +1002,9 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={saved.renterSignatureUrl} alt="" className="h-10 max-w-[40%] rounded-lg bg-white object-contain px-2 py-0.5" />
+                  <button type="button" onClick={removeRenterSignature} className="shrink-0 rounded-lg border border-rose-400/30 px-2.5 py-1.5 text-[11px] font-bold text-rose-300 hover:bg-rose-400/10">
+                    حذف امضا
+                  </button>
                 </div>
               ) : signing ? (
                 <div className="rounded-2xl bg-white p-3 text-gray-800">

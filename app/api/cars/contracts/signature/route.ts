@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getContractById } from '@/lib/db-cars';
-import { getRenterSignatureUrl, saveRenterSignature, UploadRejected } from '@/lib/storage';
+import { deleteRenterSignature, getRenterSignatureUrl, saveRenterSignature, UploadRejected } from '@/lib/storage';
 import { requireAdmin } from '@/lib/auth-check';
 
 // Staff collect the renter's signature on the office device (the customer signs on the staff's screen).
@@ -33,5 +33,27 @@ export async function POST(request: Request) {
     }
     console.error('Error saving renter signature:', error);
     return NextResponse.json({ error: 'خطا در ثبت امضا' }, { status: 500 });
+  }
+}
+
+// Staff only: removes a wrong signature so the renter can sign again.
+export async function DELETE(request: Request) {
+  try {
+    const denied = await requireAdmin(['cars']);
+    if (denied) return denied;
+
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'شناسه قرارداد الزامی است' }, { status: 400 });
+    }
+    const contract = await getContractById(id);
+    if (!contract) {
+      return NextResponse.json({ error: 'قرارداد پیدا نشد' }, { status: 404 });
+    }
+    await deleteRenterSignature(contract.id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting renter signature:', error);
+    return NextResponse.json({ error: 'خطا در حذف امضا' }, { status: 500 });
   }
 }

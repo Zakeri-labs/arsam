@@ -1046,6 +1046,12 @@ export async function getContractById(id: string): Promise<CarContract | undefin
   return data ? contractFromRow(data) : undefined;
 }
 
+export async function getContractByReservationId(reservationId: string): Promise<CarContract | undefined> {
+  const { data, error } = await supabase.from('car_contracts').select('*').eq('reservation_id', reservationId).maybeSingle();
+  ensureOk('car_contracts select', error);
+  return data ? contractFromRow(data) : undefined;
+}
+
 /** Revokes every link issued so far by moving the contract to the next share version. */
 export async function bumpContractShareVersion(id: string): Promise<number | undefined> {
   const existing = await getContractById(id);
@@ -1215,8 +1221,7 @@ async function nextContractSerial(): Promise<string> {
 // After a reservation is edited (dates, price, deposit), brings its contract and its owed rent/deposit rows in
 // line. Each pending row holds the new amount minus what was already paid against it; fully paid rows are kept.
 export async function syncReservationFinancials(reservation: CarReservation): Promise<{ contract?: CarContract; transactions: CarTransaction[] }> {
-  const contracts = await getContracts();
-  const existingContract = contracts.find(c => c.reservationId === reservation.id);
+  const existingContract = await getContractByReservationId(reservation.id);
   if (!existingContract) return { transactions: [] };
 
   const contract = await saveContract({

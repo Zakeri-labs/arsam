@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getContracts, saveContract, deleteContract, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
 import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
 import { createContractShareToken } from '@/lib/contract-share';
-import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, renterSignaturePath, signContractMedia } from '@/lib/storage';
+import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, getRenterSignatureUrls } from '@/lib/storage';
 
 const MAX_ATTACHMENTS = 40;
 
@@ -11,8 +11,9 @@ const MAX_ATTACHMENTS = 40;
 async function present(contracts: CarContract[]): Promise<CarContract[]> {
   const tokens = new Map(contracts.map(c => [c.id, createContractShareToken(c.id, c.shareVersion || 1)]));
   const withMedia = await presentContractAttachments(contracts, tokens);
-  const signatures = await signContractMedia(contracts.map(c => renterSignaturePath(c.id))).catch(() => new Map<string, string>());
-  return withMedia.map(c => ({ ...c, shareToken: tokens.get(c.id) ?? null, renterSignatureUrl: signatures.get(renterSignaturePath(c.id)) ?? null }));
+  // One listing finds the signatures that exist; only those are signed
+  const signatures = await getRenterSignatureUrls(contracts.map(c => c.id)).catch(() => new Map<string, string>());
+  return withMedia.map(c => ({ ...c, shareToken: tokens.get(c.id) ?? null, renterSignatureUrl: signatures.get(c.id) ?? null }));
 }
 
 // Only files that were uploaded to our own buckets are accepted as attachments. The browser sends back

@@ -60,6 +60,7 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
   const [drawn, setDrawn] = useState<Blob | null>(null);
   const [saving, setSaving] = useState(false);
   const [signError, setSignError] = useState(false);
+  const [downloadSigned, setDownloadSigned] = useState(false);
   const pdf = useContractPdf();
 
   const loadContract = () =>
@@ -88,6 +89,7 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
       if (!res.ok && res.status !== 409) throw new Error();
       setSigning(false);
       await loadContract();
+      setDownloadSigned(true);
     } catch {
       setSignError(true);
     } finally {
@@ -114,6 +116,14 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
     download();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contract]);
+
+  // The file downloaded on open has no signature: once the signed contract has reloaded, download it again
+  useEffect(() => {
+    if (!downloadSigned || !contract?.renterSignatureUrl) return;
+    setDownloadSigned(false);
+    download();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [downloadSigned, contract]);
 
   if (error || !contract) {
     return (

@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, syncReservationFinancials, ReservationDeleteBlockedError, ReturnMediaLockedError, ReturnSignedError, RETURN_SIGNED_MESSAGE, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
-import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signContractMedia } from '@/lib/storage';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, syncReservationFinancials, ReservationDeleteBlockedError, ReturnMediaLockedError, ReturnSignedError, RETURN_SIGNED_MESSAGE, findHandedOverContractId, getContractByReservationId, getReservationById, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
+import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signContractMedia, hasRenterSignature } from '@/lib/storage';
 
 const HANDED_OVER_MESSAGE = (contractId: string) =>
   `خودرو برای این رزرو تحویل شده است (قرارداد ${contractId}). برای لغو یا حذف رزرو، ابتدا قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم خودکار حذف می‌شوند).`;
 import { requireAdmin } from '@/lib/auth-check';
+
+const SIGNED_CONTRACT_MESSAGE = (contractId: string) =>
+  `مشتری قرارداد ${contractId} را امضا کرده است؛ تاریخ، خودرو، مبلغ اجاره و ودیعه دیگر قابل تغییر نیست. برای تغییر، ابتدا امضای مشتری را از قرارداد حذف کنید.`;
 
 const MAX_RETURN_PHOTOS = 30;
 
@@ -67,6 +70,21 @@ export async function POST(request: Request) {
       const handedOverId = await findHandedOverContractId(body.id);
       if (handedOverId) {
         return NextResponse.json({ error: HANDED_OVER_MESSAGE(handedOverId) }, { status: 409 });
+      }
+    }
+    if (!isNew && body.status !== 'cancelled') {
+      // The renter signed the contract as it stood: its terms cannot change under the signature
+      const [before, contract] = await Promise.all([getReservationById(body.id), getContractByReservationId(body.id)]);
+      if (before && contract && (await hasRenterSignature(contract.id))) {
+        const changed =
+          String(body.startDate).slice(0, 10) !== String(before.startDate).slice(0, 10) ||
+          String(body.endDate).slice(0, 10) !== String(before.endDate).slice(0, 10) ||
+          (body.totalPrice !== undefined && Number(body.totalPrice) !== Number(before.totalPrice)) ||
+          (body.depositPaid !== undefined && Number(body.depositPaid) !== Number(before.depositPaid)) ||
+          (body.carId && body.carId !== before.carId);
+        if (changed) {
+          return NextResponse.json({ error: SIGNED_CONTRACT_MESSAGE(contract.id), code: 'renter_signed' }, { status: 409 });
+        }
       }
     }
     body.returnPhotos = cleanReturnPhotos(body.returnPhotos);

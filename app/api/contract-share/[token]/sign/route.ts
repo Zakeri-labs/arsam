@@ -10,7 +10,8 @@ const HEADERS = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex' };
 // Same checks as reading the contract (valid, unexpired, current version); a contract is signed once.
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   try {
-    if (!rateLimit(`contract-sign:${clientIp(request)}`, 10, 10 * 60 * 1000)) {
+    // Per IP the cap is generous (hotels / mobile carriers share one address); the tight cap is per contract below
+    if (!rateLimit(`contract-sign:${clientIp(request)}`, 40, 10 * 60 * 1000)) {
       return tooManyRequests();
     }
 
@@ -25,6 +26,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     }
     if (read.status === 'ok' && read.version !== (contract.shareVersion || 1)) {
       return NextResponse.json({ error: 'این لینک باطل شده است.', code: 'revoked' }, { status: 410, headers: HEADERS });
+    }
+
+    if (!rateLimit(`contract-sign-id:${contract.id}`, 8, 10 * 60 * 1000)) {
+      return tooManyRequests();
     }
 
     const file = (await request.formData()).get('file');
