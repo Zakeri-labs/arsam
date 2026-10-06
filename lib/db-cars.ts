@@ -1214,13 +1214,15 @@ async function nextContractSerial(): Promise<string> {
 
 // After a reservation is edited (dates, price, deposit), brings its contract and its owed rent/deposit rows in
 // line. Each pending row holds the new amount minus what was already paid against it; fully paid rows are kept.
-export async function syncReservationFinancials(reservation: CarReservation): Promise<{ contract?: CarContract; transactions: CarTransaction[] }> {
+// `overpaid` is what the customer has paid beyond the new amounts (to be refunded); nothing is removed for it.
+export async function syncReservationFinancials(reservation: CarReservation): Promise<{ contract?: CarContract; transactions: CarTransaction[]; overpaid: number }> {
   const contracts = await getContracts();
   const existingContract = contracts.find(c => c.reservationId === reservation.id);
-  if (!existingContract) return { transactions: [] };
+  if (!existingContract) return { transactions: [], overpaid: 0 };
 
-  const contract = await saveContract({
-    id: existingContract.id,
+  // Only values the reservation actually holds: an empty field (e.g. a national ID entered only in the
+  // contract wizard) must not clear what the contract already has.
+  const fromReservation: Partial<CarContract> = {
     customerName: reservation.customerName,
     customerPhone: reservation.customerPhone,
     customerNationalId: reservation.customerNationalId,
@@ -1228,7 +1230,11 @@ export async function syncReservationFinancials(reservation: CarReservation): Pr
     startDate: reservation.startDate,
     endDate: reservation.endDate,
     totalPrice: reservation.totalPrice,
-  });
+  };
+  const update = Object.fromEntries(
+    Object.entries(fromReservation).filter(([, v]) => v !== undefined && v !== null && v !== '')
+  ) as Partial<CarContract>;
+  const contract = await saveContract({ id: existingContract.id, ...update });
 
   const { data: rows, error } = await supabase.from('car_transactions').select('*').eq('reservation_id', reservation.id);
   ensureOk('car_transactions select', error);
@@ -1240,6 +1246,7 @@ export async function syncReservationFinancials(reservation: CarReservation): Pr
   ];
 
   const transactions: CarTransaction[] = [];
+  let overpaid = 0;
   for (const charge of charges) {
     const current = reservationRows.find(t => t.id === charge.id);
     // Recorded before payments were tracked: it already counts as paid, so leave it alone
@@ -1260,11 +1267,12 @@ export async function syncReservationFinancials(reservation: CarReservation): Pr
         description: charge.label,
         transactionDate: reservation.startDate,
       }));
-    } else if (current) {
-      await deleteTransaction(charge.id);
+    } else {
+      if (owed < 0) overpaid += -owed;
+      if (current) await deleteTransaction(charge.id);
     }
   }
-  return { contract, transactions };
+  return { contract, transactions, overpaid: roundOmr(overpaid) };
 }
 
 // Idempotent: re-running for the same reservation never creates a duplicate contract or revenue row.
