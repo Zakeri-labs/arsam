@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, ReservationDeleteBlockedError, ReturnMediaLockedError, ReturnSignedError, RETURN_SIGNED_MESSAGE, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, syncReservationFinancials, ReservationDeleteBlockedError, ReturnMediaLockedError, ReturnSignedError, RETURN_SIGNED_MESSAGE, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signContractMedia } from '@/lib/storage';
 
 const HANDED_OVER_MESSAGE = (contractId: string) =>
@@ -79,7 +79,15 @@ export async function POST(request: Request) {
     const reservation = await saveReservation(body);
     if (!isNew) {
       const [shown] = await presentReturnPhotos([reservation]);
-      return NextResponse.json({ success: true, reservation: shown });
+      if (reservation.status === 'cancelled') return NextResponse.json({ success: true, reservation: shown });
+      // Edited dates / price / deposit must carry through to the contract and the accounting rows
+      try {
+        const synced = await syncReservationFinancials(reservation);
+        return NextResponse.json({ success: true, reservation: shown, contract: synced.contract, transactions: synced.transactions, overpaid: synced.overpaid });
+      } catch (syncErr) {
+        console.error('Error syncing contract/accounting for edited reservation:', syncErr);
+        return NextResponse.json({ success: true, reservation: shown, syncError: true });
+      }
     }
 
     // Auto chain: new reservation -> official contract (serial) -> rental revenue in accounting

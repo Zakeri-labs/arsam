@@ -798,7 +798,11 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         if (issued.length > 0) {
           setTransactions(prev => [...issued, ...prev.filter(t => !issued.some(i => i.id === t.id))]);
         }
-        if (data.chainError) {
+        if (data.syncError) {
+          toast.error('رزرو ذخیره شد اما به‌روزرسانی قرارداد و حسابداری ناموفق بود');
+        } else if (data.overpaid > 0) {
+          toast.warning(`مشتری ${data.overpaid.toLocaleString()} OMR بیشتر از مبلغ جدید پرداخت کرده است؛ این مبلغ باید عودت داده شود`);
+        } else if (data.chainError) {
           toast.error('رزرو ثبت شد اما صدور قرارداد و ثبت درآمد ناموفق بود');
         } else if (data.contract) {
           toast.success(`قرارداد ${data.contract.id} صادر شد؛ مبلغ اجاره تا ثبت پرداخت، «در انتظار پرداخت» است`);
