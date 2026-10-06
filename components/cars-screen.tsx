@@ -1062,14 +1062,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
   };
 
-  // Starts on the first reservation still waiting for its handover (the wizard continues its auto-issued contract)
+  // Opens with no reservation chosen unless one was clicked: defaulting to a reservation that already has a
+  // contract made "new handover" silently continue (and overwrite) that contract.
   const handleOpenAddHandover = (resId?: string) => {
-    const pending = (r: CarReservation) => {
-      const c = contracts.find(x => x.reservationId === r.id);
-      return !c || c.handoverStatus === 'pending_delivery';
-    };
-    const res = activeReservations.find(r => r.id === resId) || activeReservations.find(pending) || activeReservations[0];
-    setWizard({ contract: null, reservationId: res?.id });
+    setWizard({ contract: null, reservationId: activeReservations.find(r => r.id === resId)?.id });
   };
 
   const handleWizardSaved = (saved: CarContract) => {

@@ -369,7 +369,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
     existing ? fillGaps(draftFromContract(existing), res, cars, contracts) : fillFromReservation(emptyDraft(), res, cars, contracts);
   const initialRes = contract
     ? reservations.find(r => r.id === contract.reservationId)
-    : pickable.find(r => r.id === defaultReservationId) || pickable[0];
+    : pickable.find(r => r.id === defaultReservationId);
   const initialContract = contract || (initialRes ? contracts.find(c => c.reservationId === initialRes.id) : undefined);
 
   const [draft, setDraft] = useState<Draft>(() => draftFor(initialRes, initialContract));
@@ -424,6 +424,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
 
   const validate = (s: number): string | null => {
     if (s === 0) {
+      if (!draft.reservationId) return 'یک رزرو انتخاب کنید';
       if (!draft.customerName.trim()) return 'نام مشتری را وارد کنید';
       if (!draft.customerPhone.trim()) return 'شماره تماس مشتری را وارد کنید';
     }
@@ -650,6 +651,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
   };
   const shortDate = (d: string) => (d || '').slice(5).replace('-', '/');
 
+  const linkedContract = draft.reservationId ? contracts.find(c => c.reservationId === draft.reservationId) : undefined;
   const reservationOptions: CompactPickerOption[] = pickable.map(r => {
     const car = cars.find(c => c.id === r.carId);
     const handedOver = contracts.some(c => c.reservationId === r.id && c.handoverStatus !== 'pending_delivery');
@@ -748,11 +750,17 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
                     }}
                   />
                 </Field>
+                {linkedContract && !contract && (
+                  <p className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] leading-5 text-amber-200">
+                    این رزرو قبلاً قرارداد {linkedContract.id} دارد؛ ادامه همان قرارداد ویرایش می‌شود و قرارداد جدیدی ساخته نمی‌شود. برای قرارداد مشتری دیگر، یک رزرو جدید ثبت کنید.
+                  </p>
+                )}
               </Section>
               <Section title="مشخصات مستأجر">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field label="نام مشتری (فارسی)" required>
-                    <input className={inputCls} value={draft.customerName} onChange={e => set('customerName', e.target.value)} />
+                    <input className={`${inputCls} disabled:opacity-60`} value={draft.customerName} disabled={!!draft.reservationId} onChange={e => set('customerName', e.target.value)} />
+                    {draft.reservationId && <span className="mt-1 block text-[10.5px] text-white/45">نام مشتری از رزرو گرفته می‌شود؛ برای تغییر، رزرو را ویرایش کنید.</span>}
                   </Field>
                   <Field label="نام مشتری (انگلیسی)" hint="روی قرارداد چاپ می‌شود">
                     <input className={`${inputCls} text-left`} dir="ltr" value={draft.customerNameEn} placeholder="e.g. AHMED AL BALUSHI" onChange={e => set('customerNameEn', e.target.value)} />
