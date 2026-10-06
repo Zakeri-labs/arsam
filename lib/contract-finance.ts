@@ -23,6 +23,9 @@ export interface ContractFinance {
   unconfirmed: number;
   // Deposit still held for the customer (received minus refunded)
   depositHeld: number;
+  // A deposit is money the customer paid in advance: his credit with us, never part of what he owes.
+  // Counts it whether or not its receipt was assigned to an account yet, minus what was refunded.
+  depositCredit: number;
   status: 'none' | 'paid' | 'partial' | 'unpaid';
 }
 
@@ -51,6 +54,7 @@ export function summarizeContractFinance(rows: CarTransaction[]): ContractFinanc
   const acc = new Map<FinanceLineKey, { paid: number; owed: number }>();
   let unconfirmed = 0;
   let refunded = 0;
+  let depositUnassigned = 0;
 
   for (const tx of rows) {
     if (tx.type === 'deposit_refund' && tx.paymentStatus === 'paid') refunded += tx.amount;
@@ -58,7 +62,9 @@ export function summarizeContractFinance(rows: CarTransaction[]): ContractFinanc
     if (!key) continue;
     const entry = acc.get(key) || { paid: 0, owed: 0 };
     if (tx.paymentStatus === 'pending') {
-      entry.owed += tx.amount;
+      // A pending deposit row is a deposit already handed over, not yet assigned to an account
+      if (key === 'deposit') depositUnassigned += tx.amount;
+      else entry.owed += tx.amount;
     } else {
       entry.paid += tx.amount;
       if (!tx.receivedAt) unconfirmed += tx.amount;
@@ -74,13 +80,15 @@ export function summarizeContractFinance(rows: CarTransaction[]): ContractFinanc
       return { key, label: LABELS[key], total: round(paid + owed), paid: round(paid), owed: round(owed) };
     });
 
-  const totalCharged = round(lines.reduce((s, l) => s + l.total, 0));
-  const totalPaid = round(lines.reduce((s, l) => s + l.paid, 0));
-  const totalOwed = round(lines.reduce((s, l) => s + l.owed, 0));
+  // The deposit is the customer's credit, so it stays out of the charged / paid / owed totals
+  const charges = lines.filter(l => l.key !== 'deposit');
+  const totalCharged = round(charges.reduce((s, l) => s + l.total, 0));
+  const totalPaid = round(charges.reduce((s, l) => s + l.paid, 0));
+  const totalOwed = round(charges.reduce((s, l) => s + l.owed, 0));
   const depositPaid = lines.find(l => l.key === 'deposit')?.paid || 0;
 
   let status: ContractFinance['status'] = 'none';
-  if (lines.length) status = totalOwed <= 0 ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
+  if (lines.length) status = !charges.length || totalOwed <= 0 ? 'paid' : totalPaid > 0 ? 'partial' : 'unpaid';
 
   return {
     lines,
@@ -89,6 +97,7 @@ export function summarizeContractFinance(rows: CarTransaction[]): ContractFinanc
     totalOwed,
     unconfirmed: round(unconfirmed),
     depositHeld: round(depositPaid - refunded),
+    depositCredit: round(depositPaid + depositUnassigned - refunded),
     status,
   };
 }

@@ -128,7 +128,8 @@ export function buildFinancialReport(all: CarTransaction[], filter: ReportFilter
 
     if (tx.paymentStatus === 'pending') {
       c.pending += tx.amount;
-      if (INCOMING_TYPES.includes(tx.type)) {
+      // A pending deposit is the customer's credit, not a receivable
+      if (INCOMING_TYPES.includes(tx.type) && tx.type !== 'deposit_in') {
         car.receivables += tx.amount;
         const key = tx.customerName || '—';
         const o = owedBy.get(key) || { owed: 0, rows: 0 };

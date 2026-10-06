@@ -1139,7 +1139,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       if (!tx.reservationId || !INCOMING_TRANSACTION_TYPES.includes(tx.type)) continue;
       const entry = map.get(tx.reservationId) || { paid: 0, owed: 0, pendingRows: [], paidRows: [] };
       if (tx.paymentStatus === 'pending') {
-        entry.owed += tx.amount;
+        // A pending deposit is money the customer already handed over (his credit), not something he owes
+        if (tx.type !== 'deposit_in') entry.owed += tx.amount;
         entry.pendingRows.push(tx);
       } else {
         entry.paid += tx.amount;
@@ -1862,7 +1863,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
               <p className="text-[11px] font-bold text-rose-300 mb-1">مانده طلب از مشتریان (پرداخت‌نشده)</p>
               <div className="flex items-center gap-2 text-xl font-black text-white">{accountingStats.receivables.toLocaleString()} <OMRIcon size="sm" /></div>
               {accountingStats.pendingDeposits > 0 && (
-                <p className="text-[10px] text-white/50 mt-1 inline-flex items-center gap-1">+ ودیعه دریافت‌نشده: {accountingStats.pendingDeposits.toLocaleString()} <OMRIcon size="sm" /></p>
+                <p className="text-[10px] text-white/50 mt-1 inline-flex items-center gap-1">ودیعه‌ی پرداخت‌شده توسط مشتری (طلب مشتری، حساب دریافت ثبت نشده): {accountingStats.pendingDeposits.toLocaleString()} <OMRIcon size="sm" /></p>
               )}
             </button>
             <button
