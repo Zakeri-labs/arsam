@@ -58,8 +58,13 @@ export async function POST(request: Request) {
     if (!body.customerName || !body.carTitle || body.initialOdometer === undefined || body.initialOdometer === '') {
       return NextResponse.json({ error: 'اطلاعات ضروری صورتجلسه ناقص است' }, { status: 400 });
     }
+    // An existing contract stays on its reservation: moving it would overwrite another customer's contract
+    const existingContract = body.id ? await getContractById(body.id) : undefined;
+    if (existingContract?.reservationId && body.reservationId && body.reservationId !== existingContract.reservationId) {
+      return NextResponse.json({ error: 'این قرارداد به رزرو دیگری تعلق دارد و قابل انتقال نیست' }, { status: 409 });
+    }
     // The customer of a contract is the customer of its reservation: a contract save can never rename it
-    const linkedReservationId = body.reservationId || (body.id ? (await getContractById(body.id))?.reservationId : undefined);
+    const linkedReservationId = existingContract?.reservationId || body.reservationId;
     if (linkedReservationId) {
       const reservation = await getReservationById(linkedReservationId);
       if (reservation) body.customerName = reservation.customerName;
