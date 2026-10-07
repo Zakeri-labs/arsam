@@ -356,9 +356,11 @@ interface HandoverWizardProps {
   contracts: CarContract[];
   onSaved: (contract: CarContract) => void;
   onClose: () => void;
+  // General manager only: may remove the customer's signature
+  canRemoveSignature?: boolean;
 }
 
-export default function HandoverWizard({ contract, startAtDone, defaultReservationId, reservations, cars, contracts, onSaved, onClose }: HandoverWizardProps) {
+export default function HandoverWizard({ contract, startAtDone, defaultReservationId, reservations, cars, contracts, onSaved, onClose, canRemoveSignature = false }: HandoverWizardProps) {
   const pickable = useMemo(
     () => reservations.filter(r => r.status !== 'cancelled' || r.id === contract?.reservationId),
     [reservations, contract?.reservationId]
@@ -569,6 +571,29 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
       await pdf.download(contractData(), signatureUrl);
     } catch {
       toast.error('ساخت فایل PDF ناموفق بود؛ دوباره تلاش کنید');
+    }
+  };
+
+  const removeRenterSignature = async () => {
+    if (!saved || !(await confirmDialog({
+      title: 'حذف امضای مشتری',
+      message: 'امضای مشتری از این قرارداد حذف می‌شود و می‌توان دوباره امضا گرفت. ادامه می‌دهید؟',
+      confirmText: 'حذف امضا',
+      destructive: true,
+    }))) return;
+    try {
+      const res = await fetch(`/api/cars/contracts/signature?id=${encodeURIComponent(saved.id)}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'حذف امضا ناموفق بود');
+        return;
+      }
+      const updated: CarContract = { ...saved, renterSignatureUrl: null, renterSignedAt: null };
+      setSaved(updated);
+      onSaved(updated);
+      toast.success('امضای مشتری حذف شد');
+    } catch {
+      toast.error('خطای ارتباط با سرور');
     }
   };
 
@@ -991,10 +1016,22 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-3">
                   <div className="flex items-center gap-2 text-[12px] font-bold text-emerald-300">
                     <CheckCircle2 size={16} />
-                    امضای مشتری ثبت شده است
+                    <div>
+                      امضای مشتری ثبت شده است
+                      {saved.renterSignedAt && (
+                        <bdi dir="ltr" className="block text-[10px] font-normal text-emerald-200/70">
+                          {new Date(saved.renterSignedAt).toLocaleString('en-GB', { timeZone: 'Asia/Muscat', dateStyle: 'short', timeStyle: 'short', hour12: false })}
+                        </bdi>
+                      )}
+                    </div>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={saved.renterSignatureUrl} alt="" className="h-10 max-w-[40%] rounded-lg bg-white object-contain px-2 py-0.5" />
+                  {canRemoveSignature && (
+                    <button type="button" onClick={removeRenterSignature} className="shrink-0 rounded-lg border border-rose-400/40 px-2.5 py-1.5 text-[11px] font-bold text-rose-300 active:scale-95">
+                      حذف امضا
+                    </button>
+                  )}
                 </div>
               ) : signing ? (
                 <div className="rounded-2xl bg-white p-3 text-gray-800">

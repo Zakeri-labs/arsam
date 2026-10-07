@@ -3047,6 +3047,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
             reservations={reservations}
             cars={cars}
             contracts={contracts}
+            canRemoveSignature={canDeleteContracts}
             onSaved={handleWizardSaved}
             onClose={() => setWizard(null)}
           />

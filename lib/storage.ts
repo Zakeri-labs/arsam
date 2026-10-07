@@ -205,6 +205,24 @@ export async function getRenterSignatureUrl(contractId: string): Promise<string 
   return signed.get(objectPath) || null;
 }
 
+/** When the renter signed = when the signature file was stored (no database column needed). */
+export async function getRenterSignedAt(contractId: string): Promise<string | null> {
+  const name = renterSignaturePath(contractId).split('/').pop()!;
+  const { data, error } = await supabase.storage.from(CONTRACT_MEDIA_BUCKET).list('contracts', { search: name, limit: 5 });
+  if (error) throw error;
+  const found = (data || []).find(o => o.name === name);
+  return found?.created_at || null;
+}
+
+/** Removes the renter's signature so the contract can be signed again. Returns false when there was none. */
+export async function deleteRenterSignature(contractId: string): Promise<boolean> {
+  const signedAt = await getRenterSignedAt(contractId);
+  if (!signedAt) return false;
+  const { error } = await supabase.storage.from(CONTRACT_MEDIA_BUCKET).remove([renterSignaturePath(contractId)]);
+  if (error) throw error;
+  return true;
+}
+
 /** Saves the renter's signature PNG. Returns false when the contract was already signed. */
 export async function saveRenterSignature(contractId: string, bytes: ArrayBuffer): Promise<boolean> {
   const view = new Uint8Array(bytes);
