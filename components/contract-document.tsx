@@ -50,6 +50,10 @@ const toEng = (val: unknown) => {
 };
 
 function ContractSheet({ contract, signatureUrl }: { contract: ContractData; signatureUrl?: string | null }) {
+  // The renter's signing time, shown in Oman time (the business timezone)
+  const signedAtText = contract.renterSignedAt
+    ? new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Muscat', dateStyle: 'short', timeStyle: 'short', hour12: false }).format(new Date(contract.renterSignedAt))
+    : '';
   const contractDate = toEng(contract.date || new Date().toISOString().split('T')[0]);
   const contractNumber = (contract.contractNo || contract.id).toUpperCase();
   const dailyRate = contract.dailyRate || (contract.rentalDays ? contract.totalPrice / contract.rentalDays : 0);
@@ -241,8 +245,11 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
           <div className="flex justify-between"><span>Renter&apos;s Signature</span><span dir="rtl">توقيع المستأجر</span></div>
           {contract.renterSignatureUrl && (
             <div className="flex-1 min-h-0 flex items-center justify-center">
-              <img src={contract.renterSignatureUrl} crossOrigin="anonymous" alt="" className="max-h-[44px] max-w-[70%] object-contain" />
+              <img src={contract.renterSignatureUrl} crossOrigin="anonymous" alt="" className="max-h-[36px] max-w-[70%] object-contain" />
             </div>
+          )}
+          {contract.renterSignatureUrl && signedAtText && (
+            <div className="text-center font-mono text-[8px] font-normal text-blue-900">{signedAtText}</div>
           )}
         </div>
         <div className="col-span-2 flex flex-col gap-2">

@@ -51,6 +51,7 @@ export interface ContractData {
   checklist?: Record<string, boolean>;
   attachments?: ContractAttachment[];
   renterSignatureUrl?: string | null;
+  renterSignedAt?: string | null;
 }
 
 const today = () => new Date().toISOString().split('T')[0];
@@ -101,5 +102,6 @@ export function buildContractData(cnt: CarContract, reservation?: CarReservation
     notes: cnt.notes,
     attachments: cnt.attachments || [],
     renterSignatureUrl: cnt.renterSignatureUrl || undefined,
+    renterSignedAt: cnt.renterSignedAt || undefined,
   };
 }

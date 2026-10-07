@@ -178,6 +178,8 @@ export interface CarContract {
   shareToken?: string | null;
   // Added by the contracts API: short-lived signed URL of the renter's signature, once signed (never stored)
   renterSignatureUrl?: string | null;
+  // Added by the contracts API: when the renter signed (never stored)
+  renterSignedAt?: string | null;
 }
 
 // Contract detail fields: [CarContract key, column, kind]. Empty values are stored as NULL.
