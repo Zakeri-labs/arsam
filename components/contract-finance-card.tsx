@@ -77,7 +77,7 @@ export default function ContractFinanceCard({ reservationId, refreshKey, dirty }
             <div className="grid grid-cols-4 bg-white/5 px-2.5 py-1.5 font-bold text-white/60">
               <span>بند</span><span className="text-left">کل</span><span className="text-left">پرداخت‌شده</span><span className="text-left">مانده</span>
             </div>
-            {finance.lines.map(l => (
+            {finance.lines.filter(l => l.key !== 'deposit').map(l => (
               <div key={l.key} className="grid grid-cols-4 border-t border-white/5 px-2.5 py-1.5 font-mono text-white/80">
                 <span className="font-sans text-white/70">{l.label}</span>
                 <span className="text-left">{fmt(l.total)}</span>
@@ -94,8 +94,11 @@ export default function ContractFinanceCard({ reservationId, refreshKey, dirty }
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10.5px] text-white/60">
             <span className="inline-flex items-center gap-1">مانده بدهی مشتری: <b className="text-white">{fmt(finance.totalOwed)}</b> <OMRIcon size="sm" /></span>
-            {finance.depositHeld > 0 && (
-              <span className="inline-flex items-center gap-1">ودیعه‌ی نگهداری‌شده: <b className="text-white">{fmt(finance.depositHeld)}</b> <OMRIcon size="sm" /></span>
+            {finance.depositCredit > 0 && (
+              <span className="inline-flex items-center gap-1 text-emerald-300">ودیعه‌ی دریافت‌شده (طلب مشتری): <b>{fmt(finance.depositCredit)}</b> <OMRIcon size="sm" /></span>
+            )}
+            {finance.depositPending > 0 && (
+              <span className="inline-flex items-center gap-1 text-amber-300">ودیعه‌ی دریافت‌نشده: <b>{fmt(finance.depositPending)}</b> <OMRIcon size="sm" /></span>
             )}
             {finance.unconfirmed > 0 && (
               <span className="inline-flex items-center gap-1 text-sky-300">دریافت‌تأییدنشده: <b>{fmt(finance.unconfirmed)}</b> <OMRIcon size="sm" /></span>
