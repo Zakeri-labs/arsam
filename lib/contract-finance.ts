@@ -23,9 +23,11 @@ export interface ContractFinance {
   unconfirmed: number;
   // Deposit still held for the customer (received minus refunded)
   depositHeld: number;
-  // A deposit is money the customer paid in advance: his credit with us, never part of what he owes.
-  // Counts it whether or not its receipt was assigned to an account yet, minus what was refunded.
+  // A deposit is never part of what the customer owes. Once received it is his credit with us (held money):
+  // received minus refunded. Before "ثبت پرداخت" records where it went, it has not been received yet.
   depositCredit: number;
+  // Deposit asked for but not received yet: neither a debt nor the customer's credit
+  depositPending: number;
   status: 'none' | 'paid' | 'partial' | 'unpaid';
 }
 
@@ -54,7 +56,7 @@ export function summarizeContractFinance(rows: CarTransaction[]): ContractFinanc
   const acc = new Map<FinanceLineKey, { paid: number; owed: number }>();
   let unconfirmed = 0;
   let refunded = 0;
-  let depositUnassigned = 0;
+  let depositPending = 0;
 
   for (const tx of rows) {
     if (tx.type === 'deposit_refund' && tx.paymentStatus === 'paid') refunded += tx.amount;
@@ -62,8 +64,8 @@ export function summarizeContractFinance(rows: CarTransaction[]): ContractFinanc
     if (!key) continue;
     const entry = acc.get(key) || { paid: 0, owed: 0 };
     if (tx.paymentStatus === 'pending') {
-      // A pending deposit row is a deposit already handed over, not yet assigned to an account
-      if (key === 'deposit') depositUnassigned += tx.amount;
+      // A pending deposit has not been received yet: it is kept apart, out of the debt
+      if (key === 'deposit') depositPending += tx.amount;
       else entry.owed += tx.amount;
     } else {
       entry.paid += tx.amount;
@@ -97,7 +99,8 @@ export function summarizeContractFinance(rows: CarTransaction[]): ContractFinanc
     totalOwed,
     unconfirmed: round(unconfirmed),
     depositHeld: round(depositPaid - refunded),
-    depositCredit: round(depositPaid + depositUnassigned - refunded),
+    depositCredit: round(depositPaid - refunded),
+    depositPending: round(depositPending),
     status,
   };
 }

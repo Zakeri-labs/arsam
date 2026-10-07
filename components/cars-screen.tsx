@@ -1863,7 +1863,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
               <p className="text-[11px] font-bold text-rose-300 mb-1">مانده طلب از مشتریان (پرداخت‌نشده)</p>
               <div className="flex items-center gap-2 text-xl font-black text-white">{accountingStats.receivables.toLocaleString()} <OMRIcon size="sm" /></div>
               {accountingStats.pendingDeposits > 0 && (
-                <p className="text-[10px] text-white/50 mt-1 inline-flex items-center gap-1">ودیعه‌ی پرداخت‌شده توسط مشتری (طلب مشتری، حساب دریافت ثبت نشده): {accountingStats.pendingDeposits.toLocaleString()} <OMRIcon size="sm" /></p>
+                <p className="text-[10px] text-white/50 mt-1 inline-flex items-center gap-1">ودیعه‌ی دریافت‌نشده (جدا از بدهی اجاره): {accountingStats.pendingDeposits.toLocaleString()} <OMRIcon size="sm" /></p>
               )}
             </button>
             <button

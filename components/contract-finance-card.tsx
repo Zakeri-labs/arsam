@@ -95,7 +95,10 @@ export default function ContractFinanceCard({ reservationId, refreshKey, dirty }
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10.5px] text-white/60">
             <span className="inline-flex items-center gap-1">مانده بدهی مشتری: <b className="text-white">{fmt(finance.totalOwed)}</b> <OMRIcon size="sm" /></span>
             {finance.depositCredit > 0 && (
-              <span className="inline-flex items-center gap-1 text-emerald-300">ودیعه‌ی پرداخت‌شده (طلب مشتری): <b>{fmt(finance.depositCredit)}</b> <OMRIcon size="sm" /></span>
+              <span className="inline-flex items-center gap-1 text-emerald-300">ودیعه‌ی دریافت‌شده (طلب مشتری): <b>{fmt(finance.depositCredit)}</b> <OMRIcon size="sm" /></span>
+            )}
+            {finance.depositPending > 0 && (
+              <span className="inline-flex items-center gap-1 text-amber-300">ودیعه‌ی دریافت‌نشده: <b>{fmt(finance.depositPending)}</b> <OMRIcon size="sm" /></span>
             )}
             {finance.unconfirmed > 0 && (
               <span className="inline-flex items-center gap-1 text-sky-300">دریافت‌تأییدنشده: <b>{fmt(finance.unconfirmed)}</b> <OMRIcon size="sm" /></span>
