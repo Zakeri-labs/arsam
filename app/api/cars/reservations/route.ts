@@ -59,11 +59,19 @@ export async function POST(request: Request) {
     if (denied) return denied;
 
     const body = await request.json();
+    // Saving an existing reservation: whatever is not sent keeps its stored value (e.g. a return-media save)
+    const previous = body.id ? await getReservationById(body.id) : undefined;
+    if (previous) {
+      for (const k of ['carId', 'carTitle', 'customerName', 'customerPhone', 'startDate', 'endDate'] as const) {
+        if (body[k] === undefined) body[k] = previous[k];
+      }
+    }
     if (!body.carId || !body.customerName || !body.startDate || !body.endDate) {
       return NextResponse.json({ error: 'اطلاعات ضروری رزرو ناقص است' }, { status: 400 });
     }
 
-    const isNew = !body.id;
+    // New = not in the database yet (a made-up id from a client is still a new reservation)
+    const isNew = !previous;
     if (isNew && String(body.startDate).slice(0, 10) < businessToday()) {
       return NextResponse.json({ error: PAST_RESERVATION_MESSAGE }, { status: 400 });
     }
@@ -71,7 +79,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'تاریخ پایان رزرو نمی‌تواند قبل از تاریخ شروع باشد' }, { status: 400 });
     }
     // One car, one customer at a time: a live reservation may not overlap another live one of the same car
-    const previous = isNew ? undefined : await getReservationById(body.id);
     const willBeLive = !['cancelled', 'completed'].includes(body.status ?? previous?.status ?? 'confirmed');
     if (willBeLive) {
       const clash = await findOverlappingReservation(body.carId, String(body.startDate).slice(0, 10), String(body.endDate).slice(0, 10), body.id);

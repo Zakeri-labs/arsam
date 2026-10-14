@@ -390,7 +390,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     const res = await fetch('/api/cars/reservations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: reservation.id, carId: reservation.carId, customerName: reservation.customerName, startDate: reservation.startDate, endDate: reservation.endDate, returnPhotos: photos, returnSignature: signaturePath ? { path: signaturePath } : undefined }),
+      body: JSON.stringify({ id: reservation.id, returnPhotos: photos, returnSignature: signaturePath ? { path: signaturePath } : undefined }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) throw new Error(data.error || 'ذخیره تصاویر عودت ناموفق بود');

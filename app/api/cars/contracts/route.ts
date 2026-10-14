@@ -78,12 +78,15 @@ export async function POST(request: Request) {
     const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
     const num = (v: unknown) => (v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? undefined : Number(v));
     const resUpdate: { startDate?: string; endDate?: string; totalPrice?: number; depositPaid?: number } = {};
-    if (reservation) {
+    // Only a field edited in this save moves (compared with the stored contract), so an old mismatch between
+    // contract and reservation is never pushed into the books by just opening and saving the wizard.
+    const stored = existingContract ?? (reservation ? (await getContracts()).find(c => c.reservationId === reservation.id) : undefined);
+    if (reservation && stored && ['confirmed', 'active'].includes(reservation.status)) {
       const start = str(body.startDate), end = str(body.endDate), total = num(body.totalPrice), deposit = num(body.depositAmount);
-      if (start && start !== reservation.startDate) resUpdate.startDate = start;
-      if (end && end !== reservation.endDate) resUpdate.endDate = end;
-      if (total !== undefined && total !== reservation.totalPrice) resUpdate.totalPrice = total;
-      if (deposit !== undefined && deposit !== reservation.depositPaid) resUpdate.depositPaid = deposit;
+      if (start && start !== (stored.startDate ?? reservation.startDate)) resUpdate.startDate = start;
+      if (end && end !== (stored.endDate ?? reservation.endDate)) resUpdate.endDate = end;
+      if (total !== undefined && total !== (stored.totalPrice ?? reservation.totalPrice)) resUpdate.totalPrice = total;
+      if (deposit !== undefined && deposit !== stored.depositAmount) resUpdate.depositPaid = deposit;
       const newStart = resUpdate.startDate ?? reservation.startDate, newEnd = resUpdate.endDate ?? reservation.endDate;
       if (newEnd < newStart) {
         return NextResponse.json({ error: 'تاریخ عودت نمی‌تواند قبل از تاریخ تحویل باشد' }, { status: 400 });

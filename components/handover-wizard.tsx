@@ -157,7 +157,7 @@ function fillFromReservation(d: Draft, res: CarReservation | undefined, cars: Ca
     rentalDays: days,
     totalPrice: res.totalPrice || d.totalPrice,
     dailyRate: days && res.totalPrice ? Math.round((res.totalPrice / days) * 1000) / 1000 : car?.dailyRate || d.dailyRate,
-    depositAmount: res.depositPaid || car?.depositAmount || d.depositAmount,
+    depositAmount: res.depositPaid ?? car?.depositAmount ?? d.depositAmount,
   };
 }
 
@@ -168,7 +168,9 @@ function fillGaps(d: Draft, res: CarReservation | undefined, cars: Car[], contra
   const out = { ...d };
   (Object.keys(filled) as (keyof Draft)[]).forEach(k => {
     const cur = out[k];
-    if (cur === '' || cur === 0 || cur === undefined) (out as any)[k] = filled[k];
+    // Money fields: 0 is a real amount (e.g. no deposit), only a missing value is a gap
+    const money = k === 'depositAmount' || k === 'totalPrice';
+    if (cur === '' || cur === undefined || (!money && cur === 0)) (out as any)[k] = filled[k];
   });
   return out;
 }

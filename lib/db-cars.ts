@@ -1078,6 +1078,11 @@ export async function deleteTransactionRestoringDebt(id: string): Promise<{ rest
   ensureOk('car_transactions delete', error);
   if (!(data || []).length) return {};
 
+  // A cancelled reservation owes nothing any more: the payment goes, no debt comes back
+  if (tx.reservationId) {
+    const res = await getReservationById(tx.reservationId);
+    if (res?.status === 'cancelled') return {};
+  }
   const restored = await restoreOwed({ ...tx, id: pendingId }, tx.amount);
   return { restored };
 }
