@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, syncReservationFinancials, ReservationDeleteBlockedError, ReturnMediaLockedError, ReturnSignedError, RETURN_SIGNED_MESSAGE, findHandedOverContractId, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
+import { getReservations, saveReservation, deleteReservation, issueContractAndRevenue, syncReservationFinancials, ReservationDeleteBlockedError, ReturnMediaLockedError, ReturnSignedError, RETURN_SIGNED_MESSAGE, findHandedOverContractId, findOverlappingReservation, overlapMessage, clearPendingCharges, getReservationById, type CarReservation, type ContractAttachment } from '@/lib/db-cars';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, signContractMedia } from '@/lib/storage';
 
 const HANDED_OVER_MESSAGE = (contractId: string) =>
@@ -67,6 +67,16 @@ export async function POST(request: Request) {
     if (isNew && String(body.startDate).slice(0, 10) < businessToday()) {
       return NextResponse.json({ error: PAST_RESERVATION_MESSAGE }, { status: 400 });
     }
+    if (String(body.endDate).slice(0, 10) < String(body.startDate).slice(0, 10)) {
+      return NextResponse.json({ error: 'تاریخ پایان رزرو نمی‌تواند قبل از تاریخ شروع باشد' }, { status: 400 });
+    }
+    // One car, one customer at a time: a live reservation may not overlap another live one of the same car
+    const previous = isNew ? undefined : await getReservationById(body.id);
+    const willBeLive = !['cancelled', 'completed'].includes(body.status ?? previous?.status ?? 'confirmed');
+    if (willBeLive) {
+      const clash = await findOverlappingReservation(body.carId, String(body.startDate).slice(0, 10), String(body.endDate).slice(0, 10), body.id);
+      if (clash) return NextResponse.json({ error: overlapMessage(clash) }, { status: 409 });
+    }
     if (!isNew && body.status === 'cancelled') {
       const handedOverId = await findHandedOverContractId(body.id);
       if (handedOverId) {
@@ -79,7 +89,11 @@ export async function POST(request: Request) {
     const reservation = await saveReservation(body);
     if (!isNew) {
       const [shown] = await presentReturnPhotos([reservation]);
-      if (reservation.status === 'cancelled') return NextResponse.json({ success: true, reservation: shown });
+      if (reservation.status === 'cancelled') {
+        // Nothing is owed for a cancelled booking any more; payments already received stay (to be refunded)
+        const removedTransactionIds = await clearPendingCharges(reservation.id);
+        return NextResponse.json({ success: true, reservation: shown, removedTransactionIds });
+      }
       // Edited dates / price / deposit must carry through to the contract and the accounting rows
       try {
         const synced = await syncReservationFinancials(reservation);

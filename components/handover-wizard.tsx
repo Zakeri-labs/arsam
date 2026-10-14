@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { businessToday, businessTime } from '@/lib/business-day';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -79,8 +80,9 @@ const STEPS = [
   { key: 'done', title: 'قرارداد', icon: CheckCircle2 },
 ] as const;
 
-const today = () => new Date().toISOString().split('T')[0];
-const nowTime = () => new Date().toTimeString().slice(0, 5);
+// Oman time, whatever timezone the phone or computer is set to
+const today = () => businessToday();
+const nowTime = () => businessTime();
 const allChecked = () => Object.fromEntries(HANDOVER_CHECKLIST_ITEMS.map(i => [i.key, true]));
 
 function daysBetween(start: string, end: string) {

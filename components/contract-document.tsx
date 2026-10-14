@@ -86,7 +86,7 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
       {/* CUSTOMER LINES: English (left) — value — Arabic (right) */}
       <div className="border border-gray-700 divide-y divide-gray-500 text-[10px]">
         {[
-          { en: "Customer's Name:", ar: 'إسم المستأجر:', value: contract.customerNameEn || contract.customerName, upper: true },
+          { en: "Customer's Name:", ar: 'اسم المستأجر:', value: contract.customerNameEn || contract.customerName, upper: true },
           { en: 'Res. Add. :', ar: 'العنوان الحالي:', value: contract.customerAddress || '' },
           { en: 'Work Add. :', ar: 'عنوان العمل:', value: contract.workAddress || '' },
           { en: 'Tel. :', ar: 'هاتف:', value: toEng(contract.customerPhone), mono: true },
@@ -153,7 +153,7 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
 
           <div className="text-[8px] leading-tight text-gray-800 font-semibold text-center">
             <div dir="rtl">خاص بالإيجار قصير الأجل فقط ما يزيد عن ٢٠٠ كم يحسب بواقع ٥٠ بيسة لكل كم</div>
-            <div>EXCESS OF 200 KM 0.050 BZS PER KM WILL BE CHARGED APPLICABLE FOR SHORT TERM LEASE ONLY</div>
+            <div>EXCESS OF 200 KM WILL BE CHARGED AT OMR 0.050 (50 BAISA) PER KM, APPLICABLE FOR SHORT TERM LEASE ONLY</div>
           </div>
         </div>
 
@@ -184,7 +184,7 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
           </div>
           <div className="ml-auto w-1/3 border border-gray-700 rounded-lg overflow-hidden text-center">
             <div className="text-[8px] leading-tight text-gray-700 border-b border-gray-400 py-0.5 px-2">
-              <div dir="rtl">الكيلومترات زائدة</div>
+              <div dir="rtl">الكيلومترات الزائدة</div>
               <div>Extra KM</div>
             </div>
             <div className="h-6 flex items-center justify-center font-bold text-[12px] text-blue-900 font-mono">{toEng(contract.extraKm)}</div>
@@ -209,7 +209,7 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
         <div className="grid grid-cols-3 items-center font-black text-[10px]">
           <div className="text-left"><span dir="rtl">ممنوع التدخين في السيارة</span><br />NO SMOKING IN CAR</div>
           <div className="text-center text-[13px]" dir="rtl">إقرار وتعهد من المستأجر</div>
-          <div className="text-right"><span dir="rtl">أربط حزام الأمان</span><br />FASTEN YOUR SEAT BELT</div>
+          <div className="text-right"><span dir="rtl">اربط حزام الأمان</span><br />FASTEN YOUR SEAT BELT</div>
         </div>
         <p dir="rtl" className="text-justify text-gray-900">
           إقرار وأتعهد بأنني قرأت الشروط والبنود الواردة خلف هذا العقد كاملاً وأنني موافق عليها وأتعهد بدفع جميع المخالفات المرورية وأتحمل مسؤولية السيارة التي استأجرتها حسب عقد الإيجار كاملاً، وإذا لا سمح الله وقع على السيارة حادث أو أصيبت بعطل فني من جراء الاستخدام سأقوم بدفع قيمة التصليح + فترة وقوف السيارة في الكراج وعلى شرط أن يتم التصليح في وكالة السيارة ودفع مسامهة شركة التأمين التي تقرها الشركة وعليه أوقع.
@@ -221,8 +221,8 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
           إقرار أنا مستأجر هذه السيارة بأنني تركت (بطاقتي الشخصية / جواز سفري) بمحض إرادتي وليس رغما عني لدى المؤجر، وأنني أوافق على جميع شروط هذا العقد بعدما قرأت وفهمت ما ورد به.
         </p>
         <p className="text-gray-900">
-          I am taking delivery of this car in good condition and depositing my identity car / passport with you my self according to my wish.
-          <br />I agree all the conditions of contract between me and the company after reading and understanding it&apos;s derails.
+          I am taking delivery of this car in good condition and, of my own free will, leaving my civil ID / passport with the company.
+          <br />I accept all terms of this agreement after reading and understanding its details.
         </p>
         <p dir="rtl" className="text-justify text-gray-900">
           السيارة غير مؤمنة ضد الأضرار، وفي حال وقوع حادث وكان المستأجر هو المخطئ، فإن جميع الأضرار تقع على عاتقه.
@@ -262,7 +262,7 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
           </div>
         </div>
         <div className="col-span-5 border-2 border-gray-700 rounded-2xl h-[68px] px-2.5 py-1 flex flex-col">
-          <div className="flex justify-between"><span>In charger Signature</span><span dir="rtl">توقيع المسؤول</span></div>
+          <div className="flex justify-between"><span>Authorized Signature</span><span dir="rtl">توقيع المسؤول</span></div>
           {/* Company signature from Settings */}
           {signatureUrl && (
             <div className="flex-1 min-h-0 flex items-center justify-center">
@@ -287,7 +287,7 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
           ].map(r => (
             <div key={r.ar} className="flex items-center justify-between border border-gray-700 rounded-lg overflow-hidden px-1.5 py-1">
               <span dir="rtl">ر.ع</span>
-              <span className="flex-1 mx-2 text-center font-mono text-[11px] text-blue-900">{r.v !== null ? toEng(r.v) : ''}</span>
+              <span className="flex-1 mx-2 text-center font-mono text-[11px] text-blue-900">{r.v !== null ? Number(r.v).toFixed(3) : ''}</span>
               <span dir="rtl" className="text-right">{r.ar}</span>
             </div>
           ))}

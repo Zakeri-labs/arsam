@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getCars, saveCar, deleteCar } from '@/lib/db-cars';
+import { getCars, saveCar, deleteCar, getReservations, getContracts, effectiveCarStatus } from '@/lib/db-cars';
 import { requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
@@ -7,8 +7,9 @@ export async function GET() {
     const denied = await requireAdmin(['cars']);
     if (denied) return denied;
 
-    const cars = await getCars();
-    return NextResponse.json(cars);
+    const [cars, reservations, contracts] = await Promise.all([getCars(), getReservations(), getContracts()]);
+    // Rented / available follows the bookings, so the fleet list is never stale
+    return NextResponse.json(cars.map(car => ({ ...car, status: effectiveCarStatus(car, reservations, contracts) })));
   } catch (error: any) {
     console.error('Error fetching cars:', error);
     return NextResponse.json({ error: 'خطا در دریافت اطلاعات خودروها' }, { status: 500 });

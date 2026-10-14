@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { businessToday } from './business-day';
 
 export interface Car {
   id: string;
@@ -714,8 +715,8 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     customerName: resData.customerName ?? existing?.customerName ?? '',
     customerPhone: resData.customerPhone ?? existing?.customerPhone ?? '',
     customerNationalId: resData.customerNationalId ?? existing?.customerNationalId ?? '',
-    startDate: resData.startDate ?? existing?.startDate ?? new Date().toISOString().split('T')[0],
-    endDate: resData.endDate ?? existing?.endDate ?? new Date().toISOString().split('T')[0],
+    startDate: resData.startDate ?? existing?.startDate ?? businessToday(),
+    endDate: resData.endDate ?? existing?.endDate ?? businessToday(),
     totalPrice: resData.totalPrice !== undefined ? Number(resData.totalPrice) : (existing?.totalPrice || 0),
     depositPaid: resData.depositPaid !== undefined ? Number(resData.depositPaid) : (existing?.depositPaid || 0),
     status: resData.status ?? existing?.status ?? 'confirmed',
@@ -735,6 +736,8 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
     } else if (resData.returnSignature?.path && fingerprint) {
       reservation.returnSignature = { path: resData.returnSignature.path, signedAt: now, fingerprint };
       writeSignature = true;
+      // The customer signed the return: the rental is over and the car is free again
+      reservation.status = 'completed';
     }
   }
 
@@ -757,7 +760,59 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
   }, { onConflict: 'id' });
   ensureOk('car_reservations upsert', error);
 
+  if (writeSignature) {
+    const { error: cntError } = await supabase.from('car_contracts').update({ handover_status: 'returned' }).eq('reservation_id', reservation.id);
+    ensureOk('car_contracts returned update', cntError);
+  }
+
   return reservation;
+}
+
+// Statuses that still hold the car: a cancelled or completed reservation frees it
+const LIVE_RESERVATION = ['confirmed', 'active'];
+
+/** Another live reservation of the same car whose dates overlap [startDate, endDate] (inclusive), if any. */
+export async function findOverlappingReservation(carId: string, startDate: string, endDate: string, excludeId?: string): Promise<CarReservation | undefined> {
+  let query = supabase.from('car_reservations').select('*')
+    .eq('car_id', carId).in('status', LIVE_RESERVATION)
+    .lte('start_date', endDate).gte('end_date', startDate);
+  if (excludeId) query = query.neq('id', excludeId);
+  const { data, error } = await query.limit(1);
+  ensureOk('car_reservations overlap select', error);
+  return data?.[0] ? reservationFromRow(data[0]) : undefined;
+}
+
+export const overlapMessage = (r: CarReservation) =>
+  `این خودرو از ${r.startDate} تا ${r.endDate} برای «${r.customerName}» رزرو شده است؛ خودروی دیگری انتخاب کنید یا تاریخ را تغییر دهید.`;
+
+/** A cancelled reservation no longer owes anything: its unpaid rows go. Payments already received stay. */
+export async function clearPendingCharges(reservationId: string): Promise<string[]> {
+  const { data, error } = await supabase.from('car_transactions').delete()
+    .eq('reservation_id', reservationId).eq('payment_status', 'pending').select('id');
+  ensureOk('car_transactions pending delete', error);
+  return (data || []).map(t => t.id);
+}
+
+export class ContractHasPaymentsError extends Error {
+  constructor() {
+    super('contract has recorded payments');
+  }
+}
+export const CONTRACT_HAS_PAYMENTS_MESSAGE = 'برای این قرارداد پرداخت ثبت شده است؛ اول پرداخت‌ها را در حسابداری حذف کنید، بعد قرارداد را حذف کنید.';
+
+/**
+ * Whether a car is out right now, worked out from the bookings instead of a flag someone has to remember to flip.
+ * Maintenance / disabled stay as set by hand. Otherwise the car is rented while a contract of a live reservation
+ * was handed over and not returned, or a live reservation covers today (Oman time); else it is available.
+ */
+export function effectiveCarStatus(car: Car, reservations: CarReservation[], contracts: CarContract[], today = businessToday()): Car['status'] {
+  if (car.status === 'maintenance' || car.status === 'disabled') return car.status;
+  const live = reservations.filter(r => r.carId === car.id && LIVE_RESERVATION.includes(r.status));
+  const out = live.some(r =>
+    (r.startDate <= today && r.endDate >= today) ||
+    contracts.some(c => c.reservationId === r.id && c.handoverStatus === 'delivered')
+  );
+  return out ? 'rented' : 'available';
 }
 
 export class ReturnMediaLockedError extends Error {
@@ -849,7 +904,7 @@ export async function saveTransaction(txData: Partial<CarTransaction>): Promise<
     description: txData.description ?? existing?.description ?? '',
     receiptFileUrl: txData.receiptFileUrl ?? existing?.receiptFileUrl ?? '',
     receiptFileName: txData.receiptFileName ?? existing?.receiptFileName ?? '',
-    transactionDate: txData.transactionDate ?? existing?.transactionDate ?? new Date().toISOString().split('T')[0],
+    transactionDate: txData.transactionDate ?? existing?.transactionDate ?? businessToday(),
     recordedBy: txData.recordedBy ?? existing?.recordedBy,
     receivedAt: existing?.receivedAt,
     receivedBy: existing?.receivedBy,
@@ -938,7 +993,7 @@ export async function recordPayment(
       paymentStatus: 'paid',
       paymentMethod: payment.paymentMethod,
       description: pending.description,
-      transactionDate: payment.transactionDate || new Date().toISOString().split('T')[0],
+      transactionDate: payment.transactionDate || businessToday(),
       recordedBy: payment.recordedBy,
     });
   } catch (err) {
@@ -998,6 +1053,18 @@ async function restoreOwed(pendingRow: CarTransaction, amount: number): Promise<
 
 // Deletes a transaction. Deleting a payment recorded against a reservation charge puts its amount back on
 // what the customer owes, so undoing a wrong payment never makes the debt disappear.
+/**
+ * Rows only the general manager may delete: an unpaid charge (deleting it silently cancels what the customer
+ * owes) and a received amount that is not a recorded payment (it would vanish from the account balances).
+ * A recorded payment («ثبت پرداخت») can be deleted by staff: its amount goes back to the debt.
+ */
+export async function transactionNeedsManagerToDelete(id: string): Promise<boolean> {
+  const tx = await getTransactionById(id);
+  if (!tx) return false;
+  if (tx.paymentStatus === 'pending') return true;
+  return INCOMING_TRANSACTION_TYPES.includes(tx.type) && !pendingIdOfPayment(tx);
+}
+
 export async function deleteTransactionRestoringDebt(id: string): Promise<{ restored?: CarTransaction }> {
   const tx = await getTransactionById(id);
   const pendingId = tx && tx.paymentStatus === 'paid' ? pendingIdOfPayment(tx) : null;
@@ -1174,7 +1241,7 @@ export async function syncContractExtraCharges(contract: CarContract): Promise<v
         type: 'other_income',
         paymentStatus: 'pending',
         description: `${charge.label} - قرارداد ${contract.id} (${contract.customerName})`,
-        transactionDate: contract.endDate || new Date().toISOString().split('T')[0],
+        transactionDate: contract.endDate || businessToday(),
       });
     } else if (current) {
       await deleteTransaction(charge.id);
@@ -1192,6 +1259,10 @@ export async function deleteContract(id: string): Promise<{ contractIds: string[
 
   let transactionIds: string[] = [];
   if (row.reservation_id) {
+    // Money that actually reached an account must not vanish from the books with the contract
+    const { data: paidRows, error: paidError } = await supabase.from('car_transactions').select('id').eq('reservation_id', row.reservation_id).eq('payment_status', 'paid').limit(1);
+    ensureOk('car_transactions paid select', paidError);
+    if (paidRows?.length) throw new ContractHasPaymentsError();
     const { data: txRows, error: txError } = await supabase.from('car_transactions').delete().eq('reservation_id', row.reservation_id).select('id');
     ensureOk('car_transactions delete', txError);
     transactionIds = (txRows || []).map(t => t.id);
@@ -1219,16 +1290,20 @@ async function removeContractFiles(contracts: { id: string; attachments?: unknow
 }
 
 // --- RESERVATION CHAIN: reservation -> contract -> accounting revenue ---
+// Numbers come from a database counter (supabase_migration_contract_serial.sql): two reservations saved at the
+// same moment never share a number, and a deleted contract's number is never handed out again.
 async function nextContractSerial(): Promise<string> {
-  const year = new Date().getFullYear();
-  const prefix = `CNT-${year}-`;
-  const contracts = await getContracts();
-  const maxSeq = contracts.reduce((max, c) => {
-    if (!c.id.startsWith(prefix)) return max;
-    const n = parseInt(c.id.slice(prefix.length), 10);
-    return Number.isNaN(n) ? max : Math.max(max, n);
-  }, 0);
-  const id = `${prefix}${String(maxSeq + 1).padStart(4, '0')}`;
+  const year = Number(businessToday().slice(0, 4));
+  let id = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, error } = await supabase.rpc('next_contract_serial', { p_year: year });
+    ensureOk('next_contract_serial', error);
+    id = `CNT-${year}-${String(data).padStart(4, '0')}`;
+    // A number already taken (e.g. issued by the code before the counter existed) is skipped
+    const { data: taken, error: takenError } = await supabase.from('car_contracts').select('id').eq('id', id).maybeSingle();
+    ensureOk('car_contracts select', takenError);
+    if (!taken) break;
+  }
   // A new contract never inherits a signature left behind by a deleted contract with the same id
   await removeContractFiles([{ id }]);
   return id;
