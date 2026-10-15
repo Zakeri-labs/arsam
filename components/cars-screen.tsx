@@ -1503,7 +1503,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                         res.status === 'cancelled' ? 'bg-white/10 text-white/50 border-white/20' :
                         'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       }`}>
-                        {res.status === 'completed' ? 'تکمیل شده' : res.status === 'cancelled' ? 'لغو شده' : res.status === 'active' || contracts.some(c => c.reservationId === res.id && c.handoverStatus === 'delivered') ? 'در حال اجاره' : 'تایید شده'}
+                        {res.status === 'completed' ? 'تکمیل شده' : res.status === 'cancelled' ? 'لغو شده' : res.status === 'active' || contracts.some(c => c.reservationId === res.id && c.handoverStatus === 'delivered') ? (res.endDate < businessToday() ? 'تأخیر در عودت' : 'در حال اجاره') : 'تایید شده'}
                       </span>
                     </div>
 

@@ -1151,7 +1151,7 @@ export async function saveContract(data: Partial<CarContract>): Promise<CarContr
     ensureOk('car_contracts select', selectError);
     existing = row ? contractFromRow(row) : undefined;
   }
-  const id = data.id || existing?.id || 'CNT-' + Date.now().toString().slice(-6);
+  const id = data.id || existing?.id || await nextContractSerial();
 
   const reservationId = data.reservationId ?? existing?.reservationId ?? '';
   let carId = data.carId ?? existing?.carId;

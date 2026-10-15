@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getContracts, saveContract, deleteContract, getContractById, getReservationById, saveReservation, syncReservationFinancials, findOverlappingReservation, overlapMessage, ContractHasPaymentsError, CONTRACT_HAS_PAYMENTS_MESSAGE, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
+import { getContracts, saveContract, deleteContract, getContractById, getReservationById, saveReservation, syncReservationFinancials, issueContractAndRevenue, findOverlappingReservation, overlapMessage, ContractHasPaymentsError, CONTRACT_HAS_PAYMENTS_MESSAGE, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
 import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
 import { createContractShareToken } from '@/lib/contract-share';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, getRenterSignedAt, renterSignaturePath, signContractMedia } from '@/lib/storage';
@@ -101,6 +101,11 @@ export async function POST(request: Request) {
     delete body.shareVersion;
 
     let contract = await saveContract(body);
+    // A contract made again after its reservation's contract was deleted: the deleted one took the owed rent and
+    // deposit rows with it, so they are issued again (idempotent, rows that still exist are kept).
+    if (reservation && !stored && ['confirmed', 'active'].includes(reservation.status)) {
+      await issueContractAndRevenue(reservation);
+    }
     let overpaid = 0;
     if (reservation && Object.keys(resUpdate).length) {
       try {
