@@ -129,7 +129,7 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
               <p className="text-[12px] text-white/55" dir="rtl">{ERROR_TEXT[error].ar} · {ERROR_TEXT[error].fa}</p>
               {error !== 'invalid' && (
                 <p className="pt-2 text-[12px] text-white/70">
-                  Please contact ARSAM Rent a Car for a new link.
+                  Please contact ARSAM Rent a Car for a new link. · يرجى التواصل مع أبو أرسام لتأجير السيارات للحصول على رابط جديد.
                   <span className="mt-0.5 block" dir="rtl">لطفاً برای دریافت لینک جدید با آرسام تماس بگیرید.</span>
                 </p>
               )}
@@ -170,7 +170,7 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
             {pdf.busy ? `${pdf.progress ? `${pdf.progress.done}/${pdf.progress.total}` : '...'}` : 'PDF'}
           </button>
         </div>
-        {failed && <p className="pb-2 text-center text-[11.5px] text-rose-300">Download failed, please try again.</p>}
+        {failed && <p className="pb-2 text-center text-[11.5px] text-rose-300">Download failed, please try again. · تعذّر التنزيل، يرجى المحاولة مرة أخرى.</p>}
       </header>
 
       <div className="mx-auto max-w-[794px] px-3 pt-4">
@@ -182,10 +182,10 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
         ) : signing ? (
           <div className="mx-auto max-w-sm rounded-2xl bg-white p-3 text-left text-gray-800">
             <div className="mb-2 flex justify-between text-[12px] font-bold">
-              <span>Sign with your finger</span>
+              <span>Sign with your finger · وقّع بإصبعك</span>
               <span dir="rtl">با انگشت امضا کنید</span>
             </div>
-            <SignaturePad onChange={setDrawn} height={170} clearLabel="Clear · پاک کردن" hint="Sign here · اینجا امضا کنید" />
+            <SignaturePad onChange={setDrawn} height={170} clearLabel="Clear · مسح · پاک کردن" hint="Sign here · وقّع هنا · اینجا امضا کنید" />
             <button
               type="button"
               onClick={submitSignature}
@@ -193,9 +193,9 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
               className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0f1e37] py-3 text-[13px] font-black text-white disabled:opacity-50"
             >
               {saving && <Loader2 size={16} className="animate-spin" />}
-              Confirm signature · تأیید امضا
+              Confirm signature · تأكيد التوقيع · تأیید امضا
             </button>
-            {signError && <p className="mt-2 text-[12px] text-rose-600">Could not save, please try again. · ذخیره نشد، دوباره تلاش کنید.</p>}
+            {signError && <p className="mt-2 text-[12px] text-rose-600">Could not save, please try again. · تعذّر الحفظ، يرجى المحاولة مرة أخرى. · ذخیره نشد، دوباره تلاش کنید.</p>}
           </div>
         ) : (
           <button
@@ -204,7 +204,7 @@ export default function SharedContractPage({ params }: { params: Promise<{ token
             className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#c9a04a]/60 bg-[#c9a04a]/10 py-3.5 text-[14px] font-black text-[#c9a04a] active:scale-[0.99]"
           >
             <PenLine size={18} />
-            Sign contract · امضای قرارداد
+            Sign contract · توقيع العقد · امضای قرارداد
           </button>
         )}
       </div>

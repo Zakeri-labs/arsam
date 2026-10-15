@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getContracts, saveContract, deleteContract, getContractById, getReservationById, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
+import { getContracts, saveContract, deleteContract, getContractById, getReservationById, saveReservation, syncReservationFinancials, findOverlappingReservation, overlapMessage, ContractHasPaymentsError, CONTRACT_HAS_PAYMENTS_MESSAGE, ReturnSignedError, RETURN_SIGNED_MESSAGE, syncContractExtraCharges, CONTRACT_ATTACHMENT_KINDS, type CarContract, type ContractAttachment } from '@/lib/db-cars';
 import { verifyAdminAuth, requireAdmin } from '@/lib/auth-check';
 import { createContractShareToken } from '@/lib/contract-share';
 import { isContractMediaPath, isOwnUploadUrl, presentContractAttachments, getRenterSignedAt, renterSignaturePath, signContractMedia } from '@/lib/storage';
@@ -70,15 +70,50 @@ export async function POST(request: Request) {
     }
     // The customer of a contract is the customer of its reservation: a contract save can never rename it
     const linkedReservationId = existingContract?.reservationId || body.reservationId;
-    if (linkedReservationId) {
-      const reservation = await getReservationById(linkedReservationId);
-      if (reservation) body.customerName = reservation.customerName;
+    const reservation = linkedReservationId ? await getReservationById(linkedReservationId) : undefined;
+    if (reservation) body.customerName = reservation.customerName;
+
+    // Dates / price / deposit changed in the contract (e.g. an extension) are the reservation's too: the calendar
+    // and the owed rent must follow, and the car must be free for the new dates.
+    const str = (v: unknown) => (typeof v === 'string' && v ? v : undefined);
+    const num = (v: unknown) => (v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? undefined : Number(v));
+    const resUpdate: { startDate?: string; endDate?: string; totalPrice?: number; depositPaid?: number } = {};
+    // Only a field edited in this save moves (compared with the stored contract), so an old mismatch between
+    // contract and reservation is never pushed into the books by just opening and saving the wizard.
+    const stored = existingContract ?? (reservation ? (await getContracts()).find(c => c.reservationId === reservation.id) : undefined);
+    if (reservation && stored && ['confirmed', 'active'].includes(reservation.status)) {
+      const start = str(body.startDate), end = str(body.endDate), total = num(body.totalPrice), deposit = num(body.depositAmount);
+      if (start && start !== (stored.startDate ?? reservation.startDate)) resUpdate.startDate = start;
+      if (end && end !== (stored.endDate ?? reservation.endDate)) resUpdate.endDate = end;
+      if (total !== undefined && total !== (stored.totalPrice ?? reservation.totalPrice)) resUpdate.totalPrice = total;
+      if (deposit !== undefined && deposit !== stored.depositAmount) resUpdate.depositPaid = deposit;
+      const newStart = resUpdate.startDate ?? reservation.startDate, newEnd = resUpdate.endDate ?? reservation.endDate;
+      if (newEnd < newStart) {
+        return NextResponse.json({ error: 'تاریخ عودت نمی‌تواند قبل از تاریخ تحویل باشد' }, { status: 400 });
+      }
+      if (resUpdate.startDate || resUpdate.endDate) {
+        const clash = await findOverlappingReservation(reservation.carId, newStart, newEnd, reservation.id);
+        if (clash) return NextResponse.json({ error: overlapMessage(clash) }, { status: 409 });
+      }
     }
     body.attachments = cleanAttachments(body.attachments);
     delete body.shareToken;
     delete body.shareVersion;
 
-    const contract = await saveContract(body);
+    let contract = await saveContract(body);
+    let overpaid = 0;
+    if (reservation && Object.keys(resUpdate).length) {
+      try {
+        const updated = await saveReservation({ id: reservation.id, ...resUpdate });
+        const synced = await syncReservationFinancials(updated);
+        if (synced.contract) contract = synced.contract;
+        overpaid = synced.overpaid;
+      } catch (syncErr) {
+        console.error('Error carrying contract dates/amounts to the reservation:', syncErr);
+        const [shown] = await present([contract]);
+        return NextResponse.json({ success: true, contract: shown, chargesError: true });
+      }
+    }
     try {
       await syncContractExtraCharges(contract);
     } catch (syncErr) {
@@ -87,7 +122,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, contract: shown, chargesError: true });
     }
     const [shown] = await present([contract]);
-    return NextResponse.json({ success: true, contract: shown });
+    return NextResponse.json({ success: true, contract: shown, overpaid });
   } catch (error: any) {
     console.error('Error saving contract:', error);
     const missingColumn = /attachments/.test(String(error?.message || ''));
@@ -122,6 +157,9 @@ export async function DELETE(request: Request) {
   } catch (error: any) {
     if (error instanceof ReturnSignedError) {
       return NextResponse.json({ error: RETURN_SIGNED_MESSAGE }, { status: 409 });
+    }
+    if (error instanceof ContractHasPaymentsError) {
+      return NextResponse.json({ error: CONTRACT_HAS_PAYMENTS_MESSAGE }, { status: 409 });
     }
     console.error('Error deleting contract:', error);
     return NextResponse.json({ error: 'خطا در حذف صورتجلسه' }, { status: 500 });

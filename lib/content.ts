@@ -809,7 +809,7 @@ export const servicesListFA: Service[] = [
     title: 'مجوزهای املاک (RERA)',
     description: 'اخذ مجوزهای فعالیت‌های تجاری املاک، کارت کارگزاری و مجوزهای تبلیغات ملک از دپارتمان املاک (RERA).',
     serviceFee: '۹۵ ریال عمان',
-    governmentFees: 'از ۳,۵۰ ریال عمان',
+    governmentFees: 'از ۳,۵۰۰ ریال عمان',
     workingDays: '۵ روز کاری',
     requirements: ['کپی لایسنس شرکت', 'کارت کارگزاری مدیر', 'قرارداد دفتر تجاری'],
     category: 'General Government Services'
@@ -913,8 +913,8 @@ export const servicesListAR: Service[] = [
     id: 'company-mainland',
     title: 'تأسيس شركة في البر الرئيسي (Mainland)',
     description: 'تأسيس شركة في البر الرئيسي للإمارات أو عمان بملكية أجنبية 100%. حجز الاسم التجاري والموافقات الأولية وتوقيع عقد التأسيس.',
-    serviceFee: '3,000 ریال عمان',
-    governmentFees: 'من 12,000 ریال عمان',
+    serviceFee: '300 ر.ع.',
+    governmentFees: 'من 1,200 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية / ختم الدخول', 'ثلاثة أسماء تجارية مقترحة'],
     category: 'Company Setup Services'
@@ -923,8 +923,8 @@ export const servicesListAR: Service[] = [
     id: 'company-freezone',
     title: 'تأسيس شركة في المنطقة الحرة (Freezone)',
     description: 'تأسيس أعمالك في أفضل المناطق الحرة مع معافاة ضريبية 100% وملكية كاملة دون الحاجة لشريك محلي. تشمل الرخصة وعقد الإيجار.',
-    serviceFee: '2,500 ریال عمان',
-    governmentFees: 'من 9,500 ریال عمان',
+    serviceFee: '250 ر.ع.',
+    governmentFees: 'من 950 ر.ع.',
     workingDays: '4 أيام عمل',
     requirements: ['صورة جواز السفر', 'صورة شخصية خلفية بيضاء', 'قائمة الأنشطة التجارية المقترحة'],
     category: 'Company Setup Services'
@@ -933,8 +933,8 @@ export const servicesListAR: Service[] = [
     id: 'trademark-registration',
     title: 'تسجيل العلامة التجارية',
     description: 'حماية هوية علامتك التجارية قانونياً. إجراء الاستعلام المسبق، تقديم الطلب في وزارة الاقتصاد، وإصدار شهادة التسجيل.',
-    serviceFee: '1,500 ریال عمان',
-    governmentFees: '7,500 ریال عمان',
+    serviceFee: '150 ر.ع.',
+    governmentFees: '750 ر.ع.',
     workingDays: '15 يوم عمل',
     requirements: ['شعار العلامة التجارية', 'صورة الرخصة التجارية', 'وكالة رسمية'],
     category: 'Company Setup Services'
@@ -943,7 +943,7 @@ export const servicesListAR: Service[] = [
     id: 'business-setup-consulting',
     title: 'استشارات تأسيس الأعمال',
     description: 'استشارات متخصصة في هيكلة الشركات وتوزيع الحصص وتحديد الأنشطة التجارية والاختيار الأمثل للموقع.',
-    serviceFee: '500 ریال عمان',
+    serviceFee: '50 ر.ع.',
     workingDays: '3 أيام عمل',
     requirements: ['وصف فكرة المشروع', 'تخطيط رأس المال الأول', 'اقتراح موقع الشركة'],
     category: 'Company Setup Services'
@@ -952,7 +952,7 @@ export const servicesListAR: Service[] = [
     id: 'feasibility-study',
     title: 'دراسة الجدوى وخطة العمل الرسمية',
     description: 'إعداد دراسات جدوى وافية وخطط عمل احترافية مخصصة للتقديم للبنوك والجهات الحكومية وجذب المستثمرين.',
-    serviceFee: '1,500 ریال عمان',
+    serviceFee: '150 ر.ع.',
     workingDays: '8 أيام عمل',
     requirements: ['وصف نموذج العمل', 'التقديرات المالية والمبيعات', 'معلومات المنافسين والظروف السوقية'],
     category: 'Company Setup Services'
@@ -963,8 +963,8 @@ export const servicesListAR: Service[] = [
     id: 'family-residency-visa',
     title: 'تأشيرة الإقامة العائلية',
     description: 'إصدار وتجديد إقامة الزوجة والأبناء والوالدين. تشمل توثيق المستندات والفحص الطبي وبطاقة الهوية وتثبيت التأشيرة.',
-    serviceFee: '450 ریال عمان',
-    governmentFees: '1,340 ریال عمان',
+    serviceFee: '45 ر.ع.',
+    governmentFees: '134 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['صورة جواز إقامة الكفيل', 'توثيق عقد الزواج / شهادات الميلاد', 'شهادة الراتب / عقد إيجاري'],
     category: 'Family & Business Visas'
@@ -973,8 +973,8 @@ export const servicesListAR: Service[] = [
     id: 'partner-investor-visa',
     title: 'تأشيرة الشريك والمستثمر',
     description: 'إصدار وتجديد إقامة المستثمر والشريك التجاري لأصحاب الأعمال والمساهمين مع كافة الامتيازات القانونية.',
-    serviceFee: '650 ریال عمان',
-    governmentFees: '3,200 ریال عمان',
+    serviceFee: '65 ر.ع.',
+    governmentFees: '320 ر.ع.',
     workingDays: '4 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'عقد التأسيس (MOA/CR)', 'صورة جواز السفر للشريك'],
     category: 'Family & Business Visas'
@@ -983,8 +983,8 @@ export const servicesListAR: Service[] = [
     id: 'business-employment-visa',
     title: 'تأشيرات العمل والموظفين',
     description: 'إصدار تصاريح العمل وتأشيرات التوظيف لموظفي ومستنجدي الشركات في المناطق الحرة والبر الرئيسي.',
-    serviceFee: '350 ریال عمان',
-    governmentFees: '1,850 ریال عمان',
+    serviceFee: '35 ر.ع.',
+    governmentFees: '185 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'بطاقة المنشأة', 'صورة شخصية وجواز الموظف'],
     category: 'Family & Business Visas'
@@ -993,8 +993,8 @@ export const servicesListAR: Service[] = [
     id: 'golden-visa-services',
     title: 'خدمات الإقامة الذهبية (10 سنوات)',
     description: 'إجراءات الترشيح وإصدار الإقامة الذهبية لمدة 10 سنوات للمستثمرين ورواد الأعمال والرؤساء التنفيذيين والموهوبين.',
-    serviceFee: '1,500 ریال عمان',
-    governmentFees: '4,800 ریال عمان',
+    serviceFee: '150 ر.ع.',
+    governmentFees: '480 ر.ع.',
     workingDays: '7 أيام عمل',
     requirements: ['كشف حساب / ملكية عقار / رخصة تجارية', 'صورة جواز السفر', 'الهوية / تصريح الدخول'],
     category: 'Family & Business Visas'
@@ -1005,7 +1005,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-30-days',
     title: 'تجديد التأشيرة السياحية 30 يوماً',
     description: 'تجديد سريع وسلس للتأشيرة السياحية لمدة 30 يوماً عبر البوابات الرسمية للهجرة لضمان الوضع القانوني.',
-    serviceFee: '290 ریال عمان',
+    serviceFee: '29 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -1014,7 +1014,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-60-days',
     title: 'تجديد التأشيرة السياحية 60 يوماً',
     description: 'تجديد التأشيرة السياحية لمدة 60 يوماً للإقامات الطويلة أو متابعة المعاملات التجارية والأسرية.',
-    serviceFee: '490 ریال عمان',
+    serviceFee: '49 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -1023,7 +1023,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-multi-60-days',
     title: 'تجديد التأشيرة 60 يوماً متعددة الدخول',
     description: 'تجديد سريع للتأشيرة متعددة الدخول لمدة 60 يوماً لرجال الأعمال والمسافرين بشكل متكرر.',
-    serviceFee: '790 ریال عمان',
+    serviceFee: '79 ر.ع.',
     workingDays: '1 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -1032,7 +1032,7 @@ export const servicesListAR: Service[] = [
     id: 'tourist-visa-renewal',
     title: 'تجديد التأشيرة من داخل الدولة (بدون مغادرة)',
     description: 'تعديل الوضع وتجديد التأشيرة السياحية من داخل الدولة دون الحاجة للمغادرة حتى 4 أشهر إجمالاً.',
-    serviceFee: '1,090 ریال عمان',
+    serviceFee: '109 ر.ع.',
     workingDays: '1 يوم عمل',
     requirements: ['صورة جواز السفر', 'صورة التأشيرة السياحية الحالية', 'صورة شخصية'],
     category: 'Tourist Visa Extension Services'
@@ -1043,8 +1043,8 @@ export const servicesListAR: Service[] = [
     id: 'trade-license-renewal',
     title: 'تجديد الرخصة التجارية (Mainland & Freezone)',
     description: 'تجديد الرخص التجارية للشركات وإصدار إذن الدفع الإلكتروني وتوثيق عقود الإيجار لتفادي الغرامات.',
-    serviceFee: '300 ریال عمان',
-    governmentFees: 'من 4,270 ریال عمان',
+    serviceFee: '30 ر.ع.',
+    governmentFees: 'من 427 ر.ع.',
     workingDays: '3 أيام عمل',
     requirements: ['عقد إيجاري / بلدي ساري', 'بطاقة المنشأة سارية المفعول', 'الموافقة على إذن الدفع'],
     category: 'License Renewal Services'
@@ -1053,8 +1053,8 @@ export const servicesListAR: Service[] = [
     id: 'establishment-card-renewal',
     title: 'تجديد بطاقة المنشأة وغرفة التجارة',
     description: 'تجديد بطاقة المنشأة والانتساب لغرفة التجارة لضمان استمرارية المعاملات وتصاريح العمل.',
-    serviceFee: '150 ریال عمان',
-    governmentFees: '581 ریال عمان',
+    serviceFee: '15 ر.ع.',
+    governmentFees: '58 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['صورة الرخصة التجارية', 'الهوية الأصلية للمفوض', 'السجل التجاري للشركة'],
     category: 'License Renewal Services'
@@ -1063,7 +1063,7 @@ export const servicesListAR: Service[] = [
     id: 'ejari-1-year',
     title: 'تجديد عقد الإيجاري السنوي',
     description: 'تسجيل وتجديد عقد الإيجاري السنوي الرسمي للمكاتب والمحلات والمستودعات لاستيفاء متطلبات البلدية.',
-    serviceFee: '1,950 ریال عمان',
+    serviceFee: '195 ر.ع.',
     workingDays: '1 يوم عمل',
     requirements: ['صورة ملكية العقار', 'صورة هوية المؤجر', 'صورة الرخصة التجارية'],
     category: 'License Renewal Services'
@@ -1072,7 +1072,7 @@ export const servicesListAR: Service[] = [
     id: 'baladiya-tenancy',
     title: 'تجديد عقد الإيجار البلدي (عمان)',
     description: 'تجديد عقد الإيجار التجاري في بلدية عمان لضمان استمرار السجل التجاري والأنشطة.',
-    serviceFee: '1,500 ریال عمان',
+    serviceFee: '150 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['صورة الرسم المساحي (الكروكي)', 'صورة الهوية للمؤجر', 'السجل التجاري (CR)'],
     category: 'License Renewal Services'
@@ -1083,7 +1083,7 @@ export const servicesListAR: Service[] = [
     id: 'car-rental-daily-monthly',
     title: 'تأجير السيارات اليومي والشهري',
     description: 'تأجير مختلف أنواع السيارات الاقتصادية والسيدان بشكل يومي أو أسبوعي أو شهري مع التأمين الشامل والتسليم السريع.',
-    serviceFee: '120 ریال عمان / يومياً',
+    serviceFee: '12 ر.ع. / يومياً',
     workingDays: 'تسليم فوري',
     requirements: ['صورة الجواز والتأشيرة', 'رخصة القيادة / الدولية', 'مبلغ التأمين / بطاقة ائتمان'],
     category: 'Car Rental Services'
@@ -1092,7 +1092,7 @@ export const servicesListAR: Service[] = [
     id: 'luxury-car-rental',
     title: 'تأجير السيارات الفارهة والرياضية',
     description: 'استئجار أحدث موديلات السيارات الفاخرة والرياضية (لامبورغيني، فيراري، رولز رويس، بورش، مرسيدس) للمناسبات والوفود.',
-    serviceFee: '800 ریال عمان / يومياً',
+    serviceFee: '80 ر.ع. / يومياً',
     workingDays: 'تسليم فوري',
     requirements: ['جواز وتأشيرة سارية', 'رخصة قيادة دولية', 'وديعة تأمين'],
     category: 'Car Rental Services'
@@ -1101,7 +1101,7 @@ export const servicesListAR: Service[] = [
     id: 'chauffeur-car-rental',
     title: 'تأجير السيارات الفاخرة مع سائق خاص',
     description: 'خدمات التنقل الفاخرة مع سائقين خاصين يتحدثون لغات متعددة للتوصيل من وإلى المطار والجولات التجارية.',
-    serviceFee: '350 ریال عمان / 5 ساعات',
+    serviceFee: '35 ر.ع. / 5 ساعات',
     workingDays: 'حجز فوري',
     requirements: ['تفاصيل الرحلة / عنوان الاستلام', 'عدد الراكبين', 'تأكيد الحجز'],
     category: 'Car Rental Services'
@@ -1110,7 +1110,7 @@ export const servicesListAR: Service[] = [
     id: 'suv-family-car-rental',
     title: 'تأجير السيارات العائلية والدفع الرباعي',
     description: 'سيارات الدفع الرباعي والعائلية واسعة (7 ركاب) للتنقلات الجماعية والرحلات بين المدن مع تأمين شامل.',
-    serviceFee: '250 ریال عمان / يومياً',
+    serviceFee: '25 ر.ع. / يومياً',
     workingDays: 'تسليم فوري',
     requirements: ['صورة جواز السفر', 'رخصة قيادة سارية', 'تأمين'],
     category: 'Car Rental Services'
@@ -1121,7 +1121,7 @@ export const servicesListAR: Service[] = [
     id: 'business-account-high-risk',
     title: 'فتح حساب شركتاً - أنشطة عالية المخاطر',
     description: 'فتح حسابات بنكية تجارية للقطاعات عالية المخاطر مع إدارة الامتثال والتدقيق وتنسيق المعاملات مع البنوك.',
-    serviceFee: '3,950 ریال عمان',
+    serviceFee: '395 ر.ع.',
     workingDays: '20 يوم عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'تأشيرة جميع الشركاء سارية', 'مطلوب لتجديد الإقامة'],
     category: 'Banking Services'
@@ -1130,7 +1130,7 @@ export const servicesListAR: Service[] = [
     id: 'business-account-low-risk',
     title: 'فتح حساب شركتاً - أنشطة منخفضة المخاطر',
     description: 'تسهيل فتح الحسابات البنكية التجارية للأنشطة منخفضة المخاطر بسرعة لدى أفضل البنوك المحلية والدولية.',
-    serviceFee: '2,950 ریال عمان',
+    serviceFee: '295 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['يجب أن تكون الرخصة سارية', 'تأشيرة جميع الشركاء سارية', 'مطلوب لتجديد الإقامة'],
     category: 'Banking Services'
@@ -1139,7 +1139,7 @@ export const servicesListAR: Service[] = [
     id: 'personal-account-guidance',
     title: 'إرشادات فتح الحساب الشخصي',
     description: 'فتح حساب شخصي جاري أو توفير لدى أفضل البنوك مع مراجعة المستندات واستخراج الموافقات السريعة.',
-    serviceFee: '950 ریال عمان',
+    serviceFee: '95 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['تأشيرة إقامة وهوية سارية', 'جواز السفر مع ختم الدخول', 'شهادة الراتب أو إثبات الدخل'],
     category: 'Banking Services'
@@ -1150,7 +1150,7 @@ export const servicesListAR: Service[] = [
     id: 'corporate-tax-registration',
     title: 'التسجيل في ضريبة الشركات (Corporate Tax)',
     description: 'التسجيل الرسمي للشركة لدى الهيئة الاتحادية للضرائب لتفادي الغرامات المالية بالتسجيل في المواعيد المحددة.',
-    serviceFee: '180 ریال عمان',
+    serviceFee: '18 ر.ع.',
     workingDays: '3 أيام عمل',
     requirements: ['التسجيل خلال 87 يوماً', 'إلزامي لجميع الشركات', 'تفادي الغرامة المالية'],
     category: 'Tax Services'
@@ -1159,7 +1159,7 @@ export const servicesListAR: Service[] = [
     id: 'corporate-tax-filing',
     title: 'تقديم الإقرار الضريبي للشركات',
     description: 'إعداد وتقديم الإقرارات الضريبية وفق المعايير المعتمدة خلال المهلة القانونية لتفادي الغرامات الشهرية.',
-    serviceFee: '380 ریال عمان',
+    serviceFee: '38 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['التقديم خلال 9 أشهر', 'إلزامي لجميع الشركات المسجلة', 'تفادي الغرامة الشهرية'],
     category: 'Tax Services'
@@ -1168,7 +1168,7 @@ export const servicesListAR: Service[] = [
     id: 'vat-registration',
     title: 'التسجيل في ضريبة القيمة المضافة (VAT)',
     description: 'التسجيل الرسمي في بوابة ضريبة القيمة المضافة للشركات التي تتجاوز إيراداتها الحد القانوني الخاضع للضريبة.',
-    serviceFee: '350 ریال عمان',
+    serviceFee: '35 ر.ع.',
     workingDays: '3 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'كشف الحساب المالي المعتمد', 'جواز وتأشيرة المدير'],
     category: 'Tax Services'
@@ -1177,7 +1177,7 @@ export const servicesListAR: Service[] = [
     id: 'fta-profile-update',
     title: 'تحديث الملف الضريبي (FTA)',
     description: 'تعديل وتحديث البيانات الرسمية لدى الهيئة الاتحادية للضرائب بعد تعديل الرخصة أو العنوان أو الإدارة.',
-    serviceFee: '280 ریال عمان',
+    serviceFee: '28 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['تحديث بيانات الرخصة أولاً', 'تحديث تأشيرة المدير المسؤول', 'تحديث موقع وعنوان الشركة'],
     category: 'Tax Services'
@@ -1186,7 +1186,7 @@ export const servicesListAR: Service[] = [
     id: 'tax-reconsideration',
     title: 'طلب إعادة النظر في الغرامات الضريبية',
     description: 'تقديم طلبات التظلم وإعادة النظر الرسمية في الغرامات الضريبية وفق القوانين واللوائح التنفيذية.',
-    serviceFee: '380 ریال عمان',
+    serviceFee: '38 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['تقديم طلب تظلم من الغرامة', 'الصياغة وفق القوانين الضريبية', 'دراسة قانونية للطلب'],
     category: 'Tax Services'
@@ -1195,7 +1195,7 @@ export const servicesListAR: Service[] = [
     id: 'industrial-tax-exemptions',
     title: 'الإعفاءات الضريبية الصناعية',
     description: 'الحصول على شهادات الإعفاء الضريبي الصناعي للمعدات والآلات والمواد الخام لتخفيض التكاليف الإنتاجية.',
-    serviceFee: '950 ریال عمان',
+    serviceFee: '95 ر.ع.',
     workingDays: '10 أيام عمل',
     requirements: ['صورة الرخصة الصناعية', 'قائمة المعدات والمواد الخام', 'الموافقة البيئية'],
     category: 'Tax Services'
@@ -1206,8 +1206,8 @@ export const servicesListAR: Service[] = [
     id: 'driving-license-guidance',
     title: 'إرشادات رخصة القيادة',
     description: 'مساعدة خطوة بخطوة لتحويل رخصة القيادة الأصلية أو فتح ملف جديد وتنسيق فحوصات النظر والمواعيد.',
-    serviceFee: '350 ریال عمان',
-    governmentFees: '850 ریال عمان',
+    serviceFee: '35 ر.ع.',
+    governmentFees: '85 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['بطاقة الهوية السارية', 'رخصة القيادة الأصلية من البلد الأم', 'فحص نظر معتمد'],
     category: 'General Government Services'
@@ -1216,8 +1216,8 @@ export const servicesListAR: Service[] = [
     id: 'dubai-municipality-permits',
     title: 'تصاريح بلدية دبي',
     description: 'استخراج التصاريح التجارية والإعلانية وتصاريح الديكور الداخلي من بلدية دبي واعتماد المخططات الفنية.',
-    serviceFee: '650 ریال عمان',
-    governmentFees: 'من 1,500 ریال عمان',
+    serviceFee: '65 ر.ع.',
+    governmentFees: 'من 150 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'عقد إيجاري ساري', 'مخطط التصميم الداخلي'],
     category: 'General Government Services'
@@ -1226,8 +1226,8 @@ export const servicesListAR: Service[] = [
     id: 'sports-council-permits',
     title: 'تصاريح مجلس دبي الرياضي',
     description: 'الحصول على الموافقات والتصاريح الرسمية للأكاديميات والفعاليات والأندية الرياضية من مجلس دبي الرياضي.',
-    serviceFee: '850 ریال عمان',
-    governmentFees: 'من 2,500 ریال عمان',
+    serviceFee: '85 ر.ع.',
+    governmentFees: 'من 250 ر.ع.',
     workingDays: '7 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'شهادات مؤهلات المدربين', 'شهادة سلامة المقر'],
     category: 'General Government Services'
@@ -1236,8 +1236,8 @@ export const servicesListAR: Service[] = [
     id: 'rera-permits',
     title: 'تصاريح مؤسسة التنظيم العقاري (RERA)',
     description: 'استخراج تصاريح الأنشطة العقارية وبطاقات الوساطة وتصاريح الإعلانات العقارية من مؤسسة RERA.',
-    serviceFee: '950 ریال عمان',
-    governmentFees: 'من 3,500 ریال عمان',
+    serviceFee: '95 ر.ع.',
+    governmentFees: 'من 3,500 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'بطاقة الوسيط للمدير', 'عقد إيجار المكتب'],
     category: 'General Government Services'
@@ -1246,7 +1246,7 @@ export const servicesListAR: Service[] = [
     id: 'customs-bayan',
     title: 'التخليص الجمركي (بيان)',
     description: 'تخليص البضائع والشحنات الجمركية عبر نظام بيان الجمركي الرسمي لسرعة الإفراج في الموانئ.',
-    serviceFee: '450 ریال عمان',
+    serviceFee: '45 ر.ع.',
     workingDays: '2 يوم عمل',
     requirements: ['رخصة الاستيراد والتصدير', 'الفاتورة التجارية وقائمة التعبئة', 'شهادة المنشأ'],
     category: 'General Government Services'
@@ -1255,7 +1255,7 @@ export const servicesListAR: Service[] = [
     id: 'made-in-oman',
     title: 'شهادة صنع في عمان',
     description: 'الحصول على شهادة الجودة الرسمية "صنع في عمان" للمنتجات المصنعة محلياً للاستفادة من أولوية التوريد.',
-    serviceFee: '550 ریال عمان',
+    serviceFee: '55 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['صورة الرخصة الصناعية/التجارية', 'إثبات القيمة المضافة المحلية', 'تقرير فحص المنتج'],
     category: 'General Government Services'
@@ -1264,7 +1264,7 @@ export const servicesListAR: Service[] = [
     id: 'riyada-card',
     title: 'بطاقة ريادة الأعمال (ريادة)',
     description: 'خدمات استخراج بطاقة ريادة الأعمال للمؤسسات الصغيرة والمتوسطة للاستفادة من التسهيلات والمناقصات.',
-    serviceFee: '250 ریال عمان',
+    serviceFee: '25 ر.ع.',
     workingDays: '3 أيام عمل',
     requirements: ['إثبات الملكية العمانية', 'رخصة تجارية سارية', 'تسجيل التأمينات الاجتماعية النشط'],
     category: 'General Government Services'
@@ -1273,8 +1273,8 @@ export const servicesListAR: Service[] = [
     id: 'pacda-permits',
     title: 'تصاريح السلامة للدفاع المدني (PACDA)',
     description: 'استخراج موافقات الوقاية وتصاريح السلامة من هيئة الدفاع المدني والإسعاف للمحلات والمكاتب.',
-    serviceFee: '450 ریال عمان',
-    governmentFees: 'من 1,000 ریال عمان',
+    serviceFee: '45 ر.ع.',
+    governmentFees: 'من 100 ر.ع.',
     workingDays: '4 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'عقد إيجار العقار', 'شهادة معدات الإطفاء'],
     category: 'General Government Services'
@@ -1283,7 +1283,7 @@ export const servicesListAR: Service[] = [
     id: 'product-standards',
     title: 'شهادات مطابقة المنتجات',
     description: 'الحصول على موافقات المواصفات وشهادات شارة المطابقة الخليجية G-mark من المديرية العامة للمواصفات.',
-    serviceFee: '550 ریال عمان',
+    serviceFee: '55 ر.ع.',
     workingDays: '5 أيام عمل',
     requirements: ['كتيب المواصفات الفنية', 'نسخة شهادات الأيزو', 'رخصة الاستيراد/التصدير'],
     category: 'General Government Services'
@@ -1292,7 +1292,7 @@ export const servicesListAR: Service[] = [
     id: 'government-land-rental',
     title: 'إرشادات استئجار الأراضي الحكومية',
     description: 'مساعدة شاملة للحصول على الأراضي الحكومية المستأجرة للأغراض الصناعية والمستودعات في المدن الصناعية.',
-    serviceFee: '950 ریال عمان',
+    serviceFee: '95 ر.ع.',
     workingDays: '10 أيام عمل',
     requirements: ['رخصة صناعية/تجارية سارية', 'ملخص دراسة الجدوى', 'رسالة طلب رسمية للوزارة'],
     category: 'General Government Services'
@@ -1301,7 +1301,7 @@ export const servicesListAR: Service[] = [
     id: 'accounting-auditing',
     title: 'خدمات المحاسبة والتدقيق',
     description: 'مسك الدفاتر المحاسبية وإعداد القوائم المالية والتدقيق السنوي لضمان الامتثال للأنظمة المالية.',
-    serviceFee: '450 ریال عمان',
+    serviceFee: '45 ر.ع.',
     workingDays: '3 أيام عمل',
     requirements: ['دفاتر وكشوفات حساب الشركة', 'قائمة الفواتير الضريبية', 'مستندات المصاريف'],
     category: 'General Government Services'
@@ -1310,7 +1310,7 @@ export const servicesListAR: Service[] = [
     id: 'omanisation-management',
     title: 'إدارة التعمين والتوظيف',
     description: 'ضبط واستيفاء نسب التعمين والتوظيف طبقاً للاشتراطات الرسمية لوزارة العمل لتجنب حظر المعاملات.',
-    serviceFee: '650 ریال عمان',
+    serviceFee: '65 ر.ع.',
     workingDays: '4 أيام عمل',
     requirements: ['صورة الرخصة التجارية', 'قائمة تأشيرات الموظفين', 'نسبة التعمين المستهدفة'],
     category: 'General Government Services'
@@ -1319,7 +1319,7 @@ export const servicesListAR: Service[] = [
     id: 'icv-certificate',
     title: 'شهادة القيمة المضافة المحلية (ICV)',
     description: 'إعداد واقتناص شهادة ICV الرسمية للشركات للتنافس في المناقصات الحكومية وشركات النفط والغاز.',
-    serviceFee: '1,500 ریال عمان',
+    serviceFee: '150 ر.ع.',
     workingDays: '7 أيام عمل',
     requirements: ['القوائم المالية المدققة', 'تقرير نسبة التعمين', 'فواتير الشراء المحلية'],
     category: 'General Government Services'
@@ -1520,7 +1520,7 @@ export function convertToOmanServices(services: Service[], language: Language): 
     // Convert prices
     const convertPrice = (priceStr?: string): string | undefined => {
       if (!priceStr) return undefined;
-      if (priceStr.includes('ریال عمان') || priceStr.includes('OMR') || priceStr.includes('ريال عماني')) {
+      if (priceStr.includes('ریال عمان') || priceStr.includes('OMR') || priceStr.includes('ريال عماني') || priceStr.includes('ر.ع.')) {
         return priceStr;
       }
       const normalizedStr = toEnglishDigits(priceStr);

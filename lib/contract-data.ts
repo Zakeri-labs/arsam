@@ -1,3 +1,4 @@
+import { businessToday, businessTime } from './business-day';
 import type { Car, CarContract, CarReservation, ContractAttachment } from './db-cars';
 import { FUEL_LEVEL_LABELS } from './db-cars';
 
@@ -54,7 +55,7 @@ export interface ContractData {
   renterSignedAt?: string | null;
 }
 
-const today = () => new Date().toISOString().split('T')[0];
+const today = () => businessToday();
 
 export function buildContractData(cnt: CarContract, reservation?: CarReservation, car?: Car): ContractData {
   const sDate = cnt.startDate || reservation?.startDate || today();
@@ -92,7 +93,8 @@ export function buildContractData(cnt: CarContract, reservation?: CarReservation
     depositPaid: cnt.depositAmount || 0,
     initialOdometer: cnt.initialOdometer,
     fuelLevel: FUEL_LEVEL_LABELS[cnt.fuelLevel] || FUEL_LEVEL_LABELS.full,
-    departureTime: cnt.departureTime || (cnt.createdAt ? new Date(cnt.createdAt).toTimeString().slice(0, 5) : undefined),
+    // Same Oman time on the server (customer link) and in any browser (admin PDF)
+    departureTime: cnt.departureTime || (cnt.createdAt ? businessTime(new Date(cnt.createdAt)) : undefined),
     returnTime: cnt.returnTime,
     returnOdometer: cnt.returnOdometer,
     extraKm: cnt.extraKm,

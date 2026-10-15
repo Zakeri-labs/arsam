@@ -272,7 +272,7 @@ export default function AdminPage() {
             // 'access' and 'settings' are not per-user screens: they belong to the general manager only
             const canOpenSaved = savedScreen === 'access' || savedScreen === 'settings' ? data.user.role === 'superadmin' : data.user.allowedScreens.includes(savedScreen);
             if (!savedScreen || !canOpenSaved) {
-              setActiveScreen(data.user.allowedScreens[0]);
+              setActiveScreen(data.user.allowedScreens.includes('cars') ? 'cars' : data.user.allowedScreens[0]);
             }
           }
         }
@@ -340,7 +340,7 @@ export default function AdminPage() {
         if (data.user) {
           setCurrentUser(data.user);
           if (Array.isArray(data.user.allowedScreens) && data.user.allowedScreens.length > 0) {
-            setActiveScreen(data.user.allowedScreens[0]);
+            setActiveScreen(data.user.allowedScreens.includes('cars') ? 'cars' : data.user.allowedScreens[0]);
           }
         }
         toast.success(`خوش آمدید ${data.user?.name || ''}! ورود موفقیت‌آمیز بود`);

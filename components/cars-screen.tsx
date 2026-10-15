@@ -390,14 +390,16 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     const res = await fetch('/api/cars/reservations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...reservation, returnPhotos: photos, returnSignature: signaturePath ? { path: signaturePath } : undefined }),
+      body: JSON.stringify({ id: reservation.id, returnPhotos: photos, returnSignature: signaturePath ? { path: signaturePath } : undefined }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) throw new Error(data.error || 'ذخیره تصاویر عودت ناموفق بود');
     const saved: CarReservation = data.reservation;
-    const patch = { returnPhotos: saved.returnPhotos, returnSignature: saved.returnSignature };
+    const patch = { returnPhotos: saved.returnPhotos, returnSignature: saved.returnSignature, status: saved.status };
     setReservations(prev => prev.map(r => (r.id === saved.id ? { ...r, ...patch } : r)));
     setSelectedResDetails(cur => (cur && cur.id === saved.id ? { ...cur, ...patch } : cur));
+    // The customer's return signature closes the rental (reservation completed, contract returned, car free)
+    if (signaturePath) fetchAllData();
   };
 
   const handleAddReturnMedia = async (reservation: CarReservation, files: FileList | null) => {
@@ -672,7 +674,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         if (car) {
           next.customDailyRate = car.dailyRate;
           next.carTitle = car.title;
-          next.depositPaid = car.depositAmount || 40;
+          next.depositPaid = car.depositAmount ?? 40;
         }
       }
 
@@ -714,7 +716,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       discountType: 'amount',
       discountValue: 0,
       totalPrice: calc.finalTotal,
-      depositPaid: selectedCar ? selectedCar.depositAmount || 40 : 40,
+      depositPaid: selectedCar ? selectedCar.depositAmount ?? 40 : 40,
       status: 'confirmed',
       notes: ''
     });
@@ -865,16 +867,9 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       }
       setReservations(prev => prev.map(r => r.id === reservation.id ? { ...r, status: 'cancelled' } : r));
       setSelectedResDetails(null);
-
-      // Free the car if no other live reservation covers today
-      const todayStr = new Date().toISOString().split('T')[0];
-      const car = cars.find(c => c.id === reservation.carId);
-      const stillBusy = reservations.some(r => r.id !== reservation.id && r.carId === reservation.carId && r.status !== 'cancelled' && r.status !== 'completed' && r.startDate <= todayStr && r.endDate >= todayStr);
-      if (car?.status === 'rented' && !stillBusy) {
-        await fetch('/api/cars', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: car.id, status: 'available' }) });
-        setCars(prev => prev.map(c => c.id === car.id ? { ...c, status: 'available' } : c));
-      }
-      toast.success('رزرو لغو شد');
+      // The server removed the unpaid rent/deposit rows and the car's status follows the bookings: reload both
+      await fetchAllData();
+      toast.success('رزرو لغو شد و بدهی پرداخت‌نشده‌ی آن حذف شد');
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
     }
@@ -1243,10 +1238,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         </div>
 
         {/* 4 SUB-PAGES TABS (Responsive Scrollable Pills) */}
-        <div className="flex items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1.5 overflow-x-auto w-full md:w-auto max-w-full shrink-0 no-scrollbar">
+        <div className="grid grid-cols-4 md:flex md:items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1 md:gap-1.5 w-full md:w-auto max-w-full shrink-0">
           <button
             onClick={() => handleTabChange('calendar')}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+            className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-1 md:px-3.5 py-2 md:py-2.5 rounded-lg text-[10.5px] md:text-xs leading-tight text-center font-black transition-all cursor-pointer min-w-0 ${
               activeTab === 'calendar'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -1258,20 +1253,20 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
           <button
             onClick={() => handleTabChange('contracts')}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+            className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-1 md:px-3.5 py-2 md:py-2.5 rounded-lg text-[10.5px] md:text-xs leading-tight text-center font-black transition-all cursor-pointer min-w-0 ${
               activeTab === 'contracts'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
             }`}
           >
             <ClipboardList size={15} />
-            <span>قراردادها & تحویل</span>
-            <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{contracts.length}</span>
+            <span>قراردادها و تحویل</span>
+            <span className="hidden md:inline bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{contracts.length}</span>
           </button>
 
           <button
             onClick={() => handleTabChange('accounting')}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+            className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-1 md:px-3.5 py-2 md:py-2.5 rounded-lg text-[10.5px] md:text-xs leading-tight text-center font-black transition-all cursor-pointer min-w-0 ${
               activeTab === 'accounting'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -1283,7 +1278,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
 
           <button
             onClick={() => handleTabChange('fleet')}
-            className={`flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-xs font-black transition-all cursor-pointer shrink-0 ${
+            className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-1 md:px-3.5 py-2 md:py-2.5 rounded-lg text-[10.5px] md:text-xs leading-tight text-center font-black transition-all cursor-pointer min-w-0 ${
               activeTab === 'fleet'
                 ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
                 : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -1291,11 +1286,18 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           >
             <CarIcon size={15} />
             <span>ناوگان خودروها</span>
-            <span className="bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{cars.length}</span>
+            <span className="hidden md:inline bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{cars.length}</span>
           </button>
         </div>
       </div>
 
+
+      {loading && cars.length === 0 && (
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-10 text-sm font-bold text-white/70">
+          <Loader2 size={18} className="animate-spin text-gold" />
+          در حال بارگذاری خودروها، رزروها و قراردادها…
+        </div>
+      )}
 
       {/* ==================================================================== */}
       {/* SUB-PAGE 1: CALENDAR & BOOKINGS GANTT MATRIX VIEW                   */}
@@ -1501,7 +1503,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                         res.status === 'cancelled' ? 'bg-white/10 text-white/50 border-white/20' :
                         'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       }`}>
-                        {res.status === 'active' ? 'در حال اجرا' : res.status === 'completed' ? 'تکمیل شده' : res.status === 'cancelled' ? 'لغو شده' : 'تایید شده'}
+                        {res.status === 'completed' ? 'تکمیل شده' : res.status === 'cancelled' ? 'لغو شده' : res.status === 'active' || contracts.some(c => c.reservationId === res.id && c.handoverStatus === 'delivered') ? 'در حال اجاره' : 'تایید شده'}
                       </span>
                     </div>
 

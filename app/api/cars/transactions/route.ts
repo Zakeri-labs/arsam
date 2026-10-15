@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTransactions, saveTransaction, deleteTransactionRestoringDebt, recordPayment, setTransactionReceived, TransactionRuleError } from '@/lib/db-cars';
+import { getTransactions, saveTransaction, deleteTransactionRestoringDebt, transactionNeedsManagerToDelete, recordPayment, setTransactionReceived, TransactionRuleError } from '@/lib/db-cars';
 import { uploadFile, UploadRejected } from '@/lib/storage';
 import { requireAdmin, verifyAdminAuth } from '@/lib/auth-check';
 
@@ -149,13 +149,21 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const denied = await requireAdmin(['cars']);
-    if (denied) return denied;
+    const auth = await verifyAdminAuth(['cars']);
+    if (!auth.authenticated) {
+      return NextResponse.json({ error: 'دسترسی غیرمجاز. لطفا دوباره لاگین کنید.' }, { status: 401 });
+    }
+    if (!auth.authorized) {
+      return NextResponse.json({ error: 'شما به این بخش دسترسی ندارید.' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
       return NextResponse.json({ error: 'شناسه تراکنش الزامی است' }, { status: 400 });
+    }
+    if (auth.user?.role !== 'superadmin' && (await transactionNeedsManagerToDelete(id))) {
+      return NextResponse.json({ error: 'حذف بدهی مشتری یا مبلغ دریافت‌شده فقط برای مدیر کل مجاز است' }, { status: 403 });
     }
 
     // Deleting a recorded payment puts its amount back on what the customer owes

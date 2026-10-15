@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { businessToday, businessTime } from '@/lib/business-day';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -79,8 +80,9 @@ const STEPS = [
   { key: 'done', title: 'قرارداد', icon: CheckCircle2 },
 ] as const;
 
-const today = () => new Date().toISOString().split('T')[0];
-const nowTime = () => new Date().toTimeString().slice(0, 5);
+// Oman time, whatever timezone the phone or computer is set to
+const today = () => businessToday();
+const nowTime = () => businessTime();
 const allChecked = () => Object.fromEntries(HANDOVER_CHECKLIST_ITEMS.map(i => [i.key, true]));
 
 function daysBetween(start: string, end: string) {
@@ -155,7 +157,7 @@ function fillFromReservation(d: Draft, res: CarReservation | undefined, cars: Ca
     rentalDays: days,
     totalPrice: res.totalPrice || d.totalPrice,
     dailyRate: days && res.totalPrice ? Math.round((res.totalPrice / days) * 1000) / 1000 : car?.dailyRate || d.dailyRate,
-    depositAmount: res.depositPaid || car?.depositAmount || d.depositAmount,
+    depositAmount: res.depositPaid ?? car?.depositAmount ?? d.depositAmount,
   };
 }
 
@@ -166,7 +168,9 @@ function fillGaps(d: Draft, res: CarReservation | undefined, cars: Car[], contra
   const out = { ...d };
   (Object.keys(filled) as (keyof Draft)[]).forEach(k => {
     const cur = out[k];
-    if (cur === '' || cur === 0 || cur === undefined) (out as any)[k] = filled[k];
+    // Money fields: 0 is a real amount (e.g. no deposit), only a missing value is a gap
+    const money = k === 'depositAmount' || k === 'totalPrice';
+    if (cur === '' || cur === undefined || (!money && cur === 0)) (out as any)[k] = filled[k];
   });
   return out;
 }

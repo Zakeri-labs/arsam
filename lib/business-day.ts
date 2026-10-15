@@ -12,5 +12,10 @@ export function businessToday(now: Date = new Date()): string {
   }).format(now);
 }
 
+/** Current time (HH:MM, 24h) in the business timezone; with `at`, that moment's Oman time. */
+export function businessTime(at: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: BUSINESS_TZ, hour: '2-digit', minute: '2-digit', hour12: false }).format(at);
+}
+
 export const PAST_RESERVATION_MESSAGE =
   'ثبت رزرو برای روزهای گذشته ممکن نیست؛ بعد از ساعت ۱۲ شب، روز قبل بسته می‌شود. تاریخ تحویل باید امروز یا بعد از آن باشد.';
