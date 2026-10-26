@@ -82,6 +82,11 @@ interface ServiceRequest {
   queueStatus?: string;
 }
 
+// The screen a user lands on after login: the received requests when they may see them,
+// otherwise their first allowed section (e.g. the cars-only fleet manager lands on cars).
+const defaultScreenFor = (allowedScreens: ('services' | 'requests' | 'qms' | 'customers' | 'cars')[]) =>
+  allowedScreens.includes('requests') ? 'requests' : allowedScreens[0];
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState<boolean>(true);
@@ -272,7 +277,7 @@ export default function AdminPage() {
             // 'access' and 'settings' are not per-user screens: they belong to the general manager only
             const canOpenSaved = savedScreen === 'access' || savedScreen === 'settings' ? data.user.role === 'superadmin' : data.user.allowedScreens.includes(savedScreen);
             if (!savedScreen || !canOpenSaved) {
-              setActiveScreen(data.user.allowedScreens.includes('cars') ? 'cars' : data.user.allowedScreens[0]);
+              setActiveScreen(defaultScreenFor(data.user.allowedScreens));
             }
           }
         }
@@ -340,7 +345,7 @@ export default function AdminPage() {
         if (data.user) {
           setCurrentUser(data.user);
           if (Array.isArray(data.user.allowedScreens) && data.user.allowedScreens.length > 0) {
-            setActiveScreen(data.user.allowedScreens.includes('cars') ? 'cars' : data.user.allowedScreens[0]);
+            setActiveScreen(defaultScreenFor(data.user.allowedScreens));
           }
         }
         toast.success(`خوش آمدید ${data.user?.name || ''}! ورود موفقیت‌آمیز بود`);
