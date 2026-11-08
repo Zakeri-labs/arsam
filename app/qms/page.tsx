@@ -143,8 +143,10 @@ const CATEGORIES: Category[] = [
 // ─── Live Clock ──────────────────────────────────────────────────────────────
 
 function LiveClock({ lang }: { lang: Lang }) {
-  const [now, setNow] = useState(new Date());
+  // Starts empty and is set in the browser: a time rendered on the server never matches the first browser render
+  const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
+    setNow(new Date());
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
@@ -156,10 +158,10 @@ function LiveClock({ lang }: { lang: Lang }) {
   return (
     <div className="flex flex-col items-end">
       <span className="text-white font-black text-2xl sm:text-3xl tabular-nums tracking-tight">
-        {now.toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+        {now ? now.toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '\u00A0'}
       </span>
       <span className="text-white/40 text-xs font-medium mt-0.5">
-        {now.toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+        {now ? now.toLocaleDateString(dateLocale, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '\u00A0'}
       </span>
     </div>
   );

@@ -246,9 +246,11 @@ export default function Home() {
             const serviceParam = urlParams.get('service') || urlParams.get('request') || urlParams.get('req');
             if (serviceParam) {
               const targetId = (serviceParam === 'true' || serviceParam === 'other') ? 'other-services' : serviceParam;
-              const currentLang = selectedLanguage || 'fa';
+              const linkLang = urlParams.get('lang') as Language;
+              const currentLang = (linkLang && ['en', 'fa', 'ar'].includes(linkLang)) ? linkLang : (selectedLanguage || 'fa');
               const dynList = data[currentLang] || [];
-              const matched = dynList.find((s: Service) => s.id === targetId);
+              // A service deleted in the panel falls back to the general request form
+              const matched = dynList.find((s: Service) => s.id === targetId) || dynList.find((s: Service) => s.id === 'other-services');
               if (matched) {
                 setSelectedService(matched);
               }

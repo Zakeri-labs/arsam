@@ -178,7 +178,9 @@ export async function getServicesDB(): Promise<ServicesDB> {
       return { en, fa, ar, uaeServiceIds, omanServiceIds };
     }
   } catch (error) {
+    // Rethrown: a failed read must never look like an empty table, or the defaults would be written over real data
     console.error('Error reading services DB:', error);
+    throw error;
   }
 
   return { en: [], fa: [], ar: [], uaeServiceIds: [], omanServiceIds: [] };
@@ -203,7 +205,7 @@ export async function initializeDBIfNeeded(): Promise<ServicesDB> {
 /**
  * Saves or updates ServicesDB into individual rows in the `public.services` table.
  */
-export async function saveServicesDB(db: ServicesDB): Promise<boolean> {
+export async function saveServicesDB(db: ServicesDB, onlyId?: string): Promise<boolean> {
   try {
     const enMap = new Map(db.en.map(s => [s.id, s]));
     const faMap = new Map(db.fa.map(s => [s.id, s]));
@@ -211,7 +213,8 @@ export async function saveServicesDB(db: ServicesDB): Promise<boolean> {
     const uaeSet = new Set(db.uaeServiceIds || []);
     const omanSet = new Set(db.omanServiceIds || []);
 
-    const allIds = Array.from(
+    // With onlyId just that service is written, so a list held by an older tab cannot bring back deleted services
+    const allIds = onlyId ? [onlyId] : Array.from(
       new Set([...db.en.map(s => s.id), ...db.fa.map(s => s.id), ...db.ar.map(s => s.id)])
     );
 

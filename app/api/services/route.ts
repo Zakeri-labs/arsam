@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { initializeDBIfNeeded, saveServicesDB } from '@/lib/db';
+import { deleteServiceRow, initializeDBIfNeeded, saveServicesDB } from '@/lib/db';
 import { requireAdmin } from '@/lib/auth-check';
 
 export async function GET() {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const success = await saveServicesDB(body);
+    const success = await saveServicesDB(body, typeof body.onlyId === 'string' && body.onlyId ? body.onlyId : undefined);
 
     if (success) {
       return NextResponse.json({ success: true, message: 'تغییرات با موفقیت ذخیره شد.' });
@@ -46,5 +46,30 @@ export async function POST(request: Request) {
       { error: 'خطایی در سرور رخ داده است' },
       { status: 500 }
     );
+  }
+}
+
+// Saving the service list only adds and updates rows, so a service is removed with its own request.
+export async function DELETE(request: Request) {
+  try {
+    const denied = await requireAdmin(['services']);
+    if (denied) return denied;
+
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) {
+      return NextResponse.json({ error: 'شناسه خدمت الزامی است' }, { status: 400 });
+    }
+    // The site always offers this service; lib/db.ts recreates it when it is missing
+    if (id === 'other-services') {
+      return NextResponse.json({ error: 'این خدمت ثابت است و حذف نمی‌شود' }, { status: 400 });
+    }
+
+    if (!(await deleteServiceRow(id))) {
+      return NextResponse.json({ error: 'خطا در حذف خدمت' }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting service:', error);
+    return NextResponse.json({ error: 'خطایی در سرور رخ داده است' }, { status: 500 });
   }
 }

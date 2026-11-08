@@ -275,7 +275,10 @@ export default function AdminPage() {
           if (Array.isArray(data.user.allowedScreens) && data.user.allowedScreens.length > 0) {
             const savedScreen = localStorage.getItem('admin_active_screen');
             // 'access' and 'settings' are not per-user screens: they belong to the general manager only
-            const canOpenSaved = savedScreen === 'access' || savedScreen === 'settings' ? data.user.role === 'superadmin' : data.user.allowedScreens.includes(savedScreen);
+            const canOpenSaved = savedScreen === 'access' || savedScreen === 'settings'
+              ? data.user.role === 'superadmin'
+              // Reports has no permission of its own: it comes with the cars section
+              : data.user.allowedScreens.includes(savedScreen === 'reports' ? 'cars' : savedScreen);
             if (!savedScreen || !canOpenSaved) {
               setActiveScreen(defaultScreenFor(data.user.allowedScreens));
             }
@@ -442,7 +445,8 @@ export default function AdminPage() {
 
   const handleDeleteClick = async (serviceId: string) => {
     if (!db) return;
-    if (!(await confirmDialog(`آیا مطمئن هستید که می‌خواهید خدمت با شناسه «${serviceId}» را حذف کنید؟`))) return;
+    const serviceName = db.fa.find(s => s.id === serviceId)?.title || serviceId;
+    if (!(await confirmDialog(`خدمت «${serviceName}» برای همیشه حذف می‌شود و قابل بازگشت نیست. ادامه می‌دهید؟`))) return;
 
     // Filter out the service
     const updatedDb: ServicesDB = {
@@ -455,11 +459,7 @@ export default function AdminPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/services', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedDb),
-      });
+      const res = await fetch(`/api/services?id=${encodeURIComponent(serviceId)}`, { method: 'DELETE' });
 
       if (res.ok) {
         setDb(updatedDb);
@@ -469,7 +469,7 @@ export default function AdminPage() {
         toast.error(errData.error || 'خطا در حذف خدمت');
       }
     } catch (err) {
-      toast.error('خطا در ذخیره‌سازی اطلاعات در سرور');
+      toast.error('خطا در حذف خدمت؛ دوباره تلاش کنید');
     } finally {
       setLoading(false);
     }
@@ -677,7 +677,7 @@ export default function AdminPage() {
       const res = await fetch('/api/services', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedDb),
+        body: JSON.stringify({ ...updatedDb, onlyId: finalId }),
       });
 
       if (res.ok) {
@@ -1552,6 +1552,7 @@ export default function AdminPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteClick(service.id)}
+                              style={service.id === 'other-services' ? { visibility: 'hidden' } : undefined}
                               className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all active:scale-95 cursor-pointer"
                               title="حذف خدمت"
                             >
