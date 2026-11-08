@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Car as CarIcon, Calendar as CalendarIcon, DollarSign, Plus, Search,
   Edit3, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Clock,
-  AlertTriangle, Upload, FileText, UserCheck, Phone, ShieldCheck,
+  AlertTriangle, Upload, FileText, ShieldCheck,
   CreditCard, Landmark, Wallet, Check, X, Info, ExternalLink, Image as ImageIcon,
   Camera, Loader2, ArrowUpRight, ArrowDownRight, RefreshCw, UserPlus, Filter, ClipboardList, Key, Fuel, Gauge, Download, Link2, Ban
 } from 'lucide-react';
@@ -22,15 +22,9 @@ import FancySelect from '@/components/ui/fancy-select';
 import { useContractPdf, contractShareUrl, revokeContractLink, REVOKE_LINK_MESSAGE } from './use-contract-pdf';
 import { buildContractData } from '@/lib/contract-data';
 import { confirmDialog } from '@/components/confirm-dialog';
-import { businessToday, PAST_RESERVATION_MESSAGE } from '@/lib/business-day';
+import { businessToday } from '@/lib/business-day';
 import { MediaError, compressImage, prepareVideo, uploadContractFile } from '@/lib/contract-media';
 import SignaturePadModal from '@/components/signature-pad-modal';
-import CompactPicker, { type CompactPickerOption } from '@/components/compact-picker';
-
-interface CRMClient {
-  name: string;
-  phone: string;
-}
 
 export type { CarContract };
 
@@ -69,18 +63,20 @@ const formatDateTime = (iso?: string) => {
 };
 
 interface CarsScreenProps {
+  onTabChange?: (tab: 'calendar' | 'fleet' | 'contracts' | 'accounting') => void;
   initialTab?: 'calendar' | 'fleet' | 'contracts' | 'accounting';
   // General manager only: delete a contract (even after handover) with its reservation and accounting rows
   canDeleteContracts?: boolean;
 }
 
-export default function CarsScreen({ initialTab, canDeleteContracts = false }: CarsScreenProps = {}) {
+export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts = false }: CarsScreenProps = {}) {
   const [activeTab, setActiveTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>(initialTab || 'calendar');
 
   const handleTabChange = (tab: 'calendar' | 'fleet' | 'contracts' | 'accounting') => {
+    onTabChange?.(tab);
     setActiveTab(tab);
     try {
-      localStorage.setItem('admin_car_sub_tab', tab);
+      localStorage.setItem('admin_car_sub_tab_v2', tab);
     } catch (e) {}
   };
 
@@ -94,15 +90,13 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const [cars, setCars] = useState<Car[]>([]);
   const [reservations, setReservations] = useState<CarReservation[]>([]);
   const [transactions, setTransactions] = useState<CarTransaction[]>([]);
-  const [crmClients, setCrmClients] = useState<CRMClient[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Contracts Mock Data & State
   const [contracts, setContracts] = useState<CarContract[]>([]);
   const [savingCar, setSavingCar] = useState(false);
-  const [savingRes, setSavingRes] = useState(false);
   // Synchronous locks: a state flag only updates on the next render, so a fast double-click could still slip through
-  const saveLocks = useRef({ car: false, res: false, tx: false });
+  const saveLocks = useRef({ car: false, tx: false });
 
   // Hover Tooltip State for Calendar Gantt Bar
   const [hoveredRes, setHoveredRes] = useState<{ res: CarReservation; car: Car; x: number; y: number } | null>(null);
@@ -119,13 +113,12 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const [isCarModalOpen, setIsCarModalOpen] = useState(false);
   const [editingCar, setEditingCar] = useState<Car | null>(null);
 
-  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const [selectedResDetails, setSelectedResDetails] = useState<CarReservation | null>(null);
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   // Handover wizard: new handover (contract null), edit (step 1) or the finished contract (download / share)
-  const [wizard, setWizard] = useState<{ contract: CarContract | null; startAtDone?: boolean; reservationId?: string } | null>(null);
+  const [wizard, setWizard] = useState<{ contract: CarContract | null; startAtDone?: boolean } | null>(null);
   const contractPdf = useContractPdf();
 
   const handleDownloadContract = async (cnt: CarContract) => {
@@ -166,12 +159,13 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   };
 
   const renderContractActions = (cnt: CarContract) => (
-        <div className="flex flex-wrap items-center justify-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-center gap-1 md:gap-1.5">
           <button
             onClick={() => handleDownloadContract(cnt)}
             disabled={contractPdf.busy}
             title="دانلود قرارداد PDF"
-            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] transition-all cursor-pointer disabled:opacity-50"
+            aria-label="دانلود قرارداد PDF"
+            className="inline-flex items-center gap-1 px-2 md:px-3 py-1.5 rounded-xl bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-black font-extrabold text-[11px] focus-visible:ring-2 focus-visible:ring-gold/60 transition-all cursor-pointer disabled:opacity-50"
           >
             {contractPdf.busy ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             <span>PDF</span>
@@ -179,14 +173,16 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           <button
             onClick={() => handleCopyContractLink(cnt)}
             title="کپی لینک دانلود قرارداد برای مشتری"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+            aria-label="کپی لینک دانلود قرارداد برای مشتری"
+            className="inline-flex h-8 w-8 md:h-7 md:w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 focus-visible:ring-2 focus-visible:ring-gold/60 transition-colors cursor-pointer"
           >
             <Link2 size={14} />
           </button>
           <button
             onClick={() => handleRevokeContractLink(cnt)}
             title="باطل کردن لینک‌های قبلی و ساخت لینک جدید"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-rose-400 hover:border-rose-400/40 transition-colors cursor-pointer"
+            aria-label="باطل کردن لینک‌های قبلی و ساخت لینک جدید"
+            className="inline-flex h-8 w-8 md:h-7 md:w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-rose-400 hover:border-rose-400/40 focus-visible:ring-2 focus-visible:ring-gold/60 transition-colors cursor-pointer"
           >
             <Ban size={14} />
           </button>
@@ -194,15 +190,28 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
             <button
               onClick={() => setReturnModalResId(cnt.reservationId)}
               title="ثبت عودت: تصاویر و ویدیوهای بازگشت خودرو و امضای مشتری"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+              aria-label="ثبت عودت: تصاویر و ویدیوهای بازگشت خودرو و امضای مشتری"
+              className="inline-flex h-8 w-8 md:h-7 md:w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 focus-visible:ring-2 focus-visible:ring-gold/60 transition-colors cursor-pointer"
             >
               <Camera size={14} />
+            </button>
+          )}
+          {reservations.some(r => r.id === cnt.reservationId) && (
+            <button
+              onClick={() => setSelectedResDetails(reservations.find(r => r.id === cnt.reservationId)!)}
+              title="پرداخت‌ها و وضعیت مالی این قرارداد"
+              aria-label="پرداخت‌ها و وضعیت مالی این قرارداد"
+              className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/5 px-1.5 text-white/70 hover:text-emerald-300 hover:border-emerald-400/40 focus-visible:ring-2 focus-visible:ring-gold/60 md:h-7 md:w-7 md:px-0 transition-colors cursor-pointer"
+            >
+              <Wallet size={14} />
+              <span className="md:hidden text-[11px] font-bold">پرداخت</span>
             </button>
           )}
           <button
             onClick={() => setWizard({ contract: cnt })}
             title="ویرایش صورتجلسه، اطلاعات قرارداد و تصاویر"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 transition-colors cursor-pointer"
+            aria-label="ویرایش صورتجلسه، اطلاعات قرارداد و تصاویر"
+            className="inline-flex h-8 w-8 md:h-7 md:w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-gold hover:border-gold/40 focus-visible:ring-2 focus-visible:ring-gold/60 transition-colors cursor-pointer"
           >
             <Edit3 size={14} />
           </button>
@@ -210,7 +219,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
             <button
               onClick={() => handleDeleteContract(cnt)}
               title="حذف قرارداد (مدیر کل)"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 transition-colors cursor-pointer"
+              aria-label="حذف قرارداد (مدیر کل)"
+              className="inline-flex h-8 w-8 md:h-7 md:w-7 items-center justify-center rounded-lg text-rose-400/70 hover:bg-rose-500/15 hover:text-rose-400 focus-visible:ring-2 focus-visible:ring-gold/60 transition-colors cursor-pointer"
             >
               <Trash2 size={14} />
             </button>
@@ -219,10 +229,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   );
 
   const handleDeleteContract = async (cnt: CarContract) => {
-    // Deleting the contract also removes its accounting rows; the reservation can then be cancelled or deleted
+    // Deleting the contract also removes its rental and accounting rows, which frees the car
     const linkedTx = cnt.reservationId ? transactions.filter(t => t.reservationId === cnt.reservationId) : [];
     if (reservations.find(r => r.id === cnt.reservationId)?.returnSignature) {
-      toast.error('مشتری تصاویر و ویدیوهای عودت این رزرو را امضا کرده است؛ این قرارداد دیگر قابل حذف نیست');
+      toast.error('مشتری تصاویر و ویدیوهای عودت این اجاره را امضا کرده است؛ این قرارداد دیگر قابل حذف نیست');
       return;
     }
     const handedOver = cnt.handoverStatus !== 'pending_delivery';
@@ -231,7 +241,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       linkedTx.length
         ? `این ${linkedTx.length} سند مالی هم خودکار از حسابداری حذف می‌شوند:\n${linkedTx.map(t => `• ${t.description || t.type} (${t.amount})`).join('\n')}`
         : '',
-      cnt.reservationId ? 'رزرو مربوط باقی می‌ماند و بعد از حذف قرارداد می‌توانید آن را لغو یا حذف کنید.' : '',
+      'خودرو هم در تقویم آزاد می‌شود.',
       handedOver ? '⚠️ برای این قرارداد صورتجلسه تحویل ثبت شده است؛ فقط در صورتی حذف کنید که قرارداد تستی یا اشتباه است.' : '',
       'این عمل قابل بازگشت نیست.',
     ].filter(Boolean);
@@ -246,6 +256,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       }
       setContracts(prev => prev.filter(c => !data.contractIds.includes(c.id)));
       setTransactions(prev => prev.filter(t => !data.transactionIds.includes(t.id)));
+      setReservations(prev => prev.filter(r => r.id !== cnt.reservationId));
+      fetchAllData();
       toast.success(`قرارداد ${cnt.id} و ${data.transactionIds.length} سند مالی آن حذف شد`);
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
@@ -260,42 +272,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   });
   const [uploadingCarImg, setUploadingCarImg] = useState(false);
 
-  // Form States - Reservation
-  const [resForm, setResForm] = useState<{
-    carId: string;
-    carTitle?: string;
-    customerName: string;
-    customerPhone: string;
-    customerNationalId?: string;
-    startDate: string;
-    endDate: string;
-    customDailyRate: number;
-    discountType: 'amount' | 'percent';
-    discountValue: number;
-    totalPrice: number;
-    depositPaid: number;
-    status: 'confirmed' | 'active' | 'completed' | 'cancelled';
-    notes?: string;
-  }>({
-    carId: '',
-    carTitle: '',
-    customerName: '',
-    customerPhone: '',
-    startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0],
-    customDailyRate: 10,
-    discountType: 'amount',
-    discountValue: 0,
-    totalPrice: 0,
-    depositPaid: 0, // Default 0
-    status: 'confirmed',
-    notes: ''
-  });
-
-  const [customerSelectMode, setCustomerSelectMode] = useState<'existing' | 'new'>('existing');
-  const [selectedClient, setSelectedClient] = useState<CRMClient | null>(null);
-  const [clientSearchQuery, setClientSearchQuery] = useState('');
-  const [showClientDropdown, setShowClientDropdown] = useState(false);
 
   // Form States - Transaction
   const [txForm, setTxForm] = useState<{
@@ -339,11 +315,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const fetchAllData = async () => {
     setLoading(true);
     try {
-      const [carsRes, resRes, txRes, crmRes, contractsRes] = await Promise.all([
+      const [carsRes, resRes, txRes, contractsRes] = await Promise.all([
         fetch('/api/cars').then(r => r.json()),
         fetch('/api/cars/reservations').then(r => r.json()),
         fetch('/api/cars/transactions').then(r => r.json()),
-        fetch('/api/requests').then(r => r.json()).catch(() => []),
         fetch('/api/cars/contracts').then(r => r.json()).catch(() => [])
       ]);
 
@@ -351,20 +326,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       if (Array.isArray(carsRes)) setCars(carsRes);
       if (Array.isArray(resRes)) setReservations(resRes);
       if (Array.isArray(txRes)) setTransactions(txRes);
-
-      // Extract unique CRM clients from requests
-      if (Array.isArray(crmRes)) {
-        const clientMap = new Map<string, CRMClient>();
-        for (const req of crmRes) {
-          if (req.phone && req.name) {
-            const cleanPhone = req.phone.trim();
-            if (!clientMap.has(cleanPhone)) {
-              clientMap.set(cleanPhone, { name: req.name.trim(), phone: cleanPhone });
-            }
-          }
-        }
-        setCrmClients(Array.from(clientMap.values()));
-      }
     } catch (err) {
       console.error('Failed loading car management data:', err);
       toast.error('خطا در بارگذاری اطلاعات');
@@ -431,7 +392,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     if (!added.length) return;
     try {
       await saveReturnMedia(current, [...(current.returnPhotos || []), ...added]);
-      toast.success('فایل‌های عودت در پرونده رزرو ثبت شد');
+      toast.success('فایل‌های عودت در پرونده اجاره ثبت شد');
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -440,7 +401,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const handleRemoveReturnMedia = async (reservation: CarReservation, index: number) => {
     const current = reservations.find(r => r.id === reservation.id) ?? reservation;
     if (current.returnSignature) return;
-    if (!(await confirmDialog({ title: 'حذف فایل', message: 'این فایل از پرونده رزرو حذف شود؟', confirmText: 'حذف' }))) return;
+    if (!(await confirmDialog({ title: 'حذف فایل', message: 'این فایل از پرونده اجاره حذف شود؟', confirmText: 'حذف' }))) return;
     try {
       await saveReturnMedia(current, (current.returnPhotos || []).filter((_, i) => i !== index));
     } catch (err: any) {
@@ -592,266 +553,34 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
   };
 
-  // --- CRM & RESERVATION CLIENTS POOL ---
-  const allClients = useMemo(() => {
-    const clientMap = new Map<string, CRMClient>();
-
-    for (const c of crmClients) {
-      if (c.phone && c.name) {
-        const clean = normalizeDigits(c.phone).replace(/[^0-9+]/g, '');
-        if (clean) clientMap.set(clean, { name: c.name.trim(), phone: c.phone.trim() });
-      }
-    }
-
-    for (const r of reservations) {
-      if (r.customerPhone && r.customerName) {
-        const clean = normalizeDigits(r.customerPhone).replace(/[^0-9+]/g, '');
-        if (clean && !clientMap.has(clean)) {
-          clientMap.set(clean, { name: r.customerName.trim(), phone: r.customerPhone.trim() });
-        }
-      }
-    }
-
-    return Array.from(clientMap.values());
-  }, [crmClients, reservations]);
-
-  // Live Phone Match Check
-  const matchedExistingClient = useMemo(() => {
-    if (customerSelectMode !== 'new' || !resForm.customerPhone) return null;
-    const clean = normalizeDigits(resForm.customerPhone).replace(/[^0-9+]/g, '');
-    if (!clean || clean.length < 4) return null;
-    return allClients.find(c => normalizeDigits(c.phone).replace(/[^0-9+]/g, '') === clean) || null;
-  }, [customerSelectMode, resForm.customerPhone, allClients]);
-
-  // --- RESERVATION HANDLERS & PRICING CALCULATOR ---
-  const calculatePricing = (
-    carId: string,
-    sDate: string,
-    eDate: string,
-    customDailyRateInput?: number,
-    discType: 'amount' | 'percent' = 'amount',
-    discVal: number = 0
-  ) => {
-    const car = cars.find(c => c.id === carId);
-    const rate = (customDailyRateInput !== undefined && customDailyRateInput >= 0)
-      ? customDailyRateInput
-      : (car ? car.dailyRate : 10);
-
-    let days = 1;
-    if (sDate && eDate) {
-      try {
-        const start = new Date(sDate);
-        const end = new Date(eDate);
-        days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24)));
-      } catch (err) {}
-    }
-
-    // Work in integer baisa (1 OMR = 1000 baisa) so percent discounts are exact to 3 decimals
-    const grossBaisa = Math.round(rate * days * 1000);
-    const discountBaisa = discType === 'percent'
-      ? Math.round(Number((grossBaisa * Math.min(100, Math.max(0, discVal)) / 100).toPrecision(12)))
-      : Math.min(grossBaisa, Math.round(Math.max(0, discVal) * 1000));
-
-    const grossTotal = grossBaisa / 1000;
-    const discountAmount = discountBaisa / 1000;
-    const finalTotal = Math.max(0, grossBaisa - discountBaisa) / 1000;
-
-    return {
-      rate,
-      days,
-      grossTotal,
-      discountAmount,
-      finalTotal
-    };
-  };
-
-  const updateResFormPricing = (updates: Partial<typeof resForm>) => {
-    setResForm(prev => {
-      const next = { ...prev, ...updates };
-
-      if (updates.carId && updates.carId !== prev.carId) {
-        const car = cars.find(c => c.id === updates.carId);
-        if (car) {
-          next.customDailyRate = car.dailyRate;
-          next.carTitle = car.title;
-          next.depositPaid = car.depositAmount ?? 40;
-        }
-      }
-
-      const calc = calculatePricing(
-        next.carId,
-        next.startDate,
-        next.endDate,
-        next.customDailyRate,
-        next.discountType,
-        next.discountValue
-      );
-
-      return {
-        ...next,
-        customDailyRate: calc.rate,
-        totalPrice: calc.finalTotal
-      };
-    });
-  };
-
-  const handleOpenAddReservation = (preselectedCarId?: string) => {
-    const selectedCar = cars.find(c => c.id === (preselectedCarId || cars[0]?.id));
-    const rate = selectedCar ? selectedCar.dailyRate : 10;
-    const defaultDays = 3;
-    const sDate = businessToday();
-    const eDate = new Date(Date.now() + defaultDays * 86400000).toISOString().split('T')[0];
-
-    const calc = calculatePricing(selectedCar?.id || '', sDate, eDate, rate, 'amount', 0);
-
-    setResForm({
-      carId: selectedCar?.id || '',
-      carTitle: selectedCar?.title || '',
-      customerName: '',
-      customerPhone: '',
-      customerNationalId: '',
-      startDate: sDate,
-      endDate: eDate,
-      customDailyRate: rate,
-      discountType: 'amount',
-      discountValue: 0,
-      totalPrice: calc.finalTotal,
-      depositPaid: selectedCar ? selectedCar.depositAmount ?? 40 : 40,
-      status: 'confirmed',
-      notes: ''
-    });
-
-    setCustomerSelectMode('existing');
-    setSelectedClient(null);
-    setClientSearchQuery('');
-    setShowClientDropdown(false);
-    setIsReservationModalOpen(true);
-  };
-
-  const handleSaveReservation = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!resForm.carId || !resForm.customerName || !resForm.startDate || !resForm.endDate) {
-      toast.error('لطفا تمامی فیلدهای الزامی رزرو را تکمیل نمایید');
-      return;
-    }
-
-    if (resForm.startDate < businessToday()) {
-      toast.error(PAST_RESERVATION_MESSAGE);
-      return;
-    }
-
-    if (customerSelectMode === 'new') {
-      if (!resForm.customerPhone || resForm.customerPhone.trim() === '') {
-        toast.error('وارد کردن شماره تلفن تماس برای مشتری جدید الزامی است');
-        return;
-      }
-
-      const cleanPhone = normalizeDigits(resForm.customerPhone).replace(/[^0-9+]/g, '');
-      const existing = allClients.find(c => normalizeDigits(c.phone).replace(/[^0-9+]/g, '') === cleanPhone);
-      if (existing && existing.name !== resForm.customerName.trim()) {
-        toast.error(`خطا: شماره تماس ${resForm.customerPhone} متعلق به «${existing.name}» است. لطفاً از پرونده مشتری استفاده نمایید.`);
-        return;
-      }
-    } else {
-      if (!resForm.customerPhone || resForm.customerPhone.trim() === '') {
-        toast.error('لطفاً یک مشتری از لیست انتخاب کنید');
-        return;
-      }
-    }
-
-    if (saveLocks.current.res) return;
-    saveLocks.current.res = true;
-    setSavingRes(true);
-    try {
-      const res = await fetch('/api/cars/reservations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(resForm)
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        toast.success('رزرو خودرو با موفقیت ثبت گردید');
-        setIsReservationModalOpen(false);
-
-        const newRes = data.reservation || { id: 'res-' + Date.now(), ...resForm };
-        setReservations(prev => [newRes, ...prev.filter(r => r.id !== newRes.id)]);
-        const d = new Date(resForm.startDate);
-        if (!isNaN(d.getTime())) {
-          setCalendarAnchorDate(d);
-        }
-
-        const sideEffects: Promise<unknown>[] = [];
-
-        // Update car status to rented if reservation is active today
-        const todayStr = new Date().toISOString().split('T')[0];
-        if (resForm.startDate! <= todayStr && resForm.endDate! >= todayStr) {
-          sideEffects.push(fetch('/api/cars', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: resForm.carId, status: 'rented' })
-          }));
-          setCars(prev => prev.map(c => c.id === resForm.carId ? { ...c, status: 'rented' } : c));
-        }
-
-        // Contract, rent revenue and deposit are all issued and stored server-side
-        const issued: CarTransaction[] = [data.transaction, data.depositTransaction].filter(Boolean);
-        if (issued.length > 0) {
-          setTransactions(prev => [...issued, ...prev.filter(t => !issued.some(i => i.id === t.id))]);
-        }
-        if (data.syncError) {
-          toast.error('رزرو ذخیره شد اما به‌روزرسانی قرارداد و حسابداری ناموفق بود');
-        } else if (data.overpaid > 0) {
-          toast.warning(`مشتری ${data.overpaid.toLocaleString()} OMR بیشتر از مبلغ جدید پرداخت کرده است؛ این مبلغ باید عودت داده شود`);
-        } else if (data.chainError) {
-          toast.error('رزرو ثبت شد اما صدور قرارداد و ثبت درآمد ناموفق بود');
-        } else if (data.contract) {
-          toast.success(`قرارداد ${data.contract.id} صادر شد؛ مبلغ اجاره تا ثبت پرداخت، «در انتظار پرداخت» است`);
-        }
-
-        // Wait for the follow-up writes so the refresh below can't overwrite them with stale data
-        await Promise.allSettled(sideEffects);
-        await fetchAllData();
-      } else {
-        toast.error(data.error || 'خطا در ثبت رزرو');
-      }
-    } catch (err) {
-      toast.error('خطای برقراری ارتباط با سرور');
-    } finally {
-      saveLocks.current.res = false;
-      setSavingRes(false);
-    }
-  };
-
   const handleDeleteReservation = async (id: string) => {
     const linkedContract = contracts.find(c => c.reservationId === id);
     const message = linkedContract
-      ? `با حذف این رزرو، قرارداد ${linkedContract.id} و درآمد/ودیعه ثبت‌شده آن در حسابداری هم حذف می‌شود. ادامه می‌دهید؟`
-      : 'آیا از حذف این رزرو مطمئن هستید؟';
-    if (!(await confirmDialog({ title: 'حذف رزرو', message }))) return;
+      ? `با حذف این اجاره، قرارداد ${linkedContract.id} و درآمد/ودیعه ثبت‌شده آن در حسابداری هم حذف می‌شود. ادامه می‌دهید؟`
+      : 'آیا از حذف این اجاره مطمئن هستید؟';
+    if (!(await confirmDialog({ title: 'حذف اجاره', message }))) return;
     try {
       const res = await fetch(`/api/cars/reservations?id=${id}`, { method: 'DELETE' });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
-        toast.success('رزرو و قرارداد و اسناد مالی مرتبط حذف شد');
+        toast.success('اجاره و قرارداد و اسناد مالی مرتبط حذف شد');
         setSelectedResDetails(null);
         setReservations(prev => prev.filter(r => r.id !== id));
         setContracts(prev => prev.filter(c => c.reservationId !== id));
         setTransactions(prev => prev.filter(t => t.reservationId !== id));
       } else {
-        toast.error(data.error || 'خطا در حذف رزرو');
+        toast.error(data.error || 'خطا در حذف اجاره');
       }
     } catch (err) {
-      toast.error('خطا در حذف رزرو');
+      toast.error('خطا در حذف اجاره');
     }
   };
 
   // Cancelling keeps the reservation, its contract and accounting rows as records (used once the car was handed over)
   const handleCancelReservation = async (reservation: CarReservation) => {
     if (!(await confirmDialog({
-      title: 'لغو رزرو',
-      message: `رزرو «${reservation.customerName} - ${cleanCarTitle(reservation.carTitle || '')}» لغو می‌شود و از تقویم برداشته می‌شود. قرارداد و اسناد مالی آن به‌عنوان سابقه باقی می‌مانند.`,
+      title: 'لغو اجاره',
+      message: `اجاره «${reservation.customerName} - ${cleanCarTitle(reservation.carTitle || '')}» لغو می‌شود و از تقویم برداشته می‌شود. قرارداد و اسناد مالی آن به‌عنوان سابقه باقی می‌مانند.`,
       confirmText: 'بله، لغو شود',
     }))) return;
     try {
@@ -862,14 +591,14 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.success) {
-        toast.error(data.error || 'خطا در لغو رزرو');
+        toast.error(data.error || 'خطا در لغو اجاره');
         return;
       }
       setReservations(prev => prev.map(r => r.id === reservation.id ? { ...r, status: 'cancelled' } : r));
       setSelectedResDetails(null);
       // The server removed the unpaid rent/deposit rows and the car's status follows the bookings: reload both
       await fetchAllData();
-      toast.success('رزرو لغو شد و بدهی پرداخت‌نشده‌ی آن حذف شد');
+      toast.success('اجاره لغو شد و بدهی پرداخت‌نشده‌ی آن حذف شد');
     } catch (err) {
       toast.error('خطای ارتباط با سرور');
     }
@@ -953,8 +682,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         })
       : isAutoIssued && linkedRes
       ? await confirmDialog({
-          title: 'این ردیف مربوط به یک رزرو است',
-          message: `این ردیف به‌صورت خودکار برای رزرو «${linkedRes.customerName} - ${cleanCarTitle(linkedRes.carTitle || '')}»${linkedContract ? ` و قرارداد ${linkedContract.id}` : ''} ثبت شده است. با حذف آن فقط همین ردیف مالی پاک می‌شود و رزرو و قرارداد باقی می‌مانند.\nبرای حذف کامل: اگر خودرو هنوز تحویل نشده، کافی است خود رزرو را از تب «تقویم و رزروها» حذف کنید؛ اگر تحویل شده، قرارداد را در تب «قراردادها و تحویل» حذف کنید (اسناد مالی آن هم حذف می‌شوند) و سپس رزرو را.\nآیا این ردیف حذف شود؟`,
+          title: 'این ردیف مربوط به یک اجاره است',
+          message: `این ردیف به‌صورت خودکار برای اجاره «${linkedRes.customerName} - ${cleanCarTitle(linkedRes.carTitle || '')}»${linkedContract ? ` و قرارداد ${linkedContract.id}` : ''} ثبت شده است. با حذف آن فقط همین ردیف مالی پاک می‌شود و اجاره و قرارداد باقی می‌مانند.\nبرای حذف کامل: اگر خودرو هنوز تحویل نشده، کافی است خود اجاره را از تب «تقویم خودروها» حذف کنید؛ اگر تحویل شده، قرارداد را در تب «قراردادها و تحویل» حذف کنید (اجاره و اسناد مالی آن هم حذف می‌شوند).\nآیا این ردیف حذف شود؟`,
           confirmText: 'فقط این ردیف حذف شود',
         })
       : await confirmDialog('آیا از حذف این تراکنش مالی مطمئن هستید؟');
@@ -1057,26 +786,14 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
     }
   };
 
-  // Opens with no reservation chosen unless one was clicked: defaulting to a reservation that already has a
-  // contract made "new handover" silently continue (and overwrite) that contract.
-  const handleOpenAddHandover = (resId?: string) => {
-    setWizard({ contract: null, reservationId: activeReservations.find(r => r.id === resId)?.id });
-  };
+  // A new contract always opens blank: it can never continue or overwrite another customer's contract
+  const handleOpenAddHandover = () => setWizard({ contract: null });
 
   const handleWizardSaved = (saved: CarContract) => {
     setContracts(prev => [saved, ...prev.filter(c => c.id !== saved.id)]);
-    // Extra-km / accident amounts become their own accounting rows
-    fetch('/api/cars/transactions').then(r => r.json()).then(tx => { if (Array.isArray(tx)) setTransactions(tx); }).catch(() => {});
+    // A new contract adds a rental (calendar, car status) and accounting rows
+    fetchAllData();
   };
-
-  // --- CRM AUTOSUGGEST FILTER ---
-  const filteredCrmSuggestions = useMemo(() => {
-    if (!resForm.customerName || customerSelectMode === 'new') return [];
-    const query = resForm.customerName.toLowerCase().trim();
-    return crmClients.filter(
-      c => c.name.toLowerCase().includes(query) || c.phone.includes(query)
-    ).slice(0, 6);
-  }, [crmClients, resForm.customerName, customerSelectMode]);
 
   // --- ACCOUNTING STATS CALCULATION ---
   const accountingStats = useMemo(() => {
@@ -1182,7 +899,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
   const getCarStatusBadge = (status: Car['status']) => {
     switch (status) {
       case 'available':
-        return { label: 'آماده رزرو', bg: 'rgba(52,211,153,0.15)', text: '#34d399', border: 'rgba(52,211,153,0.3)' };
+        return { label: 'آماده اجاره', bg: 'rgba(52,211,153,0.15)', text: '#34d399', border: 'rgba(52,211,153,0.3)' };
       case 'rented':
         return { label: 'در حال اجاره', bg: 'rgba(248,113,113,0.15)', text: '#f87171', border: 'rgba(248,113,113,0.3)' };
       case 'maintenance':
@@ -1191,36 +908,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
         return { label: 'غیرفعال', bg: 'rgba(156,163,175,0.15)', text: '#9ca3af', border: 'rgba(156,163,175,0.3)' };
     }
   };
-
-  // --- COMPACT PICKER ROWS: model + year + plate, so several units of the same model stay distinguishable ---
-  const renderCarLine = (car: Car | undefined, fallbackTitle?: string) => {
-    const badge = car ? getCarStatusBadge(car.status) : undefined;
-    const plate = car ? cleanCarPlate(car.plateNumber) : '';
-    return (
-      <span className="flex items-center gap-1.5 min-w-0">
-        {badge && <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: badge.text }} title={badge.label} />}
-        <span className="truncate text-xs font-bold text-white">{car ? carModelName(car) : cleanCarTitle(fallbackTitle || 'خودرو')}</span>
-        {car?.modelYear && <span className="shrink-0 text-[10px] text-white/45 font-mono">{car.modelYear}</span>}
-        {plate && (
-          <span className="ms-auto shrink-0 rounded-md border border-gold/30 bg-black/40 px-1.5 py-px font-mono text-[10.5px] font-bold text-gold dir-ltr">
-            {plate}
-          </span>
-        )}
-      </span>
-    );
-  };
-
-  const carPickerOptions: CompactPickerOption[] = [...cars]
-    .sort((a, b) =>
-      carModelName(a).localeCompare(carModelName(b), 'fa') ||
-      (a.modelYear || '').localeCompare(b.modelYear || '') ||
-      cleanCarPlate(a.plateNumber).localeCompare(cleanCarPlate(b.plateNumber), 'en', { numeric: true })
-    )
-    .map(car => ({
-      value: car.id,
-      content: renderCarLine(car),
-      searchText: `${car.title} ${car.titleEn || ''} ${car.modelYear || ''} ${car.plateNumber}`,
-    }));
 
   return (
     <div className="space-y-5 animate-fadeIn text-white font-sans w-full max-w-full overflow-x-hidden min-w-0" dir="rtl">
@@ -1233,24 +920,12 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           </div>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-black text-white tracking-wide truncate">مدیریت خودروها</h1>
-            <p className="text-[11px] text-white/50 truncate">مدیریت ناوگان و جدول رزروها</p>
+            <p className="text-[11px] text-white/50 truncate">مدیریت ناوگان و قراردادها</p>
           </div>
         </div>
 
         {/* 4 SUB-PAGES TABS (Responsive Scrollable Pills) */}
         <div className="grid grid-cols-4 md:flex md:items-center bg-[#07111f] p-1.5 rounded-xl border border-white/10 gap-1 md:gap-1.5 w-full md:w-auto max-w-full shrink-0">
-          <button
-            onClick={() => handleTabChange('calendar')}
-            className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-1 md:px-3.5 py-2 md:py-2.5 rounded-lg text-[10.5px] md:text-xs leading-tight text-center font-black transition-all cursor-pointer min-w-0 ${
-              activeTab === 'calendar'
-                ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
-                : 'text-white/70 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <CalendarIcon size={15} />
-            <span>تقویم و رزروها</span>
-          </button>
-
           <button
             onClick={() => handleTabChange('contracts')}
             className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-1 md:px-3.5 py-2 md:py-2.5 rounded-lg text-[10.5px] md:text-xs leading-tight text-center font-black transition-all cursor-pointer min-w-0 ${
@@ -1262,6 +937,18 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
             <ClipboardList size={15} />
             <span>قراردادها و تحویل</span>
             <span className="hidden md:inline bg-white/20 text-white px-1.5 py-0.5 rounded-full text-[10px]">{contracts.length}</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('calendar')}
+            className={`flex flex-col md:flex-row items-center justify-center gap-1 md:gap-2 px-1 md:px-3.5 py-2 md:py-2.5 rounded-lg text-[10.5px] md:text-xs leading-tight text-center font-black transition-all cursor-pointer min-w-0 ${
+              activeTab === 'calendar'
+                ? 'bg-gradient-to-r from-gold to-amber-500 text-black shadow-lg shadow-gold/20'
+                : 'text-white/70 hover:text-white hover:bg-white/5'
+            }`}
+          >
+            <CalendarIcon size={15} />
+            <span>تقویم خودروها</span>
           </button>
 
           <button
@@ -1295,7 +982,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       {loading && cars.length === 0 && (
         <div className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-10 text-sm font-bold text-white/70">
           <Loader2 size={18} className="animate-spin text-gold" />
-          در حال بارگذاری خودروها، رزروها و قراردادها…
+          در حال بارگذاری خودروها و قراردادها…
         </div>
       )}
 
@@ -1341,17 +1028,10 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
               {/* Status Legend */}
               <div className="hidden lg:flex items-center gap-3 text-[11px] font-bold text-white/70 bg-[#07111f] px-3.5 py-1.5 rounded-xl border border-white/10">
                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> آزاد</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span> رزرو / اجاره</span>
+                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span> در اجاره</span>
                 <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span> سرویس</span>
               </div>
 
-              <button
-                onClick={() => handleOpenAddReservation()}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-extrabold text-xs shadow-lg shadow-emerald-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <Plus size={16} />
-                <span>ثبت رزرو جدید</span>
-              </button>
             </div>
           </div>
 
@@ -1441,15 +1121,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                                     <span className="w-2 h-2 rounded-full bg-white animate-pulse absolute right-1.5"></span>
                                   )}
                                 </div>
-                              ) : (
-                                <button
-                                  onClick={() => handleOpenAddReservation(car.id)}
-                                  className="w-full h-full opacity-0 hover:opacity-100 flex items-center justify-center bg-emerald-500/10 text-emerald-400 rounded-lg text-[10px] font-bold border border-dashed border-emerald-500/30 transition-all cursor-pointer"
-                                  title="افزودن رزرو جدید"
-                                >
-                                  +
-                                </button>
-                              )}
+                              ) : null}
                             </td>
                           );
                         })}
@@ -1481,8 +1153,8 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           {/* RESERVATION LIST CARDS SUMMARY */}
           <div className="bg-[#0b172a] p-4 rounded-2xl border border-white/10 shadow-lg space-y-3">
             <h3 className="text-sm font-black text-white flex items-center gap-2">
-              <span>آخرین رزروهای فعال سیستم</span>
-              <span className="text-xs font-normal text-white/40">({activeReservations.length} رزرو فعال)</span>
+              <span>آخرین اجاره‌های فعال</span>
+              <span className="text-xs font-normal text-white/40">({activeReservations.length} اجاره فعال)</span>
             </h3>
 
             {activeReservations.length > 0 ? (
@@ -1495,7 +1167,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="font-extrabold text-xs text-white block">{res.customerName}</span>
-                        <span className="text-[11px] text-white/50 dir-ltr inline-block">{res.customerPhone}</span>
+                        <span dir="ltr" className="text-[11px] text-white/50 inline-block">{res.customerPhone}</span>
                       </div>
                       <span className={`px-2 py-0.5 rounded-md text-[10px] font-black border ${
                         res.status === 'active' ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' :
@@ -1503,7 +1175,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                         res.status === 'cancelled' ? 'bg-white/10 text-white/50 border-white/20' :
                         'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       }`}>
-                        {res.status === 'completed' ? 'تکمیل شده' : res.status === 'cancelled' ? 'لغو شده' : res.status === 'active' || contracts.some(c => c.reservationId === res.id && c.handoverStatus === 'delivered') ? (res.endDate < businessToday() ? 'تأخیر در عودت' : 'در حال اجاره') : 'تایید شده'}
+                        {res.status === 'completed' ? 'تکمیل شده' : res.status === 'cancelled' ? 'لغو شده' : res.status === 'active' || contracts.some(c => c.reservationId === res.id && c.handoverStatus === 'delivered') ? (res.endDate < businessToday() ? 'تأخیر در عودت' : 'در حال اجاره') : 'در انتظار تحویل'}
                       </span>
                     </div>
 
@@ -1540,7 +1212,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-white/40 text-center py-4">هیچ رزروی هنوز ثبت نشده است.</p>
+              <p className="text-xs text-white/40 text-center py-4">هیچ اجاره‌ای هنوز ثبت نشده است.</p>
             )}
           </div>
 
@@ -1690,7 +1362,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
               className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold to-amber-500 text-black font-black text-xs shadow-lg shadow-gold/20 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
             >
               <Plus size={16} />
-              <span>ثبت صورتجلسه تحویل جدید</span>
+              <span>ثبت قرارداد جدید</span>
             </button>
           </div>
 
@@ -1717,7 +1389,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-white">{cnt.customerName}</span>
-                    <span className="text-[10px] text-white/50 dir-ltr">{cnt.customerPhone}</span>
+                    <span dir="ltr" className="text-[10px] text-white/50 inline-block">{cnt.customerPhone}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#07111f] p-2.5 text-[11px]">
                     <div><span className="block text-white/40">کیلومتر تحویل/عودت</span><span dir="ltr" className="font-mono text-white/80 inline-block">{cnt.initialOdometer.toLocaleString()} / {cnt.returnOdometer ? cnt.returnOdometer.toLocaleString() : '—'} KM</span></div>
@@ -1766,7 +1438,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       </td>
                       <td className="py-3.5 px-4">
                         <span className="font-bold text-white block">{cnt.customerName}</span>
-                        <span className="text-[10px] text-white/50 dir-ltr inline-block">{cnt.customerPhone}</span>
+                        <span dir="ltr" className="text-[10px] text-white/50 inline-block">{cnt.customerPhone}</span>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-white/80">
                         {cnt.initialOdometer.toLocaleString()} / {cnt.returnOdometer ? cnt.returnOdometer.toLocaleString() : '—'} KM
@@ -2176,7 +1848,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       value={carForm.status || 'available'}
                       onChange={v => setCarForm({ ...carForm, status: v })}
                       options={[
-                        { value: 'available', label: 'آماده رزرو', icon: <span className="block h-2 w-2 rounded-full bg-emerald-400" /> },
+                        { value: 'available', label: 'آماده اجاره', icon: <span className="block h-2 w-2 rounded-full bg-emerald-400" /> },
                         { value: 'rented', label: 'در حال اجاره', icon: <span className="block h-2 w-2 rounded-full bg-rose-400" /> },
                         { value: 'maintenance', label: 'در حال سرویس', icon: <span className="block h-2 w-2 rounded-full bg-amber-400" /> },
                         { value: 'disabled', label: 'غیرفعال', icon: <span className="block h-2 w-2 rounded-full bg-gray-400" /> },
@@ -2241,332 +1913,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
       {/* ==================================================================== */}
       {/* MODAL 2: NEW RESERVATION WITH SLEEK COMPACT LAYOUT                   */}
       {/* ==================================================================== */}
-      <AnimatePresence>
-        {isReservationModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md" dir="rtl">
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 30, scale: 0.98 }}
-              className="w-full max-w-xl rounded-t-3xl sm:rounded-2xl border border-white/15 bg-[#0b172a] p-4 sm:p-5 shadow-2xl space-y-4 max-h-[92vh] sm:max-h-[90vh] overflow-y-auto text-xs"
-            >
-              {/* Header */}
-              <div className="flex justify-between items-center pb-1">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
-                    <CalendarIcon size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-white">ثبت رزرو جدید خودرو</h3>
-                    <p className="text-[10.5px] text-white/50">مشخصات اجاره، مشتری و جزییات مالی</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsReservationModalOpen(false)}
-                  disabled={savingRes}
-                  className="disabled:opacity-40 disabled:cursor-not-allowed flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 text-white/50 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveReservation} className="space-y-3.5">
-                {/* 1. SELECT CAR */}
-                <div className="space-y-1.5">
-                  <label className="block text-white/90 font-bold text-[11px] flex items-center gap-1.5">
-                    <CarIcon size={14} className="text-gold" />
-                    <span>خودرو *</span>
-                  </label>
-                  <CompactPicker
-                    value={resForm.carId || ''}
-                    onChange={carId => updateResFormPricing({ carId })}
-                    options={carPickerOptions}
-                    placeholder="انتخاب خودرو"
-                    searchPlaceholder="مدل یا پلاک..."
-                    emptyText="خودرویی یافت نشد"
-                  />
-                </div>
-
-                {/* 2. CUSTOMER SELECTION */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-white/90 font-bold text-[11px] flex items-center gap-1.5">
-                      <UserCheck size={14} className="text-emerald-400" />
-                      <span>اطلاعات مشتری *</span>
-                    </label>
-
-                    <div className="flex bg-[#07111f] p-0.5 rounded-lg border border-white/10 gap-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomerSelectMode('existing');
-                          if (selectedClient) {
-                            setResForm(prev => ({ ...prev, customerName: selectedClient.name, customerPhone: selectedClient.phone }));
-                          }
-                        }}
-                        className={`px-2.5 py-1 sm:py-0.5 rounded text-[10.5px] sm:text-[10px] font-bold transition-all cursor-pointer ${
-                          customerSelectMode === 'existing' ? 'bg-gold text-black' : 'text-white/50 hover:text-white'
-                        }`}
-                      >
-                        مشتریان CRM
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setCustomerSelectMode('new');
-                          setSelectedClient(null);
-                          setResForm(prev => ({ ...prev, customerName: '', customerPhone: '' }));
-                        }}
-                        className={`px-2.5 py-1 sm:py-0.5 rounded text-[10.5px] sm:text-[10px] font-bold transition-all cursor-pointer ${
-                          customerSelectMode === 'new' ? 'bg-emerald-500 text-white' : 'text-white/50 hover:text-white'
-                        }`}
-                      >
-                        + جدید
-                      </button>
-                    </div>
-                  </div>
-
-                  {customerSelectMode === 'existing' ? (
-                    <div>
-                      {selectedClient ? (
-                        <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 p-2.5 rounded-xl">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-white text-xs">{selectedClient.name}</span>
-                            <span className="text-gold font-mono text-[11px] dir-ltr">({selectedClient.phone})</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedClient(null);
-                              setResForm(prev => ({ ...prev, customerName: '', customerPhone: '' }));
-                            }}
-                            className="text-[10px] text-white/60 hover:text-white underline cursor-pointer"
-                          >
-                            تغییر
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={clientSearchQuery}
-                            onChange={e => {
-                              setClientSearchQuery(e.target.value);
-                              setShowClientDropdown(true);
-                            }}
-                            onFocus={() => setShowClientDropdown(true)}
-                            placeholder="جستجوی نام یا شماره تلفن مشتری..."
-                            className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white placeholder-white/30 outline-none focus:border-gold"
-                          />
-
-                          {showClientDropdown && (
-                            <div className="absolute right-0 left-0 top-full mt-1 bg-[#0f1e37] border border-gold/40 rounded-xl shadow-2xl z-30 max-h-48 overflow-y-auto divide-y divide-white/5">
-                              {allClients
-                                .filter(c => 
-                                  !clientSearchQuery || 
-                                  c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) || 
-                                  c.phone.includes(clientSearchQuery)
-                                )
-                                .map((client, idx) => (
-                                  <div
-                                    key={idx}
-                                    onClick={() => {
-                                      setSelectedClient(client);
-                                      setResForm(prev => ({ ...prev, customerName: client.name, customerPhone: client.phone }));
-                                      setShowClientDropdown(false);
-                                    }}
-                                    className="p-2.5 hover:bg-gold/15 cursor-pointer flex justify-between items-center text-[11px]"
-                                  >
-                                    <span className="font-bold text-white">{client.name}</span>
-                                    <span className="font-mono text-gold dir-ltr">{client.phone}</span>
-                                  </div>
-                                ))}
-                              {allClients.filter(c => 
-                                !clientSearchQuery || 
-                                c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) || 
-                                c.phone.includes(clientSearchQuery)
-                              ).length === 0 && (
-                                <div className="p-3 text-center text-white/50 text-[11px]">
-                                  مشتری یافت نشد.{' '}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setCustomerSelectMode('new');
-                                      setShowClientDropdown(false);
-                                    }}
-                                    className="text-gold underline font-bold"
-                                  >
-                                    ثبت مشتری جدید
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <input
-                        type="text"
-                        required
-                        value={resForm.customerName || ''}
-                        onChange={e => setResForm(prev => ({ ...prev, customerName: e.target.value }))}
-                        placeholder="نام و نام خانوادگی *"
-                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
-                      />
-                      <input
-                        type="text"
-                        inputMode="tel"
-                        required
-                        value={resForm.customerPhone || ''}
-                        onChange={e => setResForm(prev => ({ ...prev, customerPhone: normalizeDigits(e.target.value) }))}
-                        placeholder="شماره تماس (+968 91234567) *"
-                        className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold dir-ltr"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. DATES & DAILY RATE (GRID 3 COLUMNS) */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <div>
-                    <label className="block text-white/80 font-bold text-[11px] mb-1">تاریخ تحویل *</label>
-                    <input
-                      type="date"
-                      required
-                      value={resForm.startDate || ''}
-                      min={businessToday()}
-                      onChange={e => updateResFormPricing({ startDate: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold text-[11px] mb-1">تاریخ عودت *</label>
-                    <input
-                      type="date"
-                      required
-                      value={resForm.endDate || ''}
-                      onChange={e => updateResFormPricing({ endDate: e.target.value })}
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold text-[11px] mb-1">نرخ روزانه (OMR) *</label>
-                    <NumericInput
-                      required
-                      value={resForm.customDailyRate}
-                      onValueChange={v => updateResFormPricing({ customDailyRate: v })}
-                      className="w-full rounded-xl border border-gold/40 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-gold font-bold outline-none focus:border-gold"
-                    />
-                  </div>
-                </div>
-
-                {/* 4. DISCOUNT & DEPOSIT */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div>
-                    <div className="flex justify-between items-center mb-1">
-                      <label className="text-white/80 font-bold text-[11px]">تخفیف اجاره:</label>
-                      <div className="flex bg-black/40 p-0.5 rounded border border-white/10">
-                        <button
-                          type="button"
-                          onClick={() => updateResFormPricing({ discountType: 'amount' })}
-                          className={`px-2 py-0.5 rounded text-[10px] sm:text-[9.5px] font-bold ${resForm.discountType === 'amount' ? 'bg-gold text-black' : 'text-white/50'}`}
-                        >
-                          مبلغی
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateResFormPricing({ discountType: 'percent' })}
-                          className={`px-2 py-0.5 rounded text-[10px] sm:text-[9.5px] font-bold ${resForm.discountType === 'percent' ? 'bg-gold text-black' : 'text-white/50'}`}
-                        >
-                          درصدی
-                        </button>
-                      </div>
-                    </div>
-                    <NumericInput
-                      value={resForm.discountValue}
-                      onValueChange={v => updateResFormPricing({ discountValue: v })}
-                      placeholder="0"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-white outline-none focus:border-gold"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-white/80 font-bold text-[11px] mb-1">مبلغ ودیعه (پیش‌فرض: ۰ OMR)</label>
-                    <NumericInput
-                      value={resForm.depositPaid}
-                      onValueChange={v => updateResFormPricing({ depositPaid: v })}
-                      placeholder="0"
-                      className="w-full rounded-xl border border-white/15 bg-[#07111f] p-3 sm:p-2 text-sm sm:text-xs text-emerald-400 font-bold outline-none focus:border-emerald-400"
-                    />
-                  </div>
-                </div>
-
-                {/* 4.5 OPTIONAL NOTES */}
-                <div>
-                  <label className="block text-white/80 font-bold text-[11px] mb-1">یادداشت / توضیحات رزرو (اختیاری)</label>
-                  <textarea
-                    rows={2}
-                    value={resForm.notes || ''}
-                    onChange={e => setResForm({ ...resForm, notes: e.target.value })}
-                    placeholder="توضیحات تکمیلی، مکان تحویل یا نکات ویژه مشتری..."
-                    className="w-full rounded-xl border border-white/15 bg-[#07111f] p-2.5 text-xs text-white outline-none focus:border-gold resize-none"
-                  />
-                </div>
-
-                {/* 5. SUMMARY ROW */}
-                {(() => {
-                  const pricing = calculatePricing(
-                    resForm.carId,
-                    resForm.startDate,
-                    resForm.endDate,
-                    resForm.customDailyRate,
-                    resForm.discountType,
-                    resForm.discountValue
-                  );
-
-                  return (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5">
-                      <div className="text-white/80 text-[11px]">
-                        <span>مدت اجاره: <strong className="text-white">{pricing.days} روز</strong></span>
-                        {pricing.discountAmount > 0 && <span className="mr-3 text-amber-400">(تخفیف: {pricing.discountAmount} OMR)</span>}
-                      </div>
-                      <div className="flex items-center gap-1 text-sm font-black text-emerald-400">
-                        <span>مبلغ کل:</span>
-                        <span className="text-base">{pricing.finalTotal.toLocaleString()}</span>
-                        <OMRIcon size="sm" />
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Actions */}
-                <div className="pt-2 flex flex-col-reverse sm:flex-row justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsReservationModalOpen(false)}
-                    disabled={savingRes}
-                    className="w-full sm:w-auto px-4 py-3 sm:py-2 rounded-xl bg-white/5 hover:bg-white/10 text-white font-bold cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    انصراف
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingRes}
-                    className="w-full sm:w-auto px-5 py-3 sm:py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-110 text-white font-extrabold shadow-lg shadow-emerald-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
-                  >
-                    {savingRes ? (<><Loader2 size={16} className="animate-spin" /><span>در حال ثبت رزرو...</span></>) : 'ثبت رزرو'}
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
 
       {/* ==================================================================== */}
@@ -2592,7 +1938,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       <span className="font-black text-white">تصاویر و ویدیوهای عودت خودرو</span>
                       <span className="text-[10px] text-white/40">{media.length - nVideos} تصویر · {nVideos} ویدیو</span>
                     </div>
-                    <p className="text-[10.5px] leading-5 text-white/45">این فایل‌ها فقط در پرونده رزرو نگهداری می‌شوند و در قرارداد نمی‌آیند.</p>
+                    <p className="text-[10.5px] leading-5 text-white/45">این فایل‌ها فقط در پرونده اجاره نگهداری می‌شوند و در قرارداد نمی‌آیند.</p>
                     {media.length > 0 && (
                       <div className="grid grid-cols-3 gap-2">
                         {media.map((m, i) => {
@@ -2687,7 +2033,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
               className="w-full max-w-md rounded-3xl border border-white/15 bg-[#0b172a] p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
             >
               <div className="flex justify-between items-center border-b border-white/10 pb-3">
-                <h3 className="text-base font-black text-white">اطلاعات رزرو {selectedResDetails.customerName}</h3>
+                <h3 className="text-base font-black text-white">پرداخت و اطلاعات قرارداد: {selectedResDetails.customerName}</h3>
                 <button onClick={() => setSelectedResDetails(null)} className="text-white/40 hover:text-white"><X size={18} /></button>
               </div>
 
@@ -2698,7 +2044,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white/50">تلفن همراه:</span>
-                  <span className="text-gold dir-ltr">{selectedResDetails.customerPhone}</span>
+                  <span dir="ltr" className="text-gold inline-block">{selectedResDetails.customerPhone}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white/50">خودرو:</span>
@@ -2786,10 +2132,9 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
               {handedOverContractForDetails && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-[11px] leading-6 text-amber-200 space-y-1">
                   <p>
-                    خودرو برای این رزرو تحویل شده است (قرارداد <span className="font-mono font-bold">{handedOverContractForDetails.id}</span>)؛ تا وقتی قرارداد باقی است، رزرو قابل لغو یا حذف نیست. به ترتیب:
+                    خودرو برای این اجاره تحویل شده است (قرارداد <span className="font-mono font-bold">{handedOverContractForDetails.id}</span>)؛ تا وقتی قرارداد باقی است، اجاره جدا قابل لغو یا حذف نیست.
                   </p>
-                  <p>۱. حذف قرارداد {handedOverContractForDetails.id} در تب «قراردادها و تحویل»{!canDeleteContracts && ' (توسط مدیر کل)'}؛ اسناد مالی آن هم خودکار حذف می‌شوند.</p>
-                  <p>۲. سپس لغو یا حذف همین رزرو</p>
+                  <p>برای حذف، قرارداد {handedOverContractForDetails.id} را در تب «قراردادها و تحویل» حذف کنید{!canDeleteContracts && ' (توسط مدیر کل)'}؛ اجاره و اسناد مالی آن هم خودکار حذف می‌شوند.</p>
                 </div>
               )}
 
@@ -2800,7 +2145,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       onClick={() => handleCancelReservation(selectedResDetails)}
                       className="px-4 py-2 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/40 text-xs font-bold hover:bg-amber-500/25"
                     >
-                      لغو رزرو
+                      لغو اجاره
                     </button>
                   )}
                   {!handedOverContractForDetails && !selectedResDetails.returnSignature && (
@@ -2808,7 +2153,7 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
                       onClick={() => handleDeleteReservation(selectedResDetails.id)}
                       className="px-4 py-2 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-bold hover:bg-rose-500/30"
                     >
-                      حذف رزرو
+                      حذف اجاره
                     </button>
                   )}
                 </div>
@@ -3045,7 +2390,6 @@ export default function CarsScreen({ initialTab, canDeleteContracts = false }: C
           <HandoverWizard
             contract={wizard.contract}
             startAtDone={wizard.startAtDone}
-            defaultReservationId={wizard.reservationId}
             reservations={reservations}
             cars={cars}
             contracts={contracts}
