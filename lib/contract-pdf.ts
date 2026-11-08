@@ -7,6 +7,11 @@ const A4_W = 595.28; // pt
 const A4_H = 841.89;
 const MARGIN = 12;
 const PIXEL_RATIO = 2;
+const IMAGE_WAIT_MS = 20_000;
+const RENDER_TIMEOUT_MS = 45_000;
+const MISSING_IMAGE = `data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#f4f1ea"/><text x="200" y="156" font-family="sans-serif" font-size="20" fill="#6b7280" text-anchor="middle">Image unavailable</text></svg>'
+)}`;
 
 interface PdfPage {
   jpeg: Uint8Array;
@@ -131,49 +136,114 @@ function buildPdf(pages: PdfPage[]): Blob {
   return new Blob(chunks as BlobPart[], { type: 'application/pdf' });
 }
 
+// Rejects if `work` has not finished in time. The clock waits while the tab is hidden, because
+// browsers pause page rendering there and the work resumes when the customer comes back.
+function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout>;
+    const arm = () => {
+      timer = setTimeout(() => (document.hidden ? arm() : reject(new Error('timed out'))), ms);
+    };
+    arm();
+    work.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
+}
+
+// Finishes when the image has loaded, failed, or run out of time. An image that did not load is
+// swapped for a labelled placeholder: html-to-image aborts the whole page when an <img> errors, and
+// one missing photo must not stop the customer from getting the contract. The renter's signature
+// (data-pdf-required) is different: a signed contract without it must fail and be retried.
+async function settleImage(img: HTMLImageElement) {
+  if (!img.complete) {
+    await new Promise<void>(resolve => {
+      const done = () => {
+        clearTimeout(timer);
+        img.removeEventListener('load', done);
+        img.removeEventListener('error', done);
+        resolve();
+      };
+      const timer = setTimeout(done, IMAGE_WAIT_MS);
+      img.addEventListener('load', done);
+      img.addEventListener('error', done);
+    });
+  }
+  if (img.complete && img.naturalWidth) {
+    await withTimeout(img.decode(), IMAGE_WAIT_MS).catch(() => undefined);
+  } else {
+    if (img.hasAttribute('data-pdf-required')) throw new Error('required image missing');
+    img.src = MISSING_IMAGE;
+  }
+}
+
 async function waitForImages(root: HTMLElement) {
-  const imgs = Array.from(root.querySelectorAll('img'));
-  await Promise.all(
-    imgs.map(img =>
-      img.complete && img.naturalWidth
-        ? Promise.resolve()
-        : new Promise<void>(resolve => {
-            img.addEventListener('load', () => resolve(), { once: true });
-            img.addEventListener('error', () => resolve(), { once: true });
-          })
-    )
-  );
-  if (document.fonts?.ready) await document.fonts.ready;
+  await Promise.all(Array.from(root.querySelectorAll('img')).map(settleImage));
+  if (document.fonts?.ready) await withTimeout(document.fonts.ready, IMAGE_WAIT_MS).catch(() => undefined);
+}
+
+// iPadOS reports itself as a Mac
+function isIOS() {
+  const ua = navigator.userAgent;
+  return /iP(hone|ad|od)/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+}
+
+// Safari, and every browser on iPhone/iPad, can leave images out of the first render of each page
+function isWebKit() {
+  const ua = navigator.userAgent;
+  return isIOS() || (/Safari\//.test(ua) && !/Chrome|Chromium|Android|Edg/.test(ua));
+}
+
+// In-app browsers (WhatsApp, Instagram...) on a phone: their web views ignore blob downloads
+function isInAppBrowser() {
+  const ua = navigator.userAgent;
+  return /; wv\)/.test(ua) || (isIOS() && !/Safari\//.test(ua));
 }
 
 /** Renders every [data-pdf-page] under `root` into one PDF Blob. */
 export async function renderContractPdf(
   root: HTMLElement,
   onProgress?: (done: number, total: number) => void,
-  onPage?: (dataUrl: string) => void
+  isCancelled?: () => boolean
 ): Promise<Blob> {
+  const stopIfCancelled = () => {
+    if (isCancelled?.()) throw new Error('cancelled');
+  };
   const { toJpeg, getFontEmbedCSS } = await import('html-to-image');
+  stopIfCancelled();
   await waitForImages(root);
+  stopIfCancelled();
   const nodes = Array.from(root.querySelectorAll<HTMLElement>('[data-pdf-page]'));
   if (!nodes.length) throw new Error('no pages');
   // Fonts are embedded once and reused for every page
-  const fontEmbedCSS = await getFontEmbedCSS(nodes[0]).catch(() => undefined);
+  const fontEmbedCSS = await withTimeout(getFontEmbedCSS(nodes[0]), IMAGE_WAIT_MS).catch(() => undefined);
 
-  const render = (node: HTMLElement) =>
-    toJpeg(node, {
-      quality: 0.9,
-      pixelRatio: PIXEL_RATIO,
-      backgroundColor: '#ffffff',
-      width: node.offsetWidth,
-      height: node.offsetHeight,
-      fontEmbedCSS,
-    });
+  const render = (node: HTMLElement) => {
+    stopIfCancelled();
+    return withTimeout(
+      toJpeg(node, {
+        quality: 0.9,
+        pixelRatio: PIXEL_RATIO,
+        backgroundColor: '#ffffff',
+        width: node.offsetWidth,
+        height: node.offsetHeight,
+        fontEmbedCSS,
+        includeQueryParams: true, // a re-signed contract keeps its file path; only the signed URL differs
+        // A photo that fails here is left empty and the page still renders; a missing signature stops the build
+        onImageErrorHandler: event => {
+          if (typeof event !== 'string' && (event.target as HTMLElement | null)?.hasAttribute('data-pdf-required')) {
+            throw new Error('required image missing');
+          }
+        },
+      }),
+      RENDER_TIMEOUT_MS
+    );
+  };
 
   // html-to-image often returns a blank first page: images/fonts are fetched and inlined
   // lazily, so the first pass can finish before they are ready. A discarded warm-up pass
   // fills its cache, and any page that still comes out blank is rendered again.
   await new Promise(r => requestAnimationFrame(() => r(null)));
   await render(nodes[0]).catch(() => undefined);
+  stopIfCancelled();
 
   // A blank page is a tiny JPEG compared to a page with content
   const isBlank = (url: string, node: HTMLElement) => url.length < node.offsetWidth * node.offsetHeight * 0.02;
@@ -183,6 +253,7 @@ export async function renderContractPdf(
     const node = nodes[i];
     const cssWidth = node.offsetWidth;
     const cssHeight = node.offsetHeight;
+    if (i > 0 && isWebKit()) await render(node).catch(() => undefined); // the warm-up above only covers page 1
     let dataUrl = await render(node);
     for (let attempt = 0; attempt < 2 && isBlank(dataUrl, node); attempt++) {
       await new Promise(r => setTimeout(r, 300));
@@ -193,7 +264,6 @@ export async function renderContractPdf(
       const r = el.getBoundingClientRect();
       return { x: r.left - box.left, y: r.top - box.top, w: r.width, h: r.height, url: el.dataset.pdfLink || '' };
     }).filter(l => l.url);
-    onPage?.(dataUrl);
     const jpeg = dataUrlToBytes(dataUrl);
     const size = jpegSize(jpeg);
     pages.push({
@@ -223,4 +293,33 @@ export function saveBlob(blob: Blob, fileName: string) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** True where the file can be saved without the customer tapping first. */
+export const canAutoSave = () => !isInAppBrowser();
+
+const pdfFile = (blob: Blob, fileName: string) => new File([blob], fileName, { type: 'application/pdf' });
+
+/** False when this browser has no way at all to hand over the file, so the customer can be told up front. */
+export const canDeliverPdf = (blob: Blob, fileName: string) =>
+  !isInAppBrowser() || !!navigator.canShare?.({ files: [pdfFile(blob, fileName)] });
+
+/**
+ * Hands the finished PDF to the customer. Call it directly from a tap, with the file already built:
+ * browsers drop a download or share that starts seconds after the tap.
+ * `blocked` means this in-app browser can neither save nor share the file.
+ */
+export async function deliverPdf(blob: Blob, fileName: string): Promise<'saved' | 'shared' | 'cancelled' | 'blocked'> {
+  if (!isInAppBrowser()) {
+    saveBlob(blob, fileName);
+    return 'saved';
+  }
+  if (!canDeliverPdf(blob, fileName)) return 'blocked';
+  try {
+    await navigator.share({ files: [pdfFile(blob, fileName)] });
+  } catch (err) {
+    // Cancelling the sheet, or a sheet already open, does not mean sharing is impossible here
+    return ['AbortError', 'InvalidStateError'].includes((err as DOMException).name) ? 'cancelled' : 'blocked';
+  }
+  return 'shared';
 }
