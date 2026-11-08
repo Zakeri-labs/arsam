@@ -791,7 +791,7 @@ export default function HandoverWizard({ contract, startAtDone, reservations, ca
                   <p className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] leading-5 text-amber-200">
                     {selectedBusy.endDate < draft.startDate
                       ? `این خودرو هنوز از اجاره «${selectedBusy.customerName}» عودت نشده است؛ ابتدا از تب قراردادها عودت آن را ثبت کنید.`
-                      : `این خودرو در تاریخ‌های فعلی در اجاره «${selectedBusy.customerName}» تا ${shortDate(selectedBusy.endDate)} است. فقط برای تاریخ بعد از آن می‌توانید قرارداد ثبت کنید.`}
+                      : `این خودرو در تاریخ‌های فعلی در اجاره «${selectedBusy.customerName}» تا ${shortDate(selectedBusy.endDate)} است. تا عودت آن ثبت نشود، قرارداد جدید برای این خودرو ثبت نمی‌شود.`}
                   </p>
                 )}
               </Section>
