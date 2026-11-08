@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { businessToday, businessTime } from '@/lib/business-day';
+import { useEffect, useRef, useState } from 'react';
+import { businessToday, businessTime, PAST_RESERVATION_MESSAGE } from '@/lib/business-day';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -31,6 +31,7 @@ type DepositStatus = CarContract['depositStatus'];
 interface Draft {
   id?: string;
   reservationId: string;
+  carId: string;
   // Customer
   customerName: string;
   customerNameEn: string;
@@ -73,8 +74,8 @@ interface Draft {
 }
 
 const STEPS = [
-  { key: 'customer', title: 'مشتری', icon: UserRound },
-  { key: 'car', title: 'خودرو و تحویل', icon: CarIcon },
+  { key: 'customer', title: 'خودرو و مشتری', icon: UserRound },
+  { key: 'car', title: 'وضعیت تحویل', icon: CarIcon },
   { key: 'rental', title: 'زمان و مبالغ', icon: CalendarClock },
   { key: 'media', title: 'تصاویر', icon: Images },
   { key: 'done', title: 'قرارداد', icon: CheckCircle2 },
@@ -95,6 +96,7 @@ function draftFromContract(c: CarContract): Draft {
   return {
     id: c.id,
     reservationId: c.reservationId || '',
+    carId: c.carId || '',
     customerName: c.customerName || '',
     customerNameEn: c.customerNameEn || '',
     customerPhone: c.customerPhone || '',
@@ -144,6 +146,7 @@ function fillFromReservation(d: Draft, res: CarReservation | undefined, cars: Ca
   return {
     ...d,
     reservationId: res.id,
+    carId: res.carId,
     customerName: res.customerName || d.customerName,
     customerPhone: res.customerPhone || d.customerPhone,
     customerNationalId: res.customerNationalId || d.customerNationalId,
@@ -177,7 +180,7 @@ function fillGaps(d: Draft, res: CarReservation | undefined, cars: Car[], contra
 
 function emptyDraft(): Draft {
   return {
-    reservationId: '', customerName: '', customerNameEn: '', customerPhone: '', whatsapp: '', customerNationality: '',
+    reservationId: '', carId: '', customerName: '', customerNameEn: '', customerPhone: '', whatsapp: '', customerNationality: '',
     customerNationalId: '', licenceType: '', licenceNo: '', customerAddress: '', workAddress: '', carTitle: '', carTitleEn: '',
     plateNumber: '', color: '', initialOdometer: 0, returnOdometer: 0, fuelLevel: 'full', cleanInside: '', cleanOutside: '',
     handoverStatus: 'delivered', depositStatus: 'held', checklist: allChecked(), contractDate: today(), startDate: today(),
@@ -199,7 +202,7 @@ function Field({ label, required, hint, children, className = '' }: { label: str
           {label}
           {required && <span className="text-rose-400"> *</span>}
         </span>
-        {hint && <span className="text-[10px] text-white/35">{hint}</span>}
+        {hint && <span className="text-[10px] text-white/50">{hint}</span>}
       </span>
       {children}
     </label>
@@ -354,8 +357,7 @@ function MediaSlot({
 interface HandoverWizardProps {
   contract: CarContract | null; // null = new handover
   startAtDone?: boolean;
-  defaultReservationId?: string;
-  reservations: CarReservation[]; // all (cancelled ones are filtered out of the picker)
+  reservations: CarReservation[]; // the rental records behind contracts
   cars: Car[];
   contracts: CarContract[];
   onSaved: (contract: CarContract) => void;
@@ -364,22 +366,20 @@ interface HandoverWizardProps {
   canRemoveSignature?: boolean;
 }
 
-export default function HandoverWizard({ contract, startAtDone, defaultReservationId, reservations, cars, contracts, onSaved, onClose, canRemoveSignature = false }: HandoverWizardProps) {
-  const pickable = useMemo(
-    () => reservations.filter(r => r.status !== 'cancelled' || r.id === contract?.reservationId),
-    [reservations, contract?.reservationId]
-  );
-
-  // A reservation has at most one contract: choosing a reservation that already has one continues that contract
-  const draftFor = (res: CarReservation | undefined, existing: CarContract | undefined): Draft =>
-    existing ? fillGaps(draftFromContract(existing), res, cars, contracts) : fillFromReservation(emptyDraft(), res, cars, contracts);
-  const initialRes = contract
-    ? reservations.find(r => r.id === contract.reservationId)
-    : pickable.find(r => r.id === defaultReservationId);
-  const initialContract = contract || (initialRes ? contracts.find(c => c.reservationId === initialRes.id) : undefined);
-
-  const [draft, setDraft] = useState<Draft>(() => draftFor(initialRes, initialContract));
-  const [saved, setSaved] = useState<CarContract | null>(initialContract || null);
+export default function HandoverWizard({ contract, startAtDone, reservations, cars, contracts, onSaved, onClose, canRemoveSignature = false }: HandoverWizardProps) {
+  // A new contract always starts blank; only a contract opened from the list is edited
+  const rental = contract ? reservations.find(r => r.id === contract.reservationId) : undefined;
+  const [draft, setDraft] = useState<Draft>(() => (contract ? fillGaps(draftFromContract(contract), rental, cars, contracts) : emptyDraft()));
+  const [saved, setSaved] = useState<CarContract | null>(contract || null);
+  const rentalClosed = !!rental && !['confirmed', 'active'].includes(rental.status);
+  const signed = !!saved?.renterSignatureUrl;
+  const identityLocked = rentalClosed || signed;
+  // The rental holding this car over the given dates, or an earlier one whose car never came back
+  const busyRental = (carId: string, start: string, end: string) =>
+    reservations.find(r => r.carId === carId && ['confirmed', 'active'].includes(r.status) && r.id !== draft.reservationId && (
+      (r.startDate <= end && r.endDate >= start) ||
+      (r.endDate < start && contracts.some(c => c.reservationId === r.id && c.handoverStatus === 'delivered'))
+    ));
   const [step, setStep] = useState(contract && startAtDone ? 4 : 0);
   // Furthest step reached: the stepper can jump back and forth up to it
   const [maxStep, setMaxStep] = useState(contract ? 4 : 0);
@@ -430,18 +430,21 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
 
   const validate = (s: number): string | null => {
     if (s === 0) {
-      if (!draft.reservationId) return 'یک رزرو انتخاب کنید';
+      if (!saved && !draft.carId) return 'خودرو را انتخاب کنید';
       if (!draft.customerName.trim()) return 'نام مشتری را وارد کنید';
       if (!draft.customerPhone.trim()) return 'شماره تماس مشتری را وارد کنید';
     }
     if (s === 1) {
-      if (!draft.carTitle.trim()) return 'خودرو مشخص نیست؛ یک رزرو انتخاب کنید';
+      if (!draft.carTitle.trim()) return 'خودرو را در مرحله اول انتخاب کنید';
       if (!draft.initialOdometer || draft.initialOdometer < 0) return 'کیلومتر هنگام خروج را وارد کنید';
       if (draft.returnOdometer && draft.returnOdometer < draft.initialOdometer) return 'کیلومتر بازگشت نمی‌تواند کمتر از کیلومتر خروج باشد';
     }
     if (s === 2) {
       if (!draft.startDate || !draft.endDate) return 'تاریخ خروج و بازگشت را وارد کنید';
       if (draft.endDate < draft.startDate) return 'تاریخ بازگشت نمی‌تواند قبل از تاریخ خروج باشد';
+      if (!saved && draft.startDate < businessToday()) return PAST_RESERVATION_MESSAGE;
+      const busy = !saved && draft.carId ? busyRental(draft.carId, draft.startDate, draft.endDate) : undefined;
+      if (busy) return busy.endDate < draft.startDate ? `این خودرو هنوز از اجاره «${busy.customerName}» عودت نشده است؛ ابتدا عودت آن را ثبت کنید` : `این خودرو تا ${busy.endDate} در اجاره «${busy.customerName}» است؛ تاریخ را تغییر دهید یا اگر برگشته، ابتدا عودت را ثبت کنید`;
     }
     return null;
   };
@@ -470,7 +473,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
       if (data.chargesError) toast.error('قرارداد ذخیره شد اما ثبت مبالغ اضافه در حسابداری ناموفق بود');
       const c: CarContract = data.contract;
       setSaved(c);
-      setDraft(prev => ({ ...prev, id: c.id }));
+      setDraft(prev => ({ ...prev, id: c.id, reservationId: c.reservationId || prev.reservationId }));
       setDirty(false);
       onSaved(c);
       return c;
@@ -680,31 +683,42 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
   };
   const shortDate = (d: string) => (d || '').slice(5).replace('-', '/');
 
-  const linkedContract = draft.reservationId ? contracts.find(c => c.reservationId === draft.reservationId) : undefined;
-  const reservationOptions: CompactPickerOption[] = pickable.map(r => {
-    const car = cars.find(c => c.id === r.carId);
-    const handedOver = contracts.some(c => c.reservationId === r.id && c.handoverStatus !== 'pending_delivery');
-    return {
-      value: r.id,
-      content: (
-        <span className="block min-w-0 space-y-0.5">
-          {carLine(car, r.carTitle)}
-          <span className="flex min-w-0 items-center gap-1.5 text-[10.5px] text-white/50">
-            <span className="truncate">{r.customerName}</span>
-            {handedOver && <span className="shrink-0 text-emerald-400/80">· تحویل ثبت شده</span>}
-            <span className="ms-auto shrink-0 font-mono">{shortDate(r.startDate)} تا {shortDate(r.endDate)}</span>
+  // Choosing the car fills what the fleet knows; the odometer continues from the car's last contract
+  const pickCar = (id: string) => {
+    const car = cars.find(c => c.id === id);
+    if (!car) return;
+    const last = contracts.find(c => c.carId === car.id || (!!car.plateNumber && c.plateNumber === car.plateNumber));
+    setDraft(prev => ({
+      ...prev,
+      carId: car.id,
+      carTitle: car.title,
+      carTitleEn: car.titleEn || '',
+      plateNumber: car.plateNumber,
+      color: car.color || '',
+      dailyRate: car.dailyRate,
+      depositAmount: car.depositAmount ?? 0,
+      totalPrice: Math.round(prev.rentalDays * car.dailyRate * 1000) / 1000,
+      initialOdometer: last ? last.returnOdometer || last.initialOdometer : 0,
+    }));
+    setDirty(true);
+  };
+  const carOptions: CompactPickerOption[] = cars
+    .filter(c => c.id === draft.carId || (c.status !== 'maintenance' && c.status !== 'disabled'))
+    .map(car => {
+      const busy = busyRental(car.id, draft.startDate, draft.endDate);
+      return {
+        value: car.id,
+        content: (
+          <span className={`block min-w-0 space-y-0.5 ${busy ? 'opacity-70' : ''}`}>
+            {carLine(car)}
+            {busy && <span className="block text-[11px] leading-4 text-amber-300">{busy.endDate < businessToday() ? `عودت ثبت نشده · «${busy.customerName}» از ${shortDate(busy.endDate)}` : `در اجاره «${busy.customerName}» تا ${shortDate(busy.endDate)}`}</span>}
           </span>
-        </span>
-      ),
-      selectedContent: (
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span className="min-w-0 flex-1">{carLine(car, r.carTitle)}</span>
-          <span className="max-w-[40%] shrink-0 truncate text-[10.5px] text-white/55">{r.customerName}</span>
-        </span>
-      ),
-      searchText: `${r.carTitle || ''} ${car?.plateNumber || ''} ${r.customerName} ${r.customerPhone || ''}`,
-    };
-  });
+        ),
+        selectedContent: carLine(car),
+        searchText: `${car.title} ${car.plateNumber}`,
+      };
+    });
+  const selectedBusy = !saved && draft.carId ? busyRental(draft.carId, draft.startDate, draft.endDate) : undefined;
 
   const StepIcon = STEPS[step].icon;
 
@@ -726,7 +740,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
               </span>
               <div className="min-w-0">
                 <h3 className="truncate text-[13.5px] font-black text-white">
-                  {saved ? `صورتجلسه و قرارداد ${saved.id}` : 'ثبت صورتجلسه تحویل و قرارداد'}
+                  {saved ? `صورتجلسه و قرارداد ${saved.id}` : 'ثبت قرارداد و تحویل خودرو'}
                 </h3>
                 <p className="text-[10.5px] text-white/45">
                   مرحله {step + 1} از {STEPS.length} · {STEPS[step].title}
@@ -761,62 +775,62 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
         <div ref={bodyRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
           {step === 0 && (
             <div className="space-y-5">
-              <Section title="رزرو">
-                <Field label="رزرو / خودرو مربوطه" required>
+              <Section title="خودرو">
+                <Field label="خودروی تحویلی" required hint="بعد از ثبت قرارداد قابل تغییر نیست">
                   <CompactPicker
-                    value={draft.reservationId}
-                    placeholder="انتخاب رزرو"
-                    searchPlaceholder="مدل، پلاک یا نام مشتری..."
-                    emptyText="رزروی یافت نشد"
-                    options={reservationOptions}
-                    disabled={!!contract}
-                    onChange={id => {
-                      const existing = contracts.find(c => c.reservationId === id);
-                      setDraft(draftFor(pickable.find(r => r.id === id), existing));
-                      setSaved(existing || null);
-                      setMaxStep(existing ? 4 : 0);
-                      setDirty(!existing);
-                    }}
+                    value={draft.carId}
+                    placeholder={draft.carTitle || 'انتخاب خودرو'}
+                    searchPlaceholder="مدل یا پلاک..."
+                    emptyText="خودرویی یافت نشد"
+                    options={carOptions}
+                    disabled={!!saved}
+                    onChange={pickCar}
                   />
                 </Field>
-                {linkedContract && !contract && (
+                {selectedBusy && (
                   <p className="mt-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] leading-5 text-amber-200">
-                    این رزرو قبلاً قرارداد {linkedContract.id} دارد؛ ادامه همان قرارداد ویرایش می‌شود و قرارداد جدیدی ساخته نمی‌شود. برای قرارداد مشتری دیگر، یک رزرو جدید ثبت کنید.
+                    {selectedBusy.endDate < draft.startDate
+                      ? `این خودرو هنوز از اجاره «${selectedBusy.customerName}» عودت نشده است؛ ابتدا از تب قراردادها عودت آن را ثبت کنید.`
+                      : `این خودرو در تاریخ‌های فعلی در اجاره «${selectedBusy.customerName}» تا ${shortDate(selectedBusy.endDate)} است. فقط برای تاریخ بعد از آن می‌توانید قرارداد ثبت کنید.`}
                   </p>
                 )}
               </Section>
               <Section title="مشخصات مستأجر">
+                {identityLocked && (
+                  <p className="mb-3 text-[11px] leading-5 text-white/55">
+                    {signed ? 'این مشخصات به دلیل امضای قرارداد قفل است؛ برای اصلاح، ابتدا امضا باید حذف شود.' : 'این اجاره بسته شده و نام، شماره و کارت ملی مشتری تغییر نمی‌کند.'}
+                  </p>
+                )}
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field label="نام مشتری (فارسی)" required>
-                    <input className={`${inputCls} disabled:opacity-60`} value={draft.customerName} disabled={!!draft.reservationId} onChange={e => set('customerName', e.target.value)} />
-                    {draft.reservationId && <span className="mt-1 block text-[10.5px] text-white/45">نام مشتری از رزرو گرفته می‌شود؛ برای تغییر، رزرو را ویرایش کنید.</span>}
+                    <input className={`${inputCls} disabled:opacity-60`} value={draft.customerName} disabled={identityLocked} onChange={e => set('customerName', e.target.value)} />
                   </Field>
                   <Field label="نام مشتری (انگلیسی)" hint="روی قرارداد چاپ می‌شود">
-                    <input className={`${inputCls} text-left`} dir="ltr" value={draft.customerNameEn} placeholder="e.g. AHMED AL BALUSHI" onChange={e => set('customerNameEn', e.target.value)} />
+                    <input className={`${inputCls} text-left disabled:opacity-60`} dir="ltr" disabled={signed} value={draft.customerNameEn} placeholder="e.g. AHMED AL BALUSHI" onChange={e => set('customerNameEn', e.target.value)} />
                   </Field>
                   <Field label="شماره تماس" required>
-                    <input className={`${inputCls} text-left font-mono`} dir="ltr" inputMode="tel" value={draft.customerPhone} onChange={e => set('customerPhone', e.target.value)} />
+                    <input className={`${inputCls} text-left font-mono disabled:opacity-60`} dir="ltr" inputMode="tel" disabled={identityLocked} value={draft.customerPhone} onChange={e => set('customerPhone', e.target.value)} />
                   </Field>
                   <Field label="شماره واتس‌اپ" hint="خالی = همان شماره تماس">
-                    <input className={`${inputCls} text-left font-mono`} dir="ltr" inputMode="tel" value={draft.whatsapp} placeholder={draft.customerPhone} onChange={e => set('whatsapp', e.target.value)} />
+                    <input className={`${inputCls} text-left font-mono disabled:opacity-60`} dir="ltr" inputMode="tel" disabled={signed} value={draft.whatsapp} placeholder={draft.customerPhone} onChange={e => set('whatsapp', e.target.value)} />
                   </Field>
                   <Field label="ملیت">
-                    <input className={inputCls} value={draft.customerNationality} onChange={e => set('customerNationality', e.target.value)} />
+                    <input className={`${inputCls} disabled:opacity-60`} disabled={signed} value={draft.customerNationality} onChange={e => set('customerNationality', e.target.value)} />
                   </Field>
                   <Field label="شماره کارت ملی / پاسپورت">
-                    <input className={`${inputCls} text-left font-mono`} dir="ltr" value={draft.customerNationalId} onChange={e => set('customerNationalId', e.target.value)} />
+                    <input className={`${inputCls} text-left font-mono disabled:opacity-60`} dir="ltr" disabled={identityLocked} value={draft.customerNationalId} onChange={e => set('customerNationalId', e.target.value)} />
                   </Field>
                   <Field label="نوع گواهینامه">
-                    <input className={inputCls} value={draft.licenceType} placeholder="مثلاً Light / سبک" onChange={e => set('licenceType', e.target.value)} />
+                    <input className={`${inputCls} disabled:opacity-60`} disabled={signed} value={draft.licenceType} placeholder="مثلاً Light / سبک" onChange={e => set('licenceType', e.target.value)} />
                   </Field>
                   <Field label="شماره گواهینامه">
-                    <input className={`${inputCls} text-left font-mono`} dir="ltr" value={draft.licenceNo} onChange={e => set('licenceNo', e.target.value)} />
+                    <input className={`${inputCls} text-left font-mono disabled:opacity-60`} dir="ltr" disabled={signed} value={draft.licenceNo} onChange={e => set('licenceNo', e.target.value)} />
                   </Field>
                   <Field label="آدرس محل سکونت" className="sm:col-span-2">
-                    <input className={inputCls} value={draft.customerAddress} onChange={e => set('customerAddress', e.target.value)} />
+                    <input className={`${inputCls} disabled:opacity-60`} disabled={signed} value={draft.customerAddress} onChange={e => set('customerAddress', e.target.value)} />
                   </Field>
                   <Field label="آدرس محل کار" className="sm:col-span-2">
-                    <input className={inputCls} value={draft.workAddress} onChange={e => set('workAddress', e.target.value)} />
+                    <input className={`${inputCls} disabled:opacity-60`} disabled={signed} value={draft.workAddress} onChange={e => set('workAddress', e.target.value)} />
                   </Field>
                 </div>
               </Section>
@@ -830,8 +844,8 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
                   <Field label="نوع خودرو (انگلیسی)" hint={draft.carTitle} className="sm:col-span-3">
                     <input className={`${inputCls} text-left`} dir="ltr" value={draft.carTitleEn} placeholder={draft.carTitle} onChange={e => set('carTitleEn', e.target.value)} />
                   </Field>
-                  <Field label="پلاک">
-                    <input className={`${inputCls} text-left font-mono`} dir="ltr" value={draft.plateNumber} onChange={e => set('plateNumber', e.target.value)} />
+                  <Field label="پلاک" hint={draft.carId ? 'از ناوگان' : undefined}>
+                    <input className={`${inputCls} text-left font-mono read-only:opacity-70`} dir="ltr" readOnly={!!draft.carId} value={draft.plateNumber} onChange={e => set('plateNumber', e.target.value)} />
                   </Field>
                   <Field label="رنگ">
                     <input className={inputCls} value={draft.color} onChange={e => set('color', e.target.value)} />
@@ -919,7 +933,7 @@ export default function HandoverWizard({ contract, startAtDone, defaultReservati
               <Section title="تاریخ و ساعت">
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="تاریخ خروج" required>
-                    <input type="date" className={`${inputCls} [color-scheme:dark]`} value={draft.startDate} onChange={e => setDates({ startDate: e.target.value })} />
+                    <input type="date" className={`${inputCls} [color-scheme:dark]`} value={draft.startDate} min={saved ? undefined : businessToday()} onChange={e => setDates({ startDate: e.target.value })} />
                   </Field>
                   <Field label="ساعت خروج">
                     <input type="time" className={`${inputCls} [color-scheme:dark]`} value={draft.departureTime} onChange={e => set('departureTime', e.target.value)} />

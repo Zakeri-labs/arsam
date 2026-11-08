@@ -281,7 +281,7 @@ const seedCars: Car[] = [
     status: 'available',
     imageUrl: '/cars/mg-gt-v2.webp',
     features: ['مدل 2026 جدید', 'موتور 1.5 توربو', 'صندلی چرم', 'GPS'],
-    notes: 'آماده رزرو تحویل فوری',
+    notes: 'آماده اجاره تحویل فوری',
     createdAt: new Date().toISOString()
   },
   {
@@ -300,7 +300,7 @@ const seedCars: Car[] = [
     status: 'available',
     imageUrl: '/cars/mg-gt-v2.webp',
     features: ['مدل 2026 جدید', 'کروز کنترل هوشمند', 'ترمز پارک برقی'],
-    notes: 'آماده رزرو تحویل فوری',
+    notes: 'آماده اجاره تحویل فوری',
     createdAt: new Date().toISOString()
   },
 
@@ -380,7 +380,7 @@ const seedCars: Car[] = [
     status: 'available',
     imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['ایربگ دوتایی', 'ترمز ABS', 'ورودی AUX/USB'],
-    notes: 'آماده رزرو تحویل فوری',
+    notes: 'آماده اجاره تحویل فوری',
     createdAt: new Date().toISOString()
   },
   {
@@ -418,7 +418,7 @@ const seedCars: Car[] = [
     status: 'available',
     imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['فرمان هیدرولیک', 'آینه‌های برقی'],
-    notes: 'آماده رزرو',
+    notes: 'آماده اجاره',
     createdAt: new Date().toISOString()
   },
   {
@@ -437,7 +437,7 @@ const seedCars: Car[] = [
     status: 'available',
     imageUrl: '/cars/nissan-sunny-v2.webp',
     features: ['شیشه‌ها برقی', 'قفل مرکزی'],
-    notes: 'آماده رزرو',
+    notes: 'آماده اجاره',
     createdAt: new Date().toISOString()
   },
 
@@ -698,7 +698,7 @@ export async function getReservations(): Promise<CarReservation[]> {
 }
 
 export async function saveReservation(resData: Partial<CarReservation>): Promise<CarReservation> {
-  const id = resData.id || 'res-' + Math.random().toString(36).substring(2, 9);
+  const id = resData.id || 'res-' + crypto.randomUUID();
   const now = new Date().toISOString();
 
   let existing: CarReservation | undefined;
@@ -769,7 +769,7 @@ export async function saveReservation(resData: Partial<CarReservation>): Promise
 }
 
 // Statuses that still hold the car: a cancelled or completed reservation frees it
-const LIVE_RESERVATION = ['confirmed', 'active'];
+export const LIVE_RESERVATION = ['confirmed', 'active'];
 
 /** Another live reservation of the same car whose dates overlap [startDate, endDate] (inclusive), if any. */
 export async function findOverlappingReservation(carId: string, startDate: string, endDate: string, excludeId?: string): Promise<CarReservation | undefined> {
@@ -783,7 +783,24 @@ export async function findOverlappingReservation(carId: string, startDate: strin
 }
 
 export const overlapMessage = (r: CarReservation) =>
-  `این خودرو از ${r.startDate} تا ${r.endDate} برای «${r.customerName}» رزرو شده است؛ خودروی دیگری انتخاب کنید یا تاریخ را تغییر دهید.`;
+  `این خودرو از ${r.startDate} تا ${r.endDate} در اجاره «${r.customerName}» است؛ خودروی دیگری انتخاب کنید یا تاریخ را تغییر دهید. اگر خودرو برگشته است، ابتدا عودت آن را ثبت کنید.`;
+
+/** A live rental of this car that ended before startDate but whose car was handed over and never returned. */
+export async function findUnreturnedRental(carId: string, startDate: string): Promise<CarReservation | undefined> {
+  const { data, error } = await supabase.from('car_reservations').select('*')
+    .eq('car_id', carId).in('status', LIVE_RESERVATION).lt('end_date', startDate);
+  ensureOk('car_reservations unreturned select', error);
+  if (!data?.length) return undefined;
+  const { data: delivered, error: cntError } = await supabase.from('car_contracts').select('reservation_id')
+    .in('reservation_id', data.map(r => r.id)).eq('handover_status', 'delivered').limit(1);
+  ensureOk('car_contracts delivered select', cntError);
+  const row = data.find(r => r.id === delivered?.[0]?.reservation_id);
+  return row ? reservationFromRow(row) : undefined;
+}
+
+export const unreturnedMessage = (r: CarReservation) =>
+  `این خودرو هنوز از اجاره «${r.customerName}» عودت نشده است؛ ابتدا از تب قراردادها عودت آن را ثبت کنید.`;
+
 
 /** A cancelled reservation no longer owes anything: its unpaid rows go. Payments already received stay. */
 export async function clearPendingCharges(reservationId: string): Promise<string[]> {
@@ -821,7 +838,7 @@ export class ReturnMediaLockedError extends Error {
   }
 }
 
-export const RETURN_SIGNED_MESSAGE = 'مشتری تصاویر و ویدیوهای عودت این رزرو را امضا کرده است؛ قرارداد و رزرو آن دیگر قابل حذف نیستند.';
+export const RETURN_SIGNED_MESSAGE = 'مشتری تصاویر و ویدیوهای عودت این اجاره را امضا کرده است؛ قرارداد آن دیگر قابل حذف نیست.';
 
 export class ReturnSignedError extends Error {
   constructor() {
@@ -857,6 +874,9 @@ export async function deleteReservation(id: string): Promise<{ contractIds: stri
   if (await hasReturnSignature(id)) throw new ReturnSignedError();
   const handedOverId = await findHandedOverContractId(id);
   if (handedOverId) throw new ReservationDeleteBlockedError(handedOverId);
+  const { data: paidRows, error: paidError } = await supabase.from('car_transactions').select('id').eq('reservation_id', id).eq('payment_status', 'paid').limit(1);
+  ensureOk('car_transactions paid select', paidError);
+  if (paidRows?.length) throw new ContractHasPaymentsError();
 
   const { data: txRows, error: txError } = await supabase.from('car_transactions').delete().eq('reservation_id', id).select('id');
   ensureOk('car_transactions delete', txError);
@@ -1255,7 +1275,7 @@ export async function syncContractExtraCharges(contract: CarContract): Promise<v
 }
 
 // Superadmin: removes the contract together with every accounting row of its reservation. The
-// reservation stays and can then be cancelled or deleted.
+// The rental exists only for its contract, so it goes with it; a signed return or a recorded payment blocks the delete.
 export async function deleteContract(id: string): Promise<{ contractIds: string[]; transactionIds: string[] }> {
   const { data: row, error: selectError } = await supabase.from('car_contracts').select('id, reservation_id').eq('id', id).maybeSingle();
   ensureOk('car_contracts select', selectError);
@@ -1276,6 +1296,12 @@ export async function deleteContract(id: string): Promise<{ contractIds: string[
   const { data: deleted, error } = await supabase.from('car_contracts').delete().eq('id', id).select('id, attachments');
   ensureOk('car_contracts delete', error);
   await removeContractFiles(deleted || []);
+  if (row.reservation_id) {
+    // The rental exists only for this contract: left behind it would keep the car blocked
+    const { data: rentals, error: rentalError } = await supabase.from('car_reservations').delete().eq('id', row.reservation_id).select('*');
+    ensureOk('car_reservations delete', rentalError);
+    await removeContractFiles([{ id, attachments: rentals?.[0]?.return_photos }]);
+  }
   return { contractIds: [id], transactionIds };
 }
 
@@ -1307,11 +1333,40 @@ async function nextContractSerial(): Promise<string> {
     // A number already taken (e.g. issued by the code before the counter existed) is skipped
     const { data: taken, error: takenError } = await supabase.from('car_contracts').select('id').eq('id', id).maybeSingle();
     ensureOk('car_contracts select', takenError);
-    if (!taken) break;
+    if (!taken) return await freshContractId(id);
   }
+  throw new Error('no free contract number after 5 attempts');
+}
+
+async function freshContractId(id: string): Promise<string> {
   // A new contract never inherits a signature left behind by a deleted contract with the same id
   await removeContractFiles([{ id }]);
   return id;
+}
+
+/**
+ * Undoes a rental record created for a direct contract whose contract or charges then failed to save, so a failed
+ * save leaves no car blocked and no half-written accounting behind.
+ */
+export async function discardRental(reservationId: string): Promise<void> {
+  const { error: txError } = await supabase.from('car_transactions').delete().eq('reservation_id', reservationId);
+  ensureOk('car_transactions delete', txError);
+  const { error: cntError } = await supabase.from('car_contracts').delete().eq('reservation_id', reservationId);
+  ensureOk('car_contracts delete', cntError);
+  const { error } = await supabase.from('car_reservations').delete().eq('id', reservationId);
+  ensureOk('car_reservations delete', error);
+}
+
+/** The customer renamed on a contract: every accounting row of that rental follows, its description included. */
+export async function renameRentalCustomer(reservationId: string, oldName: string, customerName: string): Promise<void> {
+  const { data, error } = await supabase.from('car_transactions').select('id, description').eq('reservation_id', reservationId);
+  ensureOk('car_transactions select', error);
+  for (const row of data || []) {
+    // Only the "(name)" form the system itself writes, so a name inside a car title is left alone
+    const description = oldName && row.description?.includes(`(${oldName})`) ? row.description.split(`(${oldName})`).join(`(${customerName})`) : row.description;
+    const { error: updateError } = await supabase.from('car_transactions').update({ customer_name: customerName, description }).eq('id', row.id);
+    ensureOk('car_transactions rename', updateError);
+  }
 }
 
 // After a reservation is edited (dates, price, deposit), brings its contract and its owed rent/deposit rows in
@@ -1325,9 +1380,6 @@ export async function syncReservationFinancials(reservation: CarReservation): Pr
   // Only values the reservation actually holds: an empty field (e.g. a national ID entered only in the
   // contract wizard) must not clear what the contract already has.
   const fromReservation: Partial<CarContract> = {
-    customerName: reservation.customerName,
-    customerPhone: reservation.customerPhone,
-    customerNationalId: reservation.customerNationalId,
     depositAmount: reservation.depositPaid,
     startDate: reservation.startDate,
     endDate: reservation.endDate,
