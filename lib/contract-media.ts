@@ -7,6 +7,9 @@ export const MAX_VIDEO_SECONDS = 120;
 const MAX_VIDEO_UPLOAD_BYTES = 30 * 1024 * 1024; // matches lib/storage MAX_CONTRACT_VIDEO_BYTES
 const SMALL_VIDEO_BYTES = 8 * 1024 * 1024; // smaller videos are uploaded as they are
 const VIDEO_BITRATE = 1_500_000;
+// Below this the browser was throttling the page and the result is a slideshow, not a usable video
+const MIN_REENCODE_FPS = 5;
+const MAX_SLOW_SECONDS_SHARE = 0.2;
 
 export class MediaError extends Error {}
 
@@ -133,9 +136,16 @@ async function reencode(video: HTMLVideoElement, mimeType: string, onProgress: (
   if (document.hidden) throw new MediaError(INTERRUPTED);
   await seek(video, 0);
   let done = false;
+  const framesInSecond: number[] = [];
+  let lastFrameTime = -1;
   const draw = () => {
     if (done) return;
     ctx.drawImage(video, 0, 0, width, height);
+    if (video.currentTime !== lastFrameTime) {
+      lastFrameTime = video.currentTime;
+      const second = Math.floor(video.currentTime);
+      framesInSecond[second] = (framesInSecond[second] || 0) + 1;
+    }
     onProgress(Math.min(0.99, video.currentTime / (video.duration || 1)));
     const v = video as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number };
     if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(draw);
@@ -178,6 +188,10 @@ async function reencode(video: HTMLVideoElement, mimeType: string, onProgress: (
     await stopped;
     stream.getTracks().forEach(t => t.stop());
   }
+  const seconds = Math.floor(video.currentTime);
+  let slowSeconds = 0;
+  for (let i = 0; i < seconds; i++) if ((framesInSecond[i] || 0) < MIN_REENCODE_FPS) slowSeconds++;
+  if (slowSeconds >= 2 && slowSeconds / seconds > MAX_SLOW_SECONDS_SHARE) throw new MediaError(INTERRUPTED);
   onProgress(1);
   return new Blob(chunks, { type: mimeType.split(';')[0] });
 }
