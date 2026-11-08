@@ -62,7 +62,7 @@ export function ConfirmDialogHost() {
         <AlertDialog.Overlay className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
         <AlertDialog.Content
           dir="rtl"
-          className="fixed left-1/2 top-1/2 z-[201] w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gold/30 bg-[#0b172a] p-5 text-right font-sans text-white shadow-2xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+          className="fixed left-1/2 top-1/2 z-[201] w-[calc(100%-2rem)] max-h-[calc(100dvh-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-gold/30 bg-[#0b172a] p-5 text-right font-sans text-white shadow-2xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
         >
           <div className="flex items-start gap-3">
             <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${destructive ? 'bg-rose-500/15 text-rose-400' : 'bg-gold/15 text-gold'}`}>
@@ -72,7 +72,7 @@ export function ConfirmDialogHost() {
               <AlertDialog.Title className="text-sm font-black">
                 {pending?.title || (destructive ? 'تأیید حذف' : 'تأیید')}
               </AlertDialog.Title>
-              <AlertDialog.Description className="text-xs leading-6 text-white/70 whitespace-pre-line">
+              <AlertDialog.Description className="text-xs leading-6 text-white/70 whitespace-pre-line [overflow-wrap:anywhere]">
                 {pending?.message}
               </AlertDialog.Description>
             </div>
@@ -98,13 +98,13 @@ export function ConfirmDialogHost() {
             <AlertDialog.Action
               disabled={!textMatches}
               onClick={() => close(true)}
-              className={`flex-1 cursor-pointer rounded-xl py-2.5 text-xs font-black transition-all enabled:hover:scale-[1.02] enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${destructive ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/30 hover:bg-rose-500' : 'bg-gradient-to-r from-gold to-amber-500 text-black'}`}
+              className={`min-h-11 flex-1 cursor-pointer rounded-xl py-2.5 text-xs font-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b172a] enabled:hover:scale-[1.02] enabled:active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 ${destructive ? 'bg-rose-600 text-white shadow-lg shadow-rose-900/30 hover:bg-rose-500' : 'bg-gradient-to-r from-gold to-amber-500 text-black'}`}
             >
               {pending?.confirmText || (destructive ? 'بله، حذف شود' : 'تأیید')}
             </AlertDialog.Action>
             <AlertDialog.Cancel
               onClick={() => close(false)}
-              className="flex-1 cursor-pointer rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-white/80 transition-colors hover:bg-white/10"
+              className="min-h-11 flex-1 cursor-pointer rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-white/80 transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-[#0b172a]"
             >
               {pending?.cancelText || 'انصراف'}
             </AlertDialog.Cancel>

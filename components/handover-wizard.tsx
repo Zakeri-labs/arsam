@@ -86,6 +86,12 @@ const today = () => businessToday();
 const nowTime = () => businessTime();
 const allChecked = () => Object.fromEntries(HANDOVER_CHECKLIST_ITEMS.map(i => [i.key, true]));
 
+// Spelling variants (Arabic/Persian letters, half-spaces, spacing, Latin case) are the same name
+const sameName = (a: string, b: string) => {
+  const canon = (s: string) => s.replace(/[يى]/g, 'ی').replace(/ك/g, 'ک').replace(/[\s‌]/g, '').toUpperCase();
+  return canon(a) === canon(b);
+};
+
 function daysBetween(start: string, end: string) {
   if (!start || !end) return 0;
   const d = Math.ceil((new Date(end).getTime() - new Date(start).getTime()) / 86400000);
@@ -449,7 +455,46 @@ export default function HandoverWizard({ contract, startAtDone, reservations, ca
     return null;
   };
 
+  // A customer link always shows the contract as it is now, so renaming a saved contract also renames it for whoever already holds the link
+  const confirmNameChange = (): Promise<boolean> => {
+    if (!saved) return Promise.resolve(true);
+    const oldName = (saved.customerName || '').trim();
+    const newName = draft.customerName.trim();
+    const oldNameEn = (saved.customerNameEn || '').trim();
+    const newNameEn = draft.customerNameEn.trim();
+    const nameChanged = !!oldName && !sameName(oldName, newName);
+    const nameEnChanged = !sameName(oldNameEn, newNameEn);
+    if (!nameChanged && !nameEnChanged) return Promise.resolve(true);
+
+    // The contract and the link print the English name when there is one
+    const shownChanged = !sameName(oldNameEn || oldName, newNameEn || newName);
+    // Short names stay on one line; a long one must still wrap between its words
+    const isolate = (name: string) => `«⁨${name.length > 24 ? name : name.replace(/ /g, ' ')}⁩»`;
+    const englishChange = !oldNameEn
+      ? `افزودن نام انگلیسی ${isolate(newNameEn)}`
+      : !newNameEn
+        ? `حذف نام انگلیسی ${isolate(oldNameEn)}`
+        : `${isolate(oldNameEn)} به ${isolate(newNameEn)}`;
+    const changes = [nameChanged && `${isolate(oldName)} به ${isolate(newName)}`, nameEnChanged && englishChange].filter(Boolean).join('\n');
+    const linkEffect = shownChanged
+      ? 'اگر لینک این قرارداد را قبلاً فرستاده‌اید، مشتری با همان لینک نام جدید را می‌بیند.'
+      : newNameEn
+        ? `در قرارداد و لینک مشتری همچنان نام انگلیسی ${isolate(newNameEn)} نمایش داده می‌شود. برای تغییر آن، نام انگلیسی را هم اصلاح کنید.`
+        : `در قرارداد و لینک مشتری همچنان ${isolate(newName)} نمایش داده می‌شود.`;
+    return confirmDialog({
+      title: 'تغییر نام مشتری',
+      message: `${changes}\n\n${linkEffect}\n\nاگر مشتری فرد دیگری است، این نام را ذخیره نکنید؛ فرم را ببندید و قرارداد جدید ثبت کنید. برای همان خودرو و تاریخ، اول باید مدیر کل این قرارداد را حذف کند.`,
+      confirmText: 'ذخیره با نام جدید',
+      cancelText: 'برگشت و اصلاح نام',
+      destructive: false,
+    });
+  };
+
   const save = async (withAttachments: boolean): Promise<CarContract | null> => {
+    if (!(await confirmNameChange())) {
+      setStep(0); // the name fields are on the first step
+      return null;
+    }
     setSaving(true);
     try {
       const { attachments, ...fields } = draft;
@@ -472,8 +517,10 @@ export default function HandoverWizard({ contract, startAtDone, reservations, ca
       }
       if (data.chargesError) toast.error('قرارداد ذخیره شد اما ثبت مبالغ اضافه در حسابداری ناموفق بود');
       const c: CarContract = data.contract;
+      // The server keeps the name of a rental that was closed meanwhile
+      if (saved && !sameName(saved.customerName, fields.customerName) && !sameName(c.customerName, fields.customerName)) toast.error('این اجاره بسته شده است و نام مشتری تغییر نکرد');
       setSaved(c);
-      setDraft(prev => ({ ...prev, id: c.id, reservationId: c.reservationId || prev.reservationId }));
+      setDraft(prev => ({ ...prev, id: c.id, reservationId: c.reservationId || prev.reservationId, customerName: c.customerName }));
       setDirty(false);
       onSaved(c);
       return c;
