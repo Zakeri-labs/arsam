@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import ContractDocument from './contract-document';
 import type { ContractData } from '@/lib/contract-data';
 import { contractPdfFileName, renderContractPdf, saveBlob } from '@/lib/contract-pdf';
 
+const SUPERSEDED = 'superseded';
+
 interface Job {
+  id: number;
   data: ContractData;
   signatureUrl?: string | null;
-  resolve: () => void;
+  resolve: (blob: Blob) => void;
   reject: (err: unknown) => void;
 }
 
@@ -20,27 +23,29 @@ interface Job {
 export function useContractPdf() {
   const [job, setJob] = useState<Job | null>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [previews, setPreviews] = useState<string[]>([]); // rendered page images, kept after the download for on-screen viewing
   const ref = useRef<HTMLDivElement>(null);
+  const running = useRef<Job | null>(null);
+  const nextId = useRef(1);
 
   useEffect(() => {
     if (!job || !ref.current) return;
     let cancelled = false;
     (async () => {
       try {
-        setPreviews([]);
         const blob = await renderContractPdf(
           ref.current!,
           (done, total) => !cancelled && setProgress({ done, total }),
-          url => !cancelled && setPreviews(p => [...p, url])
+          () => cancelled
         );
-        saveBlob(blob, contractPdfFileName(job.data.id));
-        job.resolve();
+        if (cancelled) return;
+        job.resolve(blob);
       } catch (err) {
+        if (cancelled) return; // a newer job took over; it was already rejected in build()
         console.error('Contract PDF failed:', err);
         job.reject(err);
       } finally {
-        if (!cancelled) {
+        if (!cancelled && running.current === job) {
+          running.current = null;
           setJob(null);
           setProgress(null);
         }
@@ -51,20 +56,38 @@ export function useContractPdf() {
     };
   }, [job]);
 
-  const download = (data: ContractData, signatureUrl?: string | null) =>
-    new Promise<void>((resolve, reject) => setJob({ data, signatureUrl, resolve, reject }));
+  /** Builds the PDF without saving it. */
+  const build = useCallback(
+    (data: ContractData, signatureUrl?: string | null) =>
+      new Promise<Blob>((resolve, reject) => {
+        running.current?.reject(new Error(SUPERSEDED));
+        const next = { id: nextId.current++, data, signatureUrl, resolve, reject };
+        running.current = next;
+        setJob(next);
+      }),
+    []
+  );
+
+  const download = async (data: ContractData, signatureUrl?: string | null) => {
+    try {
+      saveBlob(await build(data, signatureUrl), contractPdfFileName(data.id));
+    } catch (err) {
+      // A newer click took over: that one saves the file, this one is not a failure
+      if ((err as Error).message !== SUPERSEDED) throw err;
+    }
+  };
 
   const element =
     job && typeof document !== 'undefined'
       ? createPortal(
-          <div ref={ref} aria-hidden style={{ position: 'fixed', left: -100000, top: 0, pointerEvents: 'none' }}>
+          <div key={job.id} ref={ref} aria-hidden style={{ position: 'fixed', left: -100000, top: 0, pointerEvents: 'none' }}>
             <ContractDocument contract={job.data} signatureUrl={job.signatureUrl} />
           </div>,
           document.body
         )
       : null;
 
-  return { download, busy: !!job, progress, element, previews };
+  return { build, download, busy: !!job, progress, element };
 }
 
 export const contractShareUrl = (token: string) => `${window.location.origin}/c/${token}`;

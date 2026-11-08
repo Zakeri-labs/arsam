@@ -245,7 +245,7 @@ function ContractSheet({ contract, signatureUrl }: { contract: ContractData; sig
           <div className="flex justify-between"><span>Renter&apos;s Signature</span><span dir="rtl">توقيع المستأجر</span></div>
           {contract.renterSignatureUrl && (
             <div className="flex-1 min-h-0 flex items-center justify-center">
-              <img src={contract.renterSignatureUrl} crossOrigin="anonymous" alt="" className="max-h-[36px] max-w-[70%] object-contain" />
+              <img src={contract.renterSignatureUrl} crossOrigin="anonymous" data-pdf-required alt="" className="max-h-[36px] max-w-[70%] object-contain" />
             </div>
           )}
           {contract.renterSignatureUrl && signedAtText && (
