@@ -1,12 +1,15 @@
 // Browser-side preparation and upload of contract photos / videos.
 // Phone photos (4–10 MB) are shrunk to ~1600px JPEG before upload; videos are limited to
-// 60 s and re-encoded to ≤720p at ~1.5 Mbps (≈11 MB per minute) when they are large.
+// 120 s and re-encoded to ≤720p at ~1.5 Mbps (≈11 MB per minute) when they are large.
 // Files go straight to storage through a signed URL, never through our server.
 
-export const MAX_VIDEO_SECONDS = 60;
+export const MAX_VIDEO_SECONDS = 120;
 const MAX_VIDEO_UPLOAD_BYTES = 30 * 1024 * 1024; // matches lib/storage MAX_CONTRACT_VIDEO_BYTES
 const SMALL_VIDEO_BYTES = 8 * 1024 * 1024; // smaller videos are uploaded as they are
 const VIDEO_BITRATE = 1_500_000;
+// Below this the browser was throttling the page and the result is a slideshow, not a usable video
+const MIN_REENCODE_FPS = 5;
+const MAX_SLOW_SECONDS_SHARE = 0.2;
 
 export class MediaError extends Error {}
 
@@ -133,9 +136,16 @@ async function reencode(video: HTMLVideoElement, mimeType: string, onProgress: (
   if (document.hidden) throw new MediaError(INTERRUPTED);
   await seek(video, 0);
   let done = false;
+  const framesInSecond: number[] = [];
+  let lastFrameTime = -1;
   const draw = () => {
     if (done) return;
     ctx.drawImage(video, 0, 0, width, height);
+    if (video.currentTime !== lastFrameTime) {
+      lastFrameTime = video.currentTime;
+      const second = Math.floor(video.currentTime);
+      framesInSecond[second] = (framesInSecond[second] || 0) + 1;
+    }
     onProgress(Math.min(0.99, video.currentTime / (video.duration || 1)));
     const v = video as HTMLVideoElement & { requestVideoFrameCallback?: (cb: () => void) => number };
     if (v.requestVideoFrameCallback) v.requestVideoFrameCallback(draw);
@@ -159,6 +169,9 @@ async function reencode(video: HTMLVideoElement, mimeType: string, onProgress: (
     }
   }, 1000);
 
+  // A long re-encode outlasts the phone's auto-lock, and a locked screen would abort it
+  const wakeLock = navigator.wakeLock?.request('screen').catch(() => null);
+
   try {
     recorder.start(1000);
     const ended = new Promise<void>(resolve => (video.onended = () => resolve()));
@@ -167,6 +180,7 @@ async function reencode(video: HTMLVideoElement, mimeType: string, onProgress: (
     await Promise.race([ended, failed]);
   } finally {
     done = true;
+    wakeLock?.then(lock => lock?.release().catch(() => {}));
     clearInterval(watchdog);
     document.removeEventListener('visibilitychange', onVisibility);
     video.pause();
@@ -174,6 +188,10 @@ async function reencode(video: HTMLVideoElement, mimeType: string, onProgress: (
     await stopped;
     stream.getTracks().forEach(t => t.stop());
   }
+  const seconds = Math.floor(video.currentTime);
+  let slowSeconds = 0;
+  for (let i = 0; i < seconds; i++) if ((framesInSecond[i] || 0) < MIN_REENCODE_FPS) slowSeconds++;
+  if (slowSeconds >= 2 && slowSeconds / seconds > MAX_SLOW_SECONDS_SHARE) throw new MediaError(INTERRUPTED);
   onProgress(1);
   return new Blob(chunks, { type: mimeType.split(';')[0] });
 }
@@ -236,10 +254,27 @@ export async function prepareVideo(file: File, onProgress: (p: number) => void):
 
 /** Uploads one prepared file through a signed URL; returns its path in the private bucket. */
 export async function uploadContractFile(file: File, video: boolean, onProgress?: (p: number) => void): Promise<string> {
+  try {
+    return await uploadOnce(file, video, onProgress);
+  } catch (err) {
+    // One retry on a dropped connection, so a network blip does not cost a finished re-encode
+    if (!(err instanceof UploadInterrupted)) throw err;
+    await new Promise(resolve => setTimeout(resolve, UPLOAD_RETRY_DELAY_MS));
+    return uploadOnce(file, video, onProgress);
+  }
+}
+
+const UPLOAD_RETRY_DELAY_MS = 2500;
+
+class UploadInterrupted extends MediaError {}
+
+async function uploadOnce(file: File, video: boolean, onProgress?: (p: number) => void): Promise<string> {
   const signRes = await fetch('/api/cars/contracts/upload', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ fileName: file.name, fileSize: file.size, video }),
+  }).catch(() => {
+    throw new UploadInterrupted('ارتباط با سرور ذخیره‌سازی قطع شد');
   });
   const sign = await signRes.json().catch(() => ({}));
   if (!signRes.ok || !sign.signedUrl) throw new MediaError(sign.error || 'خطا در دریافت مجوز آپلود');
@@ -250,8 +285,11 @@ export async function uploadContractFile(file: File, video: boolean, onProgress?
     xhr.open('PUT', sign.signedUrl);
     xhr.setRequestHeader('Content-Type', sign.contentType || file.type || 'application/octet-stream');
     xhr.upload.onprogress = e => e.lengthComputable && onProgress?.(e.loaded / e.total);
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new MediaError('آپلود فایل ناموفق بود')));
-    xhr.onerror = () => reject(new MediaError('ارتباط با سرور ذخیره‌سازی قطع شد'));
+    xhr.onload = () =>
+      xhr.status >= 200 && xhr.status < 300
+        ? resolve()
+        : reject(new (xhr.status >= 500 ? UploadInterrupted : MediaError)('آپلود فایل ناموفق بود'));
+    xhr.onerror = () => reject(new UploadInterrupted('ارتباط با سرور ذخیره‌سازی قطع شد'));
     xhr.send(file);
   });
   return sign.path as string;
