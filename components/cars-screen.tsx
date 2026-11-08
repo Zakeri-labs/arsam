@@ -342,6 +342,7 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
   // Photos/videos taken at car return live on the reservation file (never in the contract); the customer
   // signs to confirm them, after which the media is locked (enforced on the server too).
   const [uploadingReturnPhotos, setUploadingReturnPhotos] = useState(0);
+  const [returnVideoProgress, setReturnVideoProgress] = useState<number | null>(null);
   const [returnModalResId, setReturnModalResId] = useState<string | null>(null);
   const returnRes = returnModalResId ? reservations.find(r => r.id === returnModalResId) ?? null : null;
   const [returnSignOpen, setReturnSignOpen] = useState(false);
@@ -368,12 +369,14 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
     const current = reservations.find(r => r.id === reservation.id) ?? reservation;
     if (current.returnSignature) return;
     const added: NonNullable<CarReservation['returnPhotos']> = [];
-    setUploadingReturnPhotos(n => n + files.length);
+    // One extra count holds the delete/sign buttons until the final save below has settled
+    setUploadingReturnPhotos(n => n + files.length + 1);
     for (const file of Array.from(files)) {
       try {
         const isVideo = file.type.startsWith('video/') || /\.(mp4|webm|mov)$/i.test(file.name);
         if (isVideo) {
-          const { video, poster } = await prepareVideo(file, () => {});
+          const { video, poster } = await prepareVideo(file, p => setReturnVideoProgress(Math.round(p * 100)));
+          setReturnVideoProgress(null);
           const posterPath = poster ? await uploadContractFile(poster, false).catch(() => undefined) : undefined;
           const path = await uploadContractFile(video, true);
           added.push({ kind: 'car_video', path, name: video.name, size: video.size, posterPath });
@@ -386,15 +389,18 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
       } catch (err) {
         toast.error(err instanceof MediaError ? err.message : `آپلود «${file.name}» ناموفق بود`);
       } finally {
+        setReturnVideoProgress(null);
         setUploadingReturnPhotos(n => n - 1);
       }
     }
-    if (!added.length) return;
     try {
+      if (!added.length) return;
       await saveReturnMedia(current, [...(current.returnPhotos || []), ...added]);
       toast.success('فایل‌های عودت در پرونده اجاره ثبت شد');
     } catch (err: any) {
       toast.error(err.message);
+    } finally {
+      setUploadingReturnPhotos(n => n - 1);
     }
   };
 
@@ -1956,7 +1962,8 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
                               {!sig && <button
                                 type="button"
                                 onClick={() => handleRemoveReturnMedia(returnRes, i)}
-                                className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-rose-300 hover:bg-rose-600 hover:text-white"
+                                disabled={uploadingReturnPhotos > 0}
+                                className="absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-lg bg-black/70 text-rose-300 hover:bg-rose-600 hover:text-white disabled:opacity-40 disabled:pointer-events-none"
                                 title="حذف"
                               >
                                 <Trash2 size={13} />
@@ -1968,7 +1975,7 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
                     )}
                     {!sig && <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/10 px-3 py-2.5 text-[11px] font-bold text-gold cursor-pointer hover:bg-gold/20 ${uploadingReturnPhotos > 0 ? 'opacity-60 pointer-events-none' : ''}`}>
                       {uploadingReturnPhotos > 0 ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                      <span>{uploadingReturnPhotos > 0 ? 'در حال آپلود (برای ویدیو صبر کنید)...' : 'افزودن تصویر یا ویدیوی عودت'}</span>
+                      <span>{returnVideoProgress !== null ? `فشرده‌سازی ویدیو ${returnVideoProgress.toLocaleString('fa-IR')}٪ — صفحه را باز نگه دارید` : uploadingReturnPhotos > 0 ? 'در حال آپلود (برای ویدیو صبر کنید)...' : 'افزودن تصویر یا ویدیوی عودت'}</span>
                       <input
                         type="file"
                         accept="image/*,video/*"
