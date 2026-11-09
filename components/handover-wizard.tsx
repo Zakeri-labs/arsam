@@ -19,7 +19,7 @@ import {
   HANDOVER_CHECKLIST_ITEMS, cleanCarTitle, cleanCarPlate, carModelName,
 } from '@/lib/db-cars';
 import { buildContractData } from '@/lib/contract-data';
-import { MAX_VIDEO_SECONDS, MediaError, compressImage, prepareVideo, uploadContractFile } from '@/lib/contract-media';
+import { MAX_VIDEO_LABEL, MediaError, compressImage, prepareVideo, uploadContractFile } from '@/lib/contract-media';
 import { contractShareUrl, revokeContractLink, REVOKE_LINK_MESSAGE, useContractPdf } from './use-contract-pdf';
 
 // Handover record + rental agreement in steps: every field printed on the contract is asked here,
@@ -261,7 +261,7 @@ const MEDIA_SLOTS: { kind: ContractAttachmentKind; title: string; hint: string; 
   { kind: 'licence', title: 'تصویر گواهینامه', hint: 'پشت و روی گواهینامه', max: 2, icon: IdCard },
   { kind: 'passport', title: 'تصویر پاسپورت', hint: 'صفحه مشخصات پاسپورت', max: 2, icon: BookUser },
   { kind: 'car_photo', title: 'تصاویر خودرو', hint: 'جلو، عقب، دو طرف، داخل و هر آسیب', max: 16, icon: Camera },
-  { kind: 'car_video', title: 'ویدیوی خودرو', hint: `حداکثر ${MAX_VIDEO_SECONDS} ثانیه — خودکار فشرده می‌شود`, max: 3, video: true, icon: Film },
+  { kind: 'car_video', title: 'ویدیوی خودرو', hint: `حداکثر ${MAX_VIDEO_LABEL} — خودکار فشرده می‌شود`, max: 3, video: true, icon: Film },
 ];
 
 interface UploadJob {
@@ -1043,7 +1043,7 @@ export default function HandoverWizard({ contract, startAtDone, reservations, ca
                 <Images size={16} className="mt-0.5 shrink-0 text-gold" />
                 <span>
                   همه‌ی موارد اختیاری هستند. عکس‌ها قبل از ارسال کوچک می‌شوند و ویدیوهای بزرگ روی همین دستگاه به کیفیت ۷۲۰p فشرده می‌شوند؛
-                  تا پایان فشرده‌سازی صفحه را باز نگه دارید. تصاویر در صفحات پیوست PDF قرارداد قرار می‌گیرند.
+                  فشرده‌سازی هم‌اندازه‌ی طول ویدیو زمان می‌برد و تا پایان آن باید صفحه را باز نگه دارید. تصاویر در صفحات پیوست PDF قرارداد قرار می‌گیرند.
                 </span>
               </div>
               {MEDIA_SLOTS.map(slot => (

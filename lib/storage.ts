@@ -118,8 +118,8 @@ export async function presentContractAttachments<T extends { id: string; attachm
 }
 
 export const MAX_CONTRACT_IMAGE_BYTES = 10 * 1024 * 1024;
-// Videos are compressed in the browser first (720p, ~1.5 Mbps, max 120 s ≈ 23 MB); this is the hard cap
-export const MAX_CONTRACT_VIDEO_BYTES = 30 * 1024 * 1024;
+// Videos are compressed in the browser first (720p, ~1.5 Mbps, max 300 s ≈ 56 MB); this is the hard cap
+export const MAX_CONTRACT_VIDEO_BYTES = 70 * 1024 * 1024;
 
 const CONTRACT_IMAGE_TYPES: Record<string, string> = {
   '.jpg': 'image/jpeg',
