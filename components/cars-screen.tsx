@@ -343,6 +343,7 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
   // signs to confirm them, after which the media is locked (enforced on the server too).
   const [uploadingReturnPhotos, setUploadingReturnPhotos] = useState(0);
   const [returnVideoProgress, setReturnVideoProgress] = useState<number | null>(null);
+  const [returnUploadProgress, setReturnUploadProgress] = useState<number | null>(null);
   const [returnModalResId, setReturnModalResId] = useState<string | null>(null);
   const returnRes = returnModalResId ? reservations.find(r => r.id === returnModalResId) ?? null : null;
   const [returnSignOpen, setReturnSignOpen] = useState(false);
@@ -377,8 +378,9 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
         if (isVideo) {
           const { video, poster } = await prepareVideo(file, p => setReturnVideoProgress(Math.round(p * 100)));
           setReturnVideoProgress(null);
+          setReturnUploadProgress(0);
           const posterPath = poster ? await uploadContractFile(poster, false).catch(() => undefined) : undefined;
-          const path = await uploadContractFile(video, true);
+          const path = await uploadContractFile(video, true, p => setReturnUploadProgress(Math.round(p * 100)));
           added.push({ kind: 'car_video', path, name: video.name, size: video.size, posterPath });
         } else {
           if (!file.type.startsWith('image/') && !/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)) throw new MediaError('فقط فایل تصویری یا ویدیو قابل انتخاب است');
@@ -389,6 +391,7 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
       } catch (err) {
         toast.error(err instanceof MediaError ? err.message : `آپلود «${file.name}» ناموفق بود`);
       } finally {
+        setReturnUploadProgress(null);
         setReturnVideoProgress(null);
         setUploadingReturnPhotos(n => n - 1);
       }
@@ -1975,7 +1978,7 @@ export default function CarsScreen({ initialTab, onTabChange, canDeleteContracts
                     )}
                     {!sig && <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed border-gold/40 bg-gold/10 px-3 py-2.5 text-[11px] font-bold text-gold cursor-pointer hover:bg-gold/20 ${uploadingReturnPhotos > 0 ? 'opacity-60 pointer-events-none' : ''}`}>
                       {uploadingReturnPhotos > 0 ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                      <span>{returnVideoProgress !== null ? `فشرده‌سازی ویدیو ${returnVideoProgress.toLocaleString('fa-IR')}٪ — صفحه را باز نگه دارید` : uploadingReturnPhotos > 0 ? 'در حال آپلود (برای ویدیو صبر کنید)...' : 'افزودن تصویر یا ویدیوی عودت'}</span>
+                      <span>{returnVideoProgress !== null ? `فشرده‌سازی ویدیو ${returnVideoProgress.toLocaleString('fa-IR')}٪ — صفحه را باز نگه دارید` : returnUploadProgress !== null ? `آپلود ویدیو ${returnUploadProgress.toLocaleString('fa-IR')}٪ — صفحه را باز نگه دارید` : uploadingReturnPhotos > 0 ? 'در حال آپلود (برای ویدیو صبر کنید)...' : 'افزودن تصویر یا ویدیوی عودت'}</span>
                       <input
                         type="file"
                         accept="image/*,video/*"

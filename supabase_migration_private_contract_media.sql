@@ -8,7 +8,7 @@ BEGIN;
 -- hands out short-lived signed URLs. (The old public `uploads` bucket keeps serving everything else.)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
-  'contract-media', 'contract-media', false, 31457280,
+  'contract-media', 'contract-media', false, 73400320,
   ARRAY['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime']
 )
 ON CONFLICT (id) DO UPDATE
