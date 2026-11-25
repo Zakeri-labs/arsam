@@ -3,6 +3,7 @@ import { getRequests, addRequest, deleteRequest, updateRequestDetails, RequestFi
 import { requireAdmin, verifyAdminAuth } from '@/lib/auth-check';
 import { isOwnUploadUrl, uploadFile, UploadRejected } from '@/lib/storage';
 import { clientIp, rateLimit, tooManyRequests } from '@/lib/rate-limit';
+import { getBlacklistKeys, isBlacklisted } from '@/lib/blacklist';
 
 const MAX_FILES = 20;
 const MAX_TEXT = 5000;
@@ -99,7 +100,9 @@ export async function GET() {
       return NextResponse.json({ error: 'شما به این بخش دسترسی ندارید.' }, { status: 403 });
     }
 
-    const requests = await getRequests();
+    // Blacklisted numbers (family, personal contacts) are left out of the requests and customers lists.
+    const [allRequests, blocked] = await Promise.all([getRequests(), getBlacklistKeys()]);
+    const requests = allRequests.filter(r => !isBlacklisted(blocked, r.phone));
 
     // The fleet-only admin just needs customer names/phones for the booking form.
     const seesFullRequests = auth.user.allowedScreens.some(s => s === 'requests' || s === 'customers' || s === 'qms');

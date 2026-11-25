@@ -17,6 +17,7 @@ import ReportsScreen from '@/components/reports-screen';
 import AccessScreen from '@/components/access-screen';
 import SettingsScreen from '@/components/settings-screen';
 import CaseModal from '@/components/case-modal';
+import BlacklistButton from '@/components/blacklist-button';
 import NewRequestModal from '@/components/new-request-modal';
 import { ConfirmDialogHost, confirmDialog } from '@/components/confirm-dialog';
 
@@ -1305,9 +1306,12 @@ export default function AdminPage() {
                     <div className="py-2 border-t border-white/10 space-y-1">
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-white/40 text-[10px]">تلفن:</span>
-                        <bdo dir="ltr" className="font-mono font-black text-white text-xs tracking-wide inline-block" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
-                          {req.phone}
-                        </bdo>
+                        <span className="flex items-center gap-1.5">
+                          <bdo dir="ltr" className="font-mono font-black text-white text-xs tracking-wide inline-block whitespace-nowrap" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
+                            {req.phone}
+                          </bdo>
+                          <BlacklistButton phone={req.phone} name={req.name} onDone={fetchRequests} />
+                        </span>
                       </div>
                       <div className="flex justify-between items-center text-xs">
                         <span className="text-white/40 text-[10px]">خدمت:</span>
@@ -2066,7 +2070,7 @@ export default function AdminPage() {
                   {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : activeScreen === 'customers' ? 'مدیریت مشتریان (CRM)' : activeScreen === 'access' ? 'مدیریت دسترسی‌ها' : activeScreen === 'settings' ? 'تنظیمات' : activeScreen === 'reports' ? 'گزارشات مالی' : 'مدیریت خودروها'}
                 </h1>
                 <p className="text-[10px] text-white/50 mt-1.5 font-bold">
-                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : activeScreen === 'customers' ? 'لیست پرونده‌ها، سوابق و مدارک مشتریان' : activeScreen === 'access' ? 'تعریف کاربران همکار و تعیین بخش‌های مجاز برای هر کدام' : activeScreen === 'settings' ? 'امضای شرکت روی قراردادها' : activeScreen === 'reports' ? 'گزارش درآمد و هزینه به تفکیک خودرو و نوع، با خروجی اکسل' : 'تعریف ناوگان، تقویم اشغال خودروها، قراردادها و حسابداری مالی اجاره'}
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : activeScreen === 'customers' ? 'لیست پرونده‌ها، سوابق و مدارک مشتریان' : activeScreen === 'access' ? 'تعریف کاربران همکار و تعیین بخش‌های مجاز برای هر کدام' : activeScreen === 'settings' ? 'امضای شرکت روی قراردادها و لیست سیاه شماره‌ها' : activeScreen === 'reports' ? 'گزارش درآمد و هزینه به تفکیک خودرو و نوع، با خروجی اکسل' : 'تعریف ناوگان، تقویم اشغال خودروها، قراردادها و حسابداری مالی اجاره'}
                 </p>
               </div>
               
