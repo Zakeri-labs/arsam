@@ -1,5 +1,6 @@
 'use client';
 
+import BlacklistButton from '@/components/blacklist-button';
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -58,8 +59,8 @@ export default function CustomersScreen() {
   const [sortBy, setSortBy] = useState<'recent' | 'requests' | 'name'>('recent');
   const [expandedPhone, setExpandedPhone] = useState<string | null>(null);
 
-  useEffect(() => {
-    setLoading(true);
+  const loadRequests = (showSpinner = true) => {
+    if (showSpinner) setLoading(true);
     fetch('/api/requests')
       .then(res => res.json())
       .then(data => {
@@ -67,7 +68,9 @@ export default function CustomersScreen() {
       })
       .catch(err => console.error('Failed to load requests for customers:', err))
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => loadRequests(), []);
 
   // Group requests by unique phone number
   const customers = useMemo(() => {
@@ -254,9 +257,12 @@ export default function CustomersScreen() {
 
                         {/* Phone with STRICT LTR BDO Overriding */}
                         <td className="py-3.5 px-4 font-mono font-black text-white/90 text-right">
-                          <bdo dir="ltr" className="inline-block tracking-wider" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
-                            {customer.phone}
-                          </bdo>
+                          <div className="flex items-center justify-end gap-2">
+                            <bdo dir="ltr" className="inline-block whitespace-nowrap tracking-wider" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
+                              {customer.phone}
+                            </bdo>
+                            <BlacklistButton phone={customer.phone} name={customer.name} onDone={() => loadRequests(false)} />
+                          </div>
                         </td>
 
                         {/* First seen */}

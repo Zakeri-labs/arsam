@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { PenLine, Trash2, Upload, Loader2, Settings, Check } from 'lucide-react';
+import { PenLine, Trash2, Upload, Loader2, Settings, Check, Ban, Undo2 } from 'lucide-react';
 import SignaturePad from '@/components/signature-pad';
 import { confirmDialog } from '@/components/confirm-dialog';
 
@@ -60,6 +60,98 @@ async function toTransparentSignature(file: File): Promise<File> {
   const blob = await new Promise<Blob | null>(r => out.toBlob(r, 'image/png'));
   if (!blob) throw new Error('خطا در پردازش تصویر امضا');
   return new File([blob], 'signature.png', { type: 'image/png' });
+}
+
+interface BlacklistEntry {
+  key: string;
+  phone: string;
+  name: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+// Numbers blacklisted from the requests / customers screens (Mr Zakeri, 21 Nov 2026).
+function BlacklistSection() {
+  const [items, setItems] = useState<BlacklistEntry[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [busyPhone, setBusyPhone] = useState<string | null>(null);
+
+  const load = () => {
+    setFailed(false);
+    setItems(null);
+    fetch('/api/blacklist')
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(d => setItems(Array.isArray(d) ? d : []))
+      .catch(() => setFailed(true));
+  };
+
+  useEffect(load, []);
+
+  const unblock = async (item: BlacklistEntry) => {
+    if (!(await confirmDialog({ title: 'برداشتن از لیست سیاه', message: `شماره‌ی \u2066${item.phone}\u2069 دوباره در درخواست‌ها و مشتریان نمایش داده شود؟`, confirmText: 'برداشتن از لیست' }))) return;
+    setBusyPhone(item.key);
+    try {
+      const res = await fetch(`/api/blacklist?key=${encodeURIComponent(item.key)}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      setItems(prev => (prev || []).filter(i => i.key !== item.key));
+      toast.success('شماره از لیست سیاه برداشته شد');
+    } catch {
+      toast.error('خطا در برداشتن از لیست سیاه');
+    } finally {
+      setBusyPhone(null);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#0b172a] p-4 shadow-lg sm:p-5">
+      <div className="mb-4 flex items-start gap-2.5">
+        <Ban size={17} className="mt-0.5 shrink-0 text-rose-300" />
+        <div>
+          <h3 className="text-[13px] font-black">لیست سیاه شماره‌ها</h3>
+          <p className="mt-1 text-[11px] leading-5 text-white/50">
+            این شماره‌ها (مثلاً خانواده و آشنایان) در درخواست‌ها و لیست مشتریان نمی‌آیند. با دکمه‌ی Blacklist کنار هر شماره اضافه می‌شوند.
+          </p>
+        </div>
+      </div>
+
+      {failed ? (
+        <p className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-[11.5px] font-bold text-rose-300">
+          خطا در بارگذاری لیست سیاه
+          <button type="button" onClick={load} className="mr-2 underline hover:text-rose-200">تلاش دوباره</button>
+        </p>
+      ) : items === null ? (
+        <div className="flex justify-center py-6"><Loader2 className="animate-spin text-white/40" /></div>
+      ) : items.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-white/10 py-6 text-center text-[12px] font-bold text-white/40">هیچ شماره‌ای در لیست سیاه نیست</p>
+      ) : (
+        <ul className="divide-y divide-white/5 rounded-xl border border-white/10">
+          {items.map(item => (
+            <li key={item.key} className="flex items-center justify-between gap-3 px-3 py-2.5">
+              <div className="min-w-0">
+                <bdo dir="ltr" className="block font-mono text-[12.5px] font-black tracking-wide" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
+                  {item.phone}
+                </bdo>
+                <p className="mt-0.5 flex flex-wrap gap-x-2 text-[10.5px] text-white/45">
+                  {item.name && <span>{item.name}</span>}
+                  <span>{new Date(item.createdAt).toLocaleDateString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                  {item.createdBy && <span>بلاک توسط <bdi>{item.createdBy}</bdi></span>}
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled={busyPhone === item.key}
+                onClick={() => unblock(item)}
+                className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-[11px] font-bold text-white/80 hover:bg-white/10 disabled:opacity-60"
+              >
+                {busyPhone === item.key ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />}
+                برداشتن از لیست
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export default function SettingsScreen() {
@@ -207,6 +299,8 @@ export default function SettingsScreen() {
           }}
         />
       </div>
+
+      <BlacklistSection />
     </div>
   );
 }
