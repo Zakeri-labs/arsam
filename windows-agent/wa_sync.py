@@ -31,7 +31,6 @@ import datetime as dt
 import getpass
 import hashlib
 import json
-import mimetypes
 import os
 import re
 import shutil
@@ -252,12 +251,33 @@ def api(cfg: dict, method: str, path: str, body: dict | None = None) -> dict:
         return json.loads(r.read() or b"{}")
 
 
+# Explicit types for what WhatsApp sends: Windows' mimetypes table comes from the
+# registry and often lacks .opus/.amr/.heic, which would upload voices as
+# application/octet-stream (Safari/iOS then refuse to play them). Must stay inside
+# the bucket's allowed_mime_types (supabase_migration_whatsapp_sync.sql).
+MIME = {
+    "opus": "audio/ogg", "ogg": "audio/ogg", "mp3": "audio/mpeg", "m4a": "audio/mp4", "aac": "audio/aac",
+    "wav": "audio/wav", "amr": "audio/amr",
+    "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp", "gif": "image/gif",
+    "heic": "image/heic", "heif": "image/heif",
+    "mp4": "video/mp4", "mov": "video/quicktime", "3gp": "video/3gpp", "webm": "video/webm",
+    "pdf": "application/pdf", "doc": "application/msword",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "xls": "application/vnd.ms-excel", "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "ppt": "application/vnd.ms-powerpoint",
+    "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "txt": "text/plain",
+}
+
+
 def upload_media(cfg: dict, file: Path) -> str | None:
     size = file.stat().st_size
     if not size or size > MAX_MEDIA:
         return None
     signed = api(cfg, "POST", "/api/whatsapp/agent/upload", {"fileName": file.name, "size": size})
-    mime = mimetypes.guess_type(file.name)[0] or "application/octet-stream"
+    # the panel keeps only allowed extensions (anything else becomes .bin), so the type follows its path
+    ext = signed["path"].rsplit(".", 1)[-1].lower()
+    mime = MIME.get(ext, "application/octet-stream")
     req = urllib.request.Request(signed["signedUrl"], data=file.read_bytes(), method="PUT", headers={"Content-Type": mime})
     urllib.request.urlopen(req, timeout=300).read()
     return signed["path"]
@@ -353,8 +373,22 @@ def _download_zapix(dest: Path) -> None:
     ps1.write_text(s, encoding="utf-8-sig")
 
 
+def _user_is_admin() -> bool:
+    """True when the signed-in Windows user is a member of Administrators (S-1-5-32-544),
+    elevated or not. The UAC prompt must elevate THIS user: elevating with another
+    account's password runs ZAPiXDESK in that account's profile and DPAPI scope."""
+    try:
+        out = subprocess.run(["whoami", "/groups"], capture_output=True, text=True, check=True).stdout
+    except Exception:
+        return False
+    return "S-1-5-32-544" in out
+
+
 def cmd_extract_keys(_a) -> None:
     ls = localstate()
+    if not _user_is_admin():
+        sys.exit("This Windows user is not an administrator. extract-keys must be approved by this same user "
+                 "(an admin password of another account would read the wrong profile). Stop and report this.")
     with tempfile.TemporaryDirectory(prefix="abuarsam-zx-") as tmp:
         tmp = Path(tmp)
         tool, out = tmp / "tool", tmp / "out"
@@ -415,17 +449,15 @@ def cmd_discover(_a) -> None:
 
 def cmd_sql(a) -> None:
     reveal = getattr(a, "reveal", False)
-    def trim(v):
-        # by default keep only the shape of long text, so exploring the schema
-        # does not pull whole chat messages into the terminal / transcript
-        if not reveal and isinstance(v, str) and len(v) > 24:
-            return f"<text {len(v)} chars>"
-        return v
+    def trim(k, v):
+        # by default show only the shape of values, so exploring the schema does not
+        # pull messages, names or numbers into the terminal / transcript
+        return v if reveal else _shape(v, k)
     def q(con, _p, _c):
         if not reveal:
-            print("(long text hidden; add --reveal only when you run this yourself in a terminal)")
+            print("(values hidden: text, names and numbers show only their shape; add --reveal only when you run this yourself in a terminal)")
         for r in con.execute(a.query).fetchmany(a.limit):
-            print({k: trim(v) for k, v in dict(r).items()})
+            print({k: trim(k, v) for k, v in dict(r).items()})
     _with_dbs(q)
 
 
@@ -465,6 +497,67 @@ def _sweep_stale_temp() -> None:
             log(f"could not clean leftover temp folder {d}")
 
 
+_JID = re.compile(r"^([\d:.\-]+)@([\w.]+)$")
+_CODE = re.compile(r"^[a-z_]{1,16}$")          # message type codes such as chat / ptt / image
+# columns whose short lowercase values are codes, not chat text or names
+_CODE_COLUMN = re.compile(r"(^|_)(type|kind|mime|ext|class)$|(?<=[a-z])(Type|Kind)$", re.I)
+_TIME_COLUMN = re.compile(r"time|date|(^|_)ts(_|$)|stamp|created|modified|expir", re.I)
+_HEX_ID = re.compile(r"^[A-Fa-f0-9]{16,64}$")  # WhatsApp message ids
+
+
+def _mask_digits(s: str) -> str:
+    """Every digit except the last four becomes *, whatever separators sit between them."""
+    keep = sum(ch.isdigit() for ch in s) - 4
+    out = []
+    for ch in s:
+        if ch.isdigit() and keep > 0:
+            out.append("*")
+            keep -= 1
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def _looks_like_phone_int(n: int) -> bool:
+    """8-15 digit integers are masked as possible phone numbers, except the ranges of
+    unix timestamps in seconds or milliseconds (2001-2036), which the mapping needs."""
+    n = abs(n)
+    if not 10_000_000 <= n < 10 ** 15:
+        return False
+    return not (1_000_000_000 <= n < 2_100_000_000 or 1_000_000_000_000 <= n < 2_100_000_000_000)
+
+
+def _shape(v, col: str | None = None):
+    """A value with its private content hidden. Numbers stay (ids, flags, timestamps)
+    unless they look like a phone; chat/contact ids keep only their domain and last 4
+    digits; hex message ids stay; short lowercase codes stay only in a type/kind-like
+    column; every other text shows only its length."""
+    if v is None or isinstance(v, (bool, float)):
+        return v
+    if isinstance(v, int):
+        if col and _TIME_COLUMN.search(col):
+            return v
+        n = abs(v)
+        # outside a time column, a 10-digit value in the seconds range may be a phone too
+        if _looks_like_phone_int(v) or 1_000_000_000 <= n < 10_000_000_000:
+            return _mask_digits(str(v))
+        return v
+    if isinstance(v, bytes):
+        return f"<bytes {len(v)}>"
+    s = str(v)
+    j = _JID.match(s)
+    if j:
+        return f"{_mask_digits(j.group(1))}@{j.group(2)}"
+    if _HEX_ID.match(s) or (col and _CODE_COLUMN.search(col) and _CODE.match(s)):
+        return s
+    if re.fullmatch(r"\+?[\d\s()-]{6,}", s):
+        return _mask_digits(s)
+    if re.search(r"[\\/]", s):  # a file path: keep only its extension
+        ext = re.search(r"\.(\w{1,8})$", s)
+        return f"<path .{ext.group(1)}>" if ext else "<path>"
+    return f"<text {len(s)} chars>"
+
+
 def _mask(m: dict | None, reveal: bool) -> dict | None:
     """Hide chat contents unless --reveal, so `test`/`sql` output never carries private text."""
     if m is None or reveal:
@@ -477,6 +570,9 @@ def _mask(m: dict | None, reveal: bool) -> dict | None:
     for k in ("contact_name", "media_name"):
         if out.get(k):
             out[k] = "<hidden>"
+    if out.get("media_file"):
+        out["media_file"] = _shape(out["media_file"]) if re.search(r"[\\/]", str(out["media_file"])) else "<hidden>"
+    out["id"] = _shape(out["id"].rsplit(":", 1)[0]) + ":<id>" if out.get("id") else out.get("id")
     return out
 
 
@@ -566,6 +662,11 @@ def cmd_status(_a) -> None:
 
 
 def main() -> None:
+    # When output goes to a pipe (Claude Code, the log viewer) Windows uses the ANSI
+    # code page, which cannot print Persian names or text and would crash the command.
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(description="Abu Arsam office WhatsApp sync")
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("setup")

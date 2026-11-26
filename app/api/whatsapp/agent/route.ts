@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { blacklistHashes, ingest, MAX_BATCH, touchAgent, verifyAgent } from '@/lib/whatsapp';
+import { blacklistHashes, ingest, MAX_BATCH, maybeSweepOrphanMedia, touchAgent, verifyAgent } from '@/lib/whatsapp';
 
 // Endpoint for the office WhatsApp agent (windows-agent/). Bearer token only.
 
@@ -28,6 +28,9 @@ export async function POST(request: Request) {
     }
     const result = await ingest(messages);
     await touchAgent(result.stored, typeof body.agent === 'string' ? body.agent : '');
+    // Check-ins also clear files no message points to (e.g. the upload of a message the
+    // blacklist refused), at most every 30 minutes.
+    await maybeSweepOrphanMedia().catch(err => console.error('WhatsApp orphan sweep failed:', err));
     return NextResponse.json({ success: true, ...result });
   } catch (error) {
     console.error('WhatsApp ingest failed:', error);

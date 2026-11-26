@@ -76,7 +76,8 @@ export interface IncomingMessage {
 const MAX_FUTURE_MS = 24 * 60 * 60 * 1000;
 
 export function cleanMessage(raw: any): IncomingMessage | null {
-  const id = str(raw?.id, 200);
+  // '"', '\\' and ',' would break the quoted PostgREST cursor filter in getThread
+  const id = str(raw?.id, 200).replace(/["\\,()]/g, '_');
   const phone = str(raw?.phone, 40);
   const key = phoneKey(phone);
   const sent = new Date(raw?.sent_at);
@@ -108,13 +109,20 @@ export function cleanMessage(raw: any): IncomingMessage | null {
 export async function ingest(rawMessages: unknown[]): Promise<{ stored: number; skipped: number }> {
   const blocked = await getBlacklistKeys({ strict: true }); // never ingest when the blacklist can't be read
   const rows = rawMessages.slice(0, MAX_BATCH).map(cleanMessage).filter((m): m is IncomingMessage => !!m && !blocked.has(m.chat_key));
+  let stored = 0;
   if (rows.length) {
     // ignoreDuplicates: the agent only moves forward, so an existing message id is never
     // re-sent legitimately; refusing to overwrite stops a stolen token rewriting history.
-    const { error } = await supabase.from('whatsapp_messages').upsert(rows, { onConflict: 'id', ignoreDuplicates: true });
+    // The database trigger also drops rows for a number blacklisted after the read above,
+    // so `stored` counts only the rows actually inserted.
+    const { data, error } = await supabase
+      .from('whatsapp_messages')
+      .upsert(rows, { onConflict: 'id', ignoreDuplicates: true })
+      .select('id');
     if (error) throw error;
+    stored = (data || []).length;
   }
-  return { stored: rows.length, skipped: Math.min(rawMessages.length, MAX_BATCH) - rows.length };
+  return { stored, skipped: Math.min(rawMessages.length, MAX_BATCH) - stored };
 }
 
 /** SHA-256 of each blacklisted key, so the agent can match numbers without the panel handing out the private list. */
@@ -139,16 +147,82 @@ export function uploadPathFor(fileName: string): string {
   return `wa/${month}/${randomBytes(12).toString('base64url')}.${ext}`;
 }
 
+const PAGE_ROWS = 1000; // PostgREST returns at most this many rows per request
+
+async function removeMedia(paths: string[]): Promise<void> {
+  for (let i = 0; i < paths.length; i += PAGE_ROWS) {
+    const { error } = await supabase.storage.from(MEDIA_BUCKET).remove(paths.slice(i, i + PAGE_ROWS));
+    if (error) throw error;
+  }
+}
+
+/** Media paths stored for one customer (paged past PostgREST's 1000-row cap). */
+export async function conversationMedia(chatKey: string): Promise<string[]> {
+  const paths: string[] = [];
+  if (!chatKey) return paths;
+  for (let from = 0; ; from += PAGE_ROWS) {
+    const { data, error } = await supabase
+      .from('whatsapp_messages')
+      .select('id, media_path')
+      .eq('chat_key', chatKey)
+      .not('media_path', 'is', null)
+      .order('id')
+      .range(from, from + PAGE_ROWS - 1);
+    if (error) throw error;
+    for (const r of data || []) if (r.media_path) paths.push(r.media_path);
+    if ((data || []).length < PAGE_ROWS) break;
+  }
+  return paths;
+}
+
 /**
- * Deletes a customer's whole WhatsApp conversation and its media. Called when a
- * number is blacklisted, so blacklisting also removes what was already stored
- * (hiding it in the UI is not enough for a privacy guard).
+ * Deletes a customer's whole WhatsApp conversation and its media (hiding it in the
+ * UI is not enough for a privacy guard). `paths` are the media paths read before the
+ * number was blacklisted, since the blacklist trigger deletes the rows themselves.
+ * Throws on any failure; leftover files are also caught by sweepOrphanMedia.
  */
-export async function purgeConversation(chatKey: string): Promise<void> {
-  const { data } = await supabase.from('whatsapp_messages').select('media_path').eq('chat_key', chatKey);
-  const paths = (data || []).map(r => r.media_path).filter((p): p is string => !!p);
-  if (paths.length) await supabase.storage.from(MEDIA_BUCKET).remove(paths);
-  await supabase.from('whatsapp_messages').delete().eq('chat_key', chatKey);
+export async function purgeConversation(chatKey: string, paths: string[]): Promise<void> {
+  if (!chatKey) return;
+  await removeMedia(paths);
+  // the database trigger already did this; kept so the purge does not depend on it
+  const { error } = await supabase.from('whatsapp_messages').delete().eq('chat_key', chatKey);
+  if (error) throw error;
+}
+
+/**
+ * Deletes media files that no message points to any more: files of rows the
+ * blacklist trigger removed, and uploads whose message was refused. Files younger
+ * than a day (24h) are left alone (see whatsapp_orphan_media in the migration).
+ */
+export async function sweepOrphanMedia(limit = 500): Promise<number> {
+  // self-heal first: rows of a blacklisted number that slipped past the triggers
+  const { error: healError } = await supabase.rpc('whatsapp_enforce_blacklist');
+  if (healError) throw healError;
+  const { data, error } = await supabase.rpc('whatsapp_orphan_media', { lim: limit });
+  if (error) throw error;
+  const names = ((data || []) as { name: string }[]).map(r => r.name).filter(Boolean);
+  await removeMedia(names);
+  return names.length;
+}
+
+const SWEEP_EVERY_MS = 30 * 60 * 1000;
+
+/**
+ * The sweep for agent check-ins: at most every 30 minutes, so a run of 25 batches
+ * does not scan the bucket 25 times. The slot is claimed with a conditional update,
+ * so two check-ins at the same moment do not both sweep.
+ */
+export async function maybeSweepOrphanMedia(): Promise<void> {
+  const now = new Date();
+  const due = new Date(now.getTime() - SWEEP_EVERY_MS).toISOString();
+  const { data, error } = await supabase
+    .from('whatsapp_sync')
+    .update({ last_sweep_at: now.toISOString() })
+    .eq('id', 1)
+    .or(`last_sweep_at.is.null,last_sweep_at.lt.${due}`)
+    .select('id');
+  if (error) throw error;
+  if ((data || []).length) await sweepOrphanMedia();
 }
 
 export interface Conversation {
@@ -162,51 +236,79 @@ export interface Conversation {
   count: number;
 }
 
-// ponytail: groups the newest 2000 messages in memory; move to a SQL view once the inbox outgrows that.
-export async function listConversations(): Promise<Conversation[]> {
-  const [{ data, error }, blocked] = await Promise.all([
-    supabase
-      .from('whatsapp_messages')
-      .select('chat_key, chat_phone, contact_name, sent_at, body, kind, from_me')
-      .order('sent_at', { ascending: false })
-      .limit(2000),
-    getBlacklistKeys(),
-  ]);
+export const CONVERSATIONS_PAGE = 30;
+
+/**
+ * One page of conversations, newest first. Grouping, search and the blacklist
+ * filter all run in the database (whatsapp_conversations), so a read error fails
+ * the request instead of showing a blocked number.
+ */
+export async function listConversations(query: string, page: number): Promise<{ items: Conversation[]; total: number }> {
+  // LIKE wildcards are stripped so a search is always a plain "contains"
+  const q = query.replace(/[%_\\]/g, '').trim().slice(0, 60);
+  // the digits of the search (Persian/Arabic digits folded), matched in SQL against the
+  // phone's own digits and the stored key, so 09.., +968 9.. and ۰۹.. all find a number
+  const qdigits = q
+    .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660))
+    .replace(/\D/g, '');
+  const fetchPage = (off: number, lim: number) =>
+    supabase.rpc('whatsapp_conversations', { q, qdigits, lim, off });
+  const { data, error } = await fetchPage(Math.max(0, page - 1) * CONVERSATIONS_PAGE, CONVERSATIONS_PAGE);
   if (error) throw error;
-  const byKey = new Map<string, Conversation>();
-  for (const m of data || []) {
-    if (blocked.has(m.chat_key)) continue;
-    const c = byKey.get(m.chat_key);
-    if (!c) {
-      byKey.set(m.chat_key, {
-        chatKey: m.chat_key, phone: m.chat_phone, name: m.contact_name, lastAt: m.sent_at,
-        lastBody: m.body, lastKind: m.kind, lastFromMe: m.from_me, count: 1,
-      });
-    } else {
-      c.count++;
-      if (!c.name && m.contact_name) c.name = m.contact_name;
-    }
+  const rows = (data || []) as any[];
+  let total = rows.length ? Number(rows[0].total) : 0;
+  if (!rows.length && page > 1) {
+    // past the last page (e.g. its last chat was blacklisted): report the real total
+    const first = await fetchPage(0, 1);
+    if (first.error) throw first.error;
+    total = first.data?.length ? Number((first.data as any[])[0].total) : 0;
   }
-  return [...byKey.values()];
+  return {
+    total,
+    items: rows.map(r => ({
+      chatKey: r.chat_key, phone: r.chat_phone, name: r.contact_name, lastAt: r.last_at,
+      lastBody: r.last_body, lastKind: r.last_kind, lastFromMe: r.last_from_me, count: Number(r.msg_count),
+    })),
+  };
 }
 
-export async function getThread(chatKey: string) {
-  const { data, error } = await supabase
+export const THREAD_PAGE = 200;
+
+/** Cursor for "older messages": the oldest message already shown. */
+export interface ThreadCursor { sentAt: string; id: string }
+
+/**
+ * The newest THREAD_PAGE messages of a chat, or the ones just before `before`,
+ * returned oldest first for display. `hasMore` is true when older ones exist.
+ */
+export async function getThread(chatKey: string, before?: ThreadCursor | null) {
+  let query = supabase
     .from('whatsapp_messages')
     .select('id, from_me, sent_at, kind, body, media_path, media_mime, media_name')
-    .eq('chat_key', chatKey)
-    .order('sent_at', { ascending: true })
-    .limit(1000);
+    .eq('chat_key', chatKey);
+  if (before) {
+    // values are validated by the route; quoted because ids contain ':' and '@'
+    query = query.or(`sent_at.lt."${before.sentAt}",and(sent_at.eq."${before.sentAt}",id.lt."${before.id}")`);
+  }
+  const { data, error } = await query
+    .order('sent_at', { ascending: false })
+    .order('id', { ascending: false })
+    .limit(THREAD_PAGE + 1);
   if (error) throw error;
-  const rows = data || [];
+  const hasMore = (data || []).length > THREAD_PAGE;
+  const rows = (data || []).slice(0, THREAD_PAGE).reverse();
   const paths = rows.map(r => r.media_path).filter((p): p is string => !!p);
   const urls = new Map<string, string>();
   if (paths.length) {
     const { data: signed } = await supabase.storage.from(MEDIA_BUCKET).createSignedUrls(paths, 60 * 60);
     for (const s of signed || []) if (s.path && s.signedUrl) urls.set(s.path, s.signedUrl);
   }
-  return rows.map(r => ({
-    id: r.id, fromMe: r.from_me, sentAt: r.sent_at, kind: r.kind, body: r.body,
-    mediaUrl: r.media_path ? urls.get(r.media_path) ?? null : null, mediaMime: r.media_mime, mediaName: r.media_name,
-  }));
+  return {
+    hasMore,
+    messages: rows.map(r => ({
+      id: r.id, fromMe: r.from_me, sentAt: r.sent_at, kind: r.kind, body: r.body,
+      mediaUrl: r.media_path ? urls.get(r.media_path) ?? null : null, mediaMime: r.media_mime, mediaName: r.media_name,
+    })),
+  };
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Ban, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { confirmDialog } from '@/components/confirm-dialog';
+import { cn } from '@/lib/utils';
 
 // Small "Blacklist" button next to a phone number (Mr Zakeri, 21 Nov 2026).
 // A blacklisted number disappears from the requests and customers lists;
@@ -12,10 +13,13 @@ export default function BlacklistButton({
   phone,
   name,
   onDone,
+  className,
 }: {
   phone: string;
   name?: string;
   onDone: () => void;
+  /** extra classes, e.g. a larger touch target where it sits next to 44px buttons */
+  className?: string;
 }) {
   const [busy, setBusy] = useState(false);
 
@@ -23,7 +27,7 @@ export default function BlacklistButton({
     e.stopPropagation();
     const ok = await confirmDialog({
       title: 'افزودن به لیست سیاه',
-      message: `شماره‌ی ⁦${phone}⁩${name ? ` (${name})` : ''} دیگر در درخواست‌ها و لیست مشتریان نمی‌آید. برداشتن از لیست سیاه از بخش تنظیمات ممکن است.`,
+      message: `شماره‌ی ⁦${phone}⁩${name ? ` (${name})` : ''} دیگر در درخواست‌ها، لیست مشتریان و صندوق واتس‌اپ نمی‌آید و پیام‌ها و فایل‌های واتس‌اپ ذخیره‌شده‌اش برای همیشه پاک می‌شوند (با برداشتن از لیست سیاه برنمی‌گردند). برداشتن از لیست سیاه از بخش تنظیمات ممکن است.`,
       confirmText: 'بلاک شود',
       destructive: true,
     });
@@ -37,7 +41,8 @@ export default function BlacklistButton({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'خطا در افزودن به لیست سیاه');
-      toast.success('شماره به لیست سیاه رفت');
+      if (data.cleanupPending) toast.warning('شماره بلاک شد؛ پاک‌کردن فایل‌های واتس‌اپش کامل نشد و تا یک روز بعد خودکار انجام می‌شود.');
+      else toast.success('شماره به لیست سیاه رفت');
       onDone();
     } catch (err: any) {
       toast.error(err?.message || 'خطا در افزودن به لیست سیاه');
@@ -53,7 +58,10 @@ export default function BlacklistButton({
       disabled={busy}
       title="افزودن به لیست سیاه"
       aria-label={`افزودن ${phone} به لیست سیاه`}
-      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 bg-transparent px-1.5 py-1 font-sans text-[10.5px] font-bold tracking-normal text-white/45 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400 disabled:opacity-60 sm:text-[11px]"
+      className={cn(
+        'inline-flex shrink-0 items-center gap-1 rounded-md border border-white/10 bg-transparent px-1.5 py-1 font-sans text-[10.5px] font-bold tracking-normal text-white/45 transition-colors hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose-400 disabled:opacity-60 sm:text-[11px]',
+        className,
+      )}
     >
       {busy ? <Loader2 size={11} className="animate-spin" /> : <Ban size={11} />}
       Blacklist
