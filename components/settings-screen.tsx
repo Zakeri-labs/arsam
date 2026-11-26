@@ -71,7 +71,10 @@ interface BlacklistEntry {
 }
 
 // Numbers blacklisted from the requests / customers screens (Mr Zakeri, 21 Nov 2026).
-function BlacklistSection() {
+// onChange lets the admin page reload its own lists (requests and the menu
+// badge) after a number comes off the blacklist; otherwise they stay stale
+// until the page is refreshed.
+function BlacklistSection({ onChange }: { onChange?: () => void }) {
   const [items, setItems] = useState<BlacklistEntry[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [busyPhone, setBusyPhone] = useState<string | null>(null);
@@ -95,6 +98,7 @@ function BlacklistSection() {
       if (!res.ok) throw new Error();
       setItems(prev => (prev || []).filter(i => i.key !== item.key));
       toast.success('شماره از لیست سیاه برداشته شد');
+      onChange?.();
     } catch {
       toast.error('خطا در برداشتن از لیست سیاه');
     } finally {
@@ -154,7 +158,7 @@ function BlacklistSection() {
   );
 }
 
-export default function SettingsScreen() {
+export default function SettingsScreen({ onBlacklistChange }: { onBlacklistChange?: () => void } = {}) {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -300,7 +304,7 @@ export default function SettingsScreen() {
         />
       </div>
 
-      <BlacklistSection />
+      <BlacklistSection onChange={onBlacklistChange} />
     </div>
   );
 }
