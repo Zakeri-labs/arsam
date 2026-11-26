@@ -65,7 +65,8 @@ const PAGE_SIZE = 30; // same as CONVERSATIONS_PAGE in lib/whatsapp.ts
 
 const faNum = (n: number) => n.toLocaleString('fa-IR');
 
-export default function WhatsAppScreen() {
+// onBlacklistChange lets the admin page reload the requests list after a number is blacklisted here.
+export default function WhatsAppScreen({ onBlacklistChange }: { onBlacklistChange?: () => void } = {}) {
   const reduceMotion = useReducedMotion();
   const [chats, setChats] = useState<Conversation[] | null>(null);
   const [total, setTotal] = useState(0);
@@ -252,7 +253,7 @@ export default function WhatsAppScreen() {
           <bdo dir="ltr" className="block text-right font-mono text-[11px] text-white/50" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{open.phone}</bdo>
         </div>
         <a href={`tel:${open.phone.replace(/[^0-9+]/g, '')}`} title="تماس" aria-label="تماس" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 text-white/70 hover:bg-white/5"><Phone size={14} /></a>
-        <BlacklistButton className="min-h-11 rounded-xl px-3 text-[11px]" phone={open.phone} name={open.name || undefined} onDone={() => { setOpen(null); loadChats(); }} />
+        <BlacklistButton className="min-h-11 rounded-xl px-3 text-[11px]" phone={open.phone} name={open.name || undefined} onDone={() => { setOpen(null); loadChats(); onBlacklistChange?.(); }} />
       </div>
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {threadFailed && !thread ? (

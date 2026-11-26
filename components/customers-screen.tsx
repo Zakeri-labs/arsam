@@ -52,7 +52,9 @@ function formatDate(dateStr: string) {
   } catch { return dateStr; }
 }
 
-export default function CustomersScreen() {
+// onBlacklistChange lets the admin page reload its requests list after a
+// number is blacklisted here, so the requests screen and its badge stay in step.
+export default function CustomersScreen({ onBlacklistChange }: { onBlacklistChange?: () => void } = {}) {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -261,7 +263,7 @@ export default function CustomersScreen() {
                             <bdo dir="ltr" className="inline-block whitespace-nowrap tracking-wider" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>
                               {customer.phone}
                             </bdo>
-                            <BlacklistButton phone={customer.phone} name={customer.name} onDone={() => loadRequests(false)} />
+                            <BlacklistButton phone={customer.phone} name={customer.name} onDone={() => { loadRequests(false); onBlacklistChange?.(); }} />
                           </div>
                         </td>
 

@@ -323,7 +323,10 @@ export default function AdminPage() {
 
   const fetchRequests = () => {
     fetch('/api/requests')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`requests ${res.status}`);
+        return res.json();
+      })
       .then(data => {
         if (Array.isArray(data)) {
           setRequests(data);
@@ -2114,13 +2117,13 @@ export default function AdminPage() {
               ) : activeScreen === 'qms' ? (
                 <QMSScreen />
               ) : activeScreen === 'customers' ? (
-                <CustomersScreen />
+                <CustomersScreen onBlacklistChange={fetchRequests} />
               ) : activeScreen === 'whatsapp' ? (
-                <WhatsAppScreen />
+                <WhatsAppScreen onBlacklistChange={fetchRequests} />
               ) : activeScreen === 'access' && currentUser?.role === 'superadmin' ? (
                 <AccessScreen />
               ) : activeScreen === 'settings' && currentUser?.role === 'superadmin' ? (
-                <SettingsScreen />
+                <SettingsScreen onBlacklistChange={fetchRequests} />
               ) : activeScreen === 'reports' && (!currentUser?.allowedScreens || currentUser.allowedScreens.includes('cars')) ? (
                 <ReportsScreen />
               ) : (
