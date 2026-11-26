@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth, requireSuperadmin } from '@/lib/auth-check';
 import { addToBlacklist, getBlacklist, removeFromBlacklist } from '@/lib/blacklist';
-import { purgeConversation } from '@/lib/whatsapp';
+import { conversationMedia, purgeConversation, sweepOrphanMedia } from '@/lib/whatsapp';
 import { phoneKey } from '@/lib/phone-key';
 
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value : '').trim().slice(0, max);
@@ -33,10 +33,24 @@ export async function POST(request: Request) {
     if (phoneKey(phone).length < 7) {
       return NextResponse.json({ error: 'شماره معتبر نیست' }, { status: 400 });
     }
+    const key = phoneKey(phone);
+    // Block first, so a storage hiccup can never leave the number unblocked. The media
+    // paths are read just before, because the blacklist trigger deletes the rows.
+    let cleanupPending = false;
+    const media = await conversationMedia(key).catch(err => {
+      console.error('WhatsApp media lookup failed for a blacklisted number:', err);
+      cleanupPending = true;
+      return [] as string[];
+    });
     await addToBlacklist(phone, text(body.name, 200) || null, auth.user.email);
-    // Also drop any WhatsApp conversation already stored for this number, with its media.
-    await purgeConversation(phoneKey(phone));
-    return NextResponse.json({ success: true });
+    // Then drop what was already stored for it. If this fails the number is still
+    // blocked and hidden; the orphan sweep removes leftover files on a later run.
+    await purgeConversation(key, media).catch(err => {
+      console.error('WhatsApp purge failed for a blacklisted number:', err);
+      cleanupPending = true;
+    });
+    await sweepOrphanMedia().catch(err => console.error('WhatsApp orphan sweep failed:', err));
+    return NextResponse.json({ success: true, cleanupPending });
   } catch (error) {
     console.error('Error adding to blacklist:', error);
     return NextResponse.json({ error: 'خطا در افزودن به لیست سیاه' }, { status: 500 });

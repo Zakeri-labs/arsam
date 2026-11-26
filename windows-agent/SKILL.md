@@ -12,15 +12,23 @@ the temp folder. It never writes to WhatsApp, never sends WhatsApp messages, ski
 status and channels, and skips every number on the panel's blacklist.
 
 ## Rules while you work
-- Message contents are private. `discover`, `test` and `sql` hide chat text by default and
-  show only its shape. Do not add `--reveal`, and if a value must be seen, tell the person to
+- Message contents are private. `discover`, `test` and `sql` hide chat text, names, file
+  names and phone numbers by default and show only their shape (type codes, hex message ids,
+  timestamps and the last 4 digits of a number stay visible). Do not add `--reveal`, and if a value must be seen, tell the person to
   run that command themselves in a terminal. Never paste chat contents into your replies, and
   never upload, email or copy the decrypted databases or the ZAPiXDESK output anywhere.
   `wa_sync.py` deletes them itself.
+- The panel side must be ready first, in this order: `supabase_migration_whatsapp_sync.sql`,
+  then `supabase_migration_whatsapp_blacklist_guard.sql`, then the code deployed. If the
+  «صندوق واتس‌اپ» screen says it is not set up yet, stop and report it.
 - Before going live, make sure the owner has put every private number (family and such) on the
-  panel's blacklist: blacklisting a number also deletes whatever was already synced for it.
+  panel's blacklist (Settings → «لیست سیاه شماره‌ها», typed **with the country code**, e.g.
+  `+968…`, `+964…`): blacklisting a number also deletes whatever was already synced for it.
 - Do not change WhatsApp's own files and do not uninstall or re-login WhatsApp.
-- The only network targets are the panel URL in config and GitHub (pinned ZAPiXDESK, step 3).
+- The only network targets are the panel URL in config, the panel's file storage
+  (`ftzmlowdyozcowsorcnp.supabase.co`, where voices and files are uploaded through signed links)
+  and GitHub (pinned ZAPiXDESK, step 3). If a firewall or antivirus filters traffic, all three
+  must be allowed.
 - If a step fails in a way this file does not cover, stop and report the exact error.
 
 ## Install (first time)
@@ -31,6 +39,10 @@ status and channels, and skips every number on the panel's blacklist.
    - Python 3.11 or newer: `python --version`. If it is missing, install it for this user only
      (no admin): `winget install -e --id Python.Python.3.12 --scope user`, then open a new terminal.
    - `python -m pip install --user cryptography`
+   - The signed-in Windows user must be an administrator (`whoami /groups` lists
+     `S-1-5-32-544`). Step 3 elevates **this same user**; approving the UAC prompt with another
+     account's password would read that account's profile instead. If the user is not an
+     admin, stop and report it (`extract-keys` refuses too).
 
 2. **Put the program in place and connect it to the panel.**
    - Copy this folder to `%LOCALAPPDATA%\AbuArsamWA\agent\`. Run every later command from there.
@@ -47,7 +59,7 @@ status and channels, and skips every number on the panel's blacklist.
    - `python wa_sync.py extract-keys`
    - It downloads ZAPiXDESK at a pinned commit, checks the SHA-256 of both files, and refuses
      to run anything else. It saves only the database keys, DPAPI-protected, in `keys.bin`.
-   - If the admin prompt cannot be approved on this PC, stop and report that.
+   - If the admin prompt cannot be approved on this PC by this same user, stop and report that.
 
 4. **Map the WhatsApp tables (the WhatsApp schema is not documented and changes between versions).**
    - `python wa_sync.py discover` lists every database, table, column and row count.
@@ -61,7 +73,8 @@ status and channels, and skips every number on the panel's blacklist.
        LocalState.
    - Write `messages_sql` into `%LOCALAPPDATA%\AbuArsamWA\config.json`.
      - It must return these column names: `cursor` (an integer that only grows, usually the
-       rowid), `id`, `chat_jid`, `from_me` (0/1), `ts` (unix seconds or ms), `body`, `kind`,
+       rowid), `id`, `chat_jid` (the id of the **chat**, never of the sender: in a group the
+       sender is a person's jid, and using it would let group messages through as 1:1 chats), `from_me` (0/1), `ts` (unix seconds or ms), `body`, `kind`,
        `media_file`, `media_mime`, `media_name`, `contact_name`. Optionally it can also return
        `phone`.
      - It must end with: `WHERE <cursor> > :cursor AND <ts> >= :since ORDER BY <cursor> LIMIT :limit`.
@@ -79,6 +92,10 @@ status and channels, and skips every number on the panel's blacklist.
      `kind`, `media_exists`, that a phone is present) without reading private content.
    - If the person needs to confirm the actual names or text look right, have them run
      `python wa_sync.py test --reveal` themselves in a terminal. Fix the mapping until it is right.
+   - Media must be the real files: `media_file` should end in a normal extension (`.opus`,
+     `.jpg`, `.pdf`, …) and `media_exists` be true. If the media under LocalState is stored
+     encrypted (e.g. `.enc` files or unreadable bytes), stop and report it: the agent uploads
+     files as they are and cannot decrypt media.
 
 6. **Go live.**
    - `python wa_sync.py run` once. It must print `run ok: N messages sent`.

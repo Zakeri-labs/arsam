@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ArrowRight, FileText, Loader2, Phone, RefreshCw, Search } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ArrowRight, ChevronLeft, ChevronRight, FileText, Loader2, Phone, RefreshCw, Search } from 'lucide-react';
 import BlacklistButton from '@/components/blacklist-button';
 
 // Office WhatsApp inbox: one continuing file per customer, filled by the agent on
@@ -60,34 +61,102 @@ function MessageBody({ m }: { m: Message }) {
   );
 }
 
+const PAGE_SIZE = 30; // same as CONVERSATIONS_PAGE in lib/whatsapp.ts
+
+const faNum = (n: number) => n.toLocaleString('fa-IR');
+
 export default function WhatsAppScreen() {
+  const reduceMotion = useReducedMotion();
   const [chats, setChats] = useState<Conversation[] | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [failed, setFailed] = useState<string | false>(false);
+  const [listLoading, setListLoading] = useState(false);
+  const listScrollRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
+  const [search, setSearch] = useState('');
   const [open, setOpen] = useState<Conversation | null>(null);
   const [thread, setThread] = useState<Message[] | null>(null);
+  const [threadFailed, setThreadFailed] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const listReq = useRef(0);
+  const threadReq = useRef(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // scroll to apply once the new thread is on screen: 'bottom', or a distance from the bottom
+  const pendingScroll = useRef<'bottom' | number | null>(null);
 
-  const loadChats = () => {
+  // search runs on the server; wait for a short pause in typing
+  useEffect(() => {
+    const next = query.trim();
+    if (next === search) return;
+    const t = setTimeout(() => {
+      setSearch(next);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query, search]);
+
+  const loadChats = useCallback(() => {
+    const req = ++listReq.current;
     setFailed(false);
-    fetch('/api/whatsapp')
-      .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(d => setChats(Array.isArray(d) ? d : []))
-      .catch(() => setFailed(true));
-  };
+    setListLoading(true);
+    fetch(`/api/whatsapp?q=${encodeURIComponent(search)}&page=${page}`)
+      .then(async r => (r.ok ? r.json() : Promise.reject((await r.json().catch(() => ({})))?.error)))
+      .then(d => {
+        if (req !== listReq.current) return;
+        setChats(Array.isArray(d?.items) ? d.items : []);
+        setTotal(Number(d?.total) || 0);
+        if (listScrollRef.current) listScrollRef.current.scrollTop = 0;
+      })
+      .catch(msg => { if (req === listReq.current) setFailed(typeof msg === 'string' && msg ? msg : 'خطا در بارگذاری پیام‌ها'); })
+      .finally(() => { if (req === listReq.current) setListLoading(false); });
+  }, [search, page]);
 
-  useEffect(loadChats, []);
+  useEffect(loadChats, [loadChats]);
+
+  const loadThread = useCallback((chat: Conversation, before?: Message) => {
+    const req = ++threadReq.current;
+    setThreadFailed(false);
+    if (before) setLoadingOlder(true);
+    else { setThread(null); setHasMore(false); }
+    const cursor = before ? `&before_at=${encodeURIComponent(before.sentAt)}&before_id=${encodeURIComponent(before.id)}` : '';
+    fetch(`/api/whatsapp?chat=${chat.chatKey}${cursor}`)
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(d => {
+        if (req !== threadReq.current) return;
+        const msgs: Message[] = Array.isArray(d?.messages) ? d.messages : [];
+        setHasMore(!!d?.hasMore);
+        // newest page: jump to the latest message; older page: keep the reader where they are now
+        const box = scrollRef.current;
+        pendingScroll.current = before && box ? box.scrollHeight - box.scrollTop : 'bottom';
+        setThread(prev => (before ? [...msgs, ...(prev || [])] : msgs));
+      })
+      .catch(() => { if (req === threadReq.current) setThreadFailed(true); })
+      .finally(() => { if (req === threadReq.current) setLoadingOlder(false); });
+  }, []);
 
   useEffect(() => {
-    if (!open) return;
-    setThread(null);
-    fetch(`/api/whatsapp?chat=${open.chatKey}`)
-      .then(r => (r.ok ? r.json() : Promise.reject()))
-      .then(d => setThread(Array.isArray(d) ? d : []))
-      .catch(() => setThread([]));
-  }, [open]);
+    if (open) loadThread(open);
+  }, [open, loadThread]);
 
-  const q = query.trim().toLowerCase();
-  const shown = (chats || []).filter(c => !q || (c.name || '').toLowerCase().includes(q) || c.phone.includes(q) || c.chatKey.includes(q));
+  // runs after React has put the messages on screen, before the browser paints
+  useLayoutEffect(() => {
+    const box = scrollRef.current;
+    const want = pendingScroll.current;
+    if (!box || want === null || !thread) return;
+    pendingScroll.current = null;
+    box.scrollTop = want === 'bottom' ? box.scrollHeight : box.scrollHeight - want;
+  }, [thread]);
+
+  const shown = chats || [];
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  // a page that emptied (e.g. its last conversation was blacklisted) falls back to the
+  // last real page; the server reports the real total even past the end
+  useEffect(() => {
+    if (chats && page > pages) setPage(pages);
+  }, [chats, page, pages]);
 
   const list = (
     <div className={`flex min-h-0 flex-col rounded-2xl border border-white/10 bg-[#0b172a] ${open ? 'hidden lg:flex' : 'flex'}`}>
@@ -98,29 +167,35 @@ export default function WhatsAppScreen() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="جستجوی نام یا شماره..."
-            className="w-full rounded-xl border border-white/10 bg-[#07111f] py-2 pr-9 pl-3 text-[12px] text-white placeholder:text-white/30 focus:border-gold/50 focus:outline-none"
+            aria-label="جستجوی نام یا شماره"
+            className="min-h-11 w-full rounded-xl border border-white/10 bg-[#07111f] py-2 pr-9 pl-3 text-[12px] text-white placeholder:text-white/30 focus:border-gold/50 focus:outline-none"
           />
         </div>
-        <button type="button" onClick={loadChats} title="بارگذاری دوباره" aria-label="بارگذاری دوباره" className="rounded-xl border border-white/10 p-2 text-white/60 hover:bg-white/5">
-          <RefreshCw size={14} />
+        <button type="button" onClick={loadChats} title="بارگذاری دوباره" aria-label="بارگذاری دوباره" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 text-white/60 hover:bg-white/5">
+          <RefreshCw size={14} className={listLoading ? 'animate-spin' : ''} />
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={listScrollRef} className="min-h-0 flex-1 overflow-y-auto">
         {failed ? (
-          <p className="p-4 text-[12px] font-bold text-rose-300">
-            خطا در بارگذاری پیام‌ها
-            <button type="button" onClick={loadChats} className="mr-2 underline">تلاش دوباره</button>
-          </p>
+          <div className="flex flex-col items-center gap-2 p-4 text-center text-[12px] font-bold leading-6 text-rose-300">
+            {failed}
+            <button type="button" onClick={loadChats} className="min-h-11 rounded-xl border border-rose-500/30 px-4 text-[12px] font-bold text-rose-200 hover:bg-rose-500/10">تلاش دوباره</button>
+          </div>
         ) : chats === null ? (
           <div className="flex justify-center py-10"><Loader2 className="animate-spin text-white/40" /></div>
         ) : shown.length === 0 ? (
           <p className="px-4 py-10 text-center text-[12px] leading-6 text-white/40">
-            {chats.length === 0 ? 'هنوز پیامی از واتس‌اپ دفتر نرسیده است. وضعیت اتصال در «تنظیمات» دیده می‌شود.' : 'نتیجه‌ای پیدا نشد'}
+            {search ? 'نتیجه‌ای پیدا نشد' : total > 0 ? 'این صفحه خالی است' : 'هنوز پیامی از واتس‌اپ دفتر نرسیده است. وضعیت اتصال در «تنظیمات» دیده می‌شود.'}
           </p>
         ) : (
-          <ul className="divide-y divide-white/5">
-            {shown.map(c => (
-              <li key={c.chatKey}>
+          <ul aria-busy={listLoading} className={`divide-y divide-white/5 transition-opacity ${listLoading ? 'pointer-events-none opacity-50' : ''}`}>
+            {shown.map((c, i) => (
+              <motion.li
+                key={c.chatKey}
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, delay: Math.min(i, 12) * 0.025, ease: 'easeOut' }}
+              >
                 <button
                   type="button"
                   onClick={() => setOpen(c)}
@@ -137,31 +212,75 @@ export default function WhatsAppScreen() {
                     <span className="mt-0.5 block truncate text-[11px] text-white/50" dir="auto">{preview(c)}</span>
                   </span>
                 </button>
-              </li>
+              </motion.li>
             ))}
           </ul>
         )}
       </div>
+      {pages > 1 && (
+        <nav aria-label="صفحه‌های گفتگوها" className="flex items-center justify-between gap-2 border-t border-white/10 px-2 py-1.5">
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page <= 1 || listLoading}
+            className="flex min-h-11 items-center gap-1 rounded-xl px-3 text-[11.5px] font-bold text-white/70 transition-colors hover:bg-white/5 disabled:opacity-35"
+          >
+            <ChevronRight size={15} /> قبلی
+          </button>
+          <span className="text-center text-[11px] leading-5 text-white/50">صفحه‌ی {faNum(page)} از {faNum(pages)} · {faNum(total)} گفتگو</span>
+          <button
+            type="button"
+            onClick={() => setPage(p => Math.min(pages, p + 1))}
+            disabled={page >= pages || listLoading}
+            className="flex min-h-11 items-center gap-1 rounded-xl px-3 text-[11.5px] font-bold text-white/70 transition-colors hover:bg-white/5 disabled:opacity-35"
+          >
+            بعدی <ChevronLeft size={15} />
+          </button>
+        </nav>
+      )}
     </div>
   );
 
   const detail = open && (
     <div className="flex min-h-0 flex-col rounded-2xl border border-white/10 bg-[#0b172a]">
       <div className="flex items-center gap-2 border-b border-white/10 p-3">
-        <button type="button" onClick={() => setOpen(null)} aria-label="بازگشت" className="rounded-xl p-1.5 text-white/60 hover:bg-white/5 lg:hidden">
+        <button type="button" onClick={() => setOpen(null)} aria-label="بازگشت" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white/60 hover:bg-white/5 lg:hidden">
           <ArrowRight size={18} />
         </button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-black text-white">{open.name || 'بدون نام'}</p>
           <bdo dir="ltr" className="block text-right font-mono text-[11px] text-white/50" style={{ unicodeBidi: 'bidi-override', direction: 'ltr' }}>{open.phone}</bdo>
         </div>
-        <a href={`tel:${open.phone.replace(/[^0-9+]/g, '')}`} title="تماس" aria-label="تماس" className="rounded-lg border border-white/10 p-1.5 text-white/70 hover:bg-white/5"><Phone size={14} /></a>
-        <BlacklistButton phone={open.phone} name={open.name || undefined} onDone={() => { setOpen(null); loadChats(); }} />
+        <a href={`tel:${open.phone.replace(/[^0-9+]/g, '')}`} title="تماس" aria-label="تماس" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/10 text-white/70 hover:bg-white/5"><Phone size={14} /></a>
+        <BlacklistButton className="min-h-11 rounded-xl px-3 text-[11px]" phone={open.phone} name={open.name || undefined} onDone={() => { setOpen(null); loadChats(); }} />
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
-        {thread === null ? (
+      <div ref={scrollRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+        {threadFailed && !thread ? (
+          <div className="flex flex-col items-center gap-2 p-4 text-[12px] font-bold text-rose-300">
+            خطا در بارگذاری پیام‌ها
+            <button type="button" onClick={() => loadThread(open)} className="min-h-11 rounded-xl border border-rose-500/30 px-4 text-[12px] font-bold text-rose-200 hover:bg-rose-500/10">تلاش دوباره</button>
+          </div>
+        ) : thread === null ? (
           <div className="flex justify-center py-10"><Loader2 className="animate-spin text-white/40" /></div>
-        ) : thread.map(m => (
+        ) : thread.length === 0 ? (
+          <p className="py-10 text-center text-[12px] text-white/40">پیامی برای نمایش نیست</p>
+        ) : hasMore || threadFailed ? (
+          <div className="flex flex-col items-center gap-1 pb-1">
+            {hasMore && (
+              <button
+                type="button"
+                onClick={() => loadThread(open, thread[0])}
+                disabled={loadingOlder}
+                className="flex min-h-11 items-center gap-1.5 rounded-xl border border-white/10 px-3 text-[11px] font-bold text-white/65 transition-colors hover:bg-white/5 disabled:opacity-50"
+              >
+                {loadingOlder && <Loader2 size={13} className="animate-spin" />}
+                پیام‌های قدیمی‌تر
+              </button>
+            )}
+            {threadFailed && <p className="text-[11px] text-rose-300">پیام‌های قدیمی‌تر بارگذاری نشد</p>}
+          </div>
+        ) : null}
+        {thread && thread.map(m => (
           <div key={m.id} className={`flex ${m.fromMe ? 'justify-start' : 'justify-end'}`}>
             <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${m.fromMe ? 'bg-emerald-500/15 text-white' : 'bg-white/[0.06] text-white'}`}>
               <MessageBody m={m} />
@@ -175,7 +294,7 @@ export default function WhatsAppScreen() {
 
   return (
     <div className="space-y-4 text-white" dir="rtl">
-      <div className="grid h-[calc(100dvh-150px)] min-h-[420px] gap-4 lg:grid-cols-[340px_1fr]">
+      <div className="grid h-[calc(100dvh-150px)] min-h-[420px] grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
         {list}
         {detail || (
           <div className="hidden items-center justify-center rounded-2xl border border-dashed border-white/10 text-[12px] text-white/35 lg:flex">

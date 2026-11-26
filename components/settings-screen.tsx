@@ -87,8 +87,51 @@ function BlacklistSection() {
 
   useEffect(load, []);
 
+  // Add a number by hand, so private numbers can be blocked before they ever reach
+  // the panel (e.g. before the office WhatsApp sync is installed).
+  const [newPhone, setNewPhone] = useState('');
+  const [newName, setNewName] = useState('');
+  const [adding, setAdding] = useState(false);
+  // local form (0..., not 09 Iran / 00 international), Persian and Arabic digits included
+  const asciiPhone = newPhone
+    .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
+  const localNumber = /^0[1-8]/.test(asciiPhone.replace(/[^\d+]/g, ''));
+
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const phone = newPhone.trim();
+    if (!phone) return;
+    const ok = await confirmDialog({
+      title: 'افزودن به لیست سیاه',
+      message: `شماره‌ی \u2066${phone}\u2069${newName.trim() ? ` (${newName.trim()})` : ''} دیگر در درخواست‌ها، لیست مشتریان و صندوق واتس‌اپ نمی‌آید و پیام‌ها و فایل‌های واتس‌اپ ذخیره‌شده‌اش برای همیشه پاک می‌شوند (با برداشتن از لیست سیاه برنمی‌گردند).`,
+      confirmText: 'بلاک شود',
+      destructive: true,
+    });
+    if (!ok) return;
+    setAdding(true);
+    try {
+      const res = await fetch('/api/blacklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, name: newName.trim() || undefined }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error);
+      if (data.cleanupPending) toast.warning('شماره بلاک شد؛ پاک‌کردن فایل‌های واتس‌اپش کامل نشد و تا یک روز بعد خودکار انجام می‌شود.');
+      else toast.success('شماره به لیست سیاه رفت');
+      setNewPhone('');
+      setNewName('');
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'خطا در افزودن به لیست سیاه');
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const unblock = async (item: BlacklistEntry) => {
-    if (!(await confirmDialog({ title: 'برداشتن از لیست سیاه', message: `شماره‌ی \u2066${item.phone}\u2069 دوباره در درخواست‌ها و مشتریان نمایش داده شود؟`, confirmText: 'برداشتن از لیست' }))) return;
+    if (!(await confirmDialog({ title: 'برداشتن از لیست سیاه', message: `شماره‌ی \u2066${item.phone}\u2069 دوباره در درخواست‌ها، مشتریان و صندوق واتس‌اپ نمایش داده شود؟ پیام‌های واتس‌اپی که هنگام بلاک پاک شدند برنمی‌گردند؛ فقط پیام‌های تازه همگام می‌شوند.`, confirmText: 'برداشتن از لیست' }))) return;
     setBusyPhone(item.key);
     try {
       const res = await fetch(`/api/blacklist?key=${encodeURIComponent(item.key)}`, { method: 'DELETE' });
@@ -109,16 +152,54 @@ function BlacklistSection() {
         <div>
           <h3 className="text-[13px] font-black">لیست سیاه شماره‌ها</h3>
           <p className="mt-1 text-[11px] leading-5 text-white/50">
-            این شماره‌ها (مثلاً خانواده و آشنایان) در درخواست‌ها و لیست مشتریان نمی‌آیند. با دکمه‌ی Blacklist کنار هر شماره اضافه می‌شوند.
+            این شماره‌ها (مثلاً خانواده و آشنایان) در درخواست‌ها، لیست مشتریان و صندوق واتس‌اپ نمی‌آیند و پیام‌ها و فایل‌های واتس‌اپ قبلی‌شان هم پاک می‌شوند. با دکمه‌ی Blacklist کنار هر شماره، یا از همین‌جا اضافه می‌شوند.
           </p>
         </div>
       </div>
 
-      {failed ? (
-        <p className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-[11.5px] font-bold text-rose-300">
-          خطا در بارگذاری لیست سیاه
-          <button type="button" onClick={load} className="mr-2 underline hover:text-rose-200">تلاش دوباره</button>
+      <form onSubmit={add} className="mb-4 grid items-start gap-2 sm:grid-cols-[1fr_1fr_auto]">
+        <p id="blacklist-phone-hint" className="text-[11px] leading-5 text-white/50 sm:col-span-3">
+          شماره را همیشه با کد کشور بنویسید (مثل <bdi dir="ltr">+968</bdi> یا <bdi dir="ltr">+964</bdi>). اگر شماره‌ی کشوری غیر از ایران و عمان را بدون کد کشور بنویسید، روی واتس‌اپ بلاک نمی‌شود.
         </p>
+        <div className="grid gap-1">
+          <input
+            value={newPhone}
+            onChange={e => setNewPhone(e.target.value)}
+            inputMode="tel"
+            dir="ltr"
+            aria-label="شماره"
+            aria-describedby={localNumber ? 'blacklist-phone-hint blacklist-phone-warn' : 'blacklist-phone-hint'}
+            placeholder="+968 9123 4567"
+            className="min-h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-left font-mono text-[12px] text-white placeholder:text-white/35 focus:border-gold/50 focus:outline-none"
+          />
+          {localNumber && (
+            <p id="blacklist-phone-warn" role="status" className="text-[11px] leading-5 text-amber-300">
+              این شماره بدون کد کشور است. اگر شماره‌ی ایران نیست، کد کشور را اضافه کنید تا روی واتس‌اپ هم بلاک شود.
+            </p>
+          )}
+        </div>
+        <input
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+          aria-label="نام (اختیاری)"
+          placeholder="نام (اختیاری)"
+          className="min-h-11 rounded-xl border border-white/10 bg-[#07111f] px-3 text-[12px] text-white placeholder:text-white/35 focus:border-gold/50 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={adding || !newPhone.trim()}
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 text-[12px] font-bold text-rose-200 transition-colors hover:bg-rose-500/20 disabled:opacity-50"
+        >
+          {adding ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+          افزودن به لیست سیاه
+        </button>
+      </form>
+
+      {failed ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-[11.5px] font-bold text-rose-300">
+          خطا در بارگذاری لیست سیاه
+          <button type="button" onClick={load} className="min-h-11 rounded-xl border border-rose-500/30 px-4 text-[12px] font-bold text-rose-200 hover:bg-rose-500/10">تلاش دوباره</button>
+        </div>
       ) : items === null ? (
         <div className="flex justify-center py-6"><Loader2 className="animate-spin text-white/40" /></div>
       ) : items.length === 0 ? (
