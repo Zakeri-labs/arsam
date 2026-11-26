@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { PenLine, Trash2, Upload, Loader2, Settings, Check, Ban, Undo2 } from 'lucide-react';
+import { PenLine, Trash2, Upload, Loader2, Settings, Check, Ban, Undo2, MessageCircle, Copy, KeyRound } from 'lucide-react';
 import SignaturePad from '@/components/signature-pad';
 import { confirmDialog } from '@/components/confirm-dialog';
 
@@ -149,6 +149,125 @@ function BlacklistSection() {
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+interface SyncStatus {
+  connected: boolean;
+  tokenCreated: string | null;
+  lastSeenAt: string | null;
+  lastBatch: number | null;
+  agentInfo: string | null;
+}
+
+const faDateTime = (iso: string) =>
+  new Date(iso).toLocaleString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+// Office WhatsApp agent (windows-agent/): status and its access key.
+function WhatsAppSection() {
+  const [status, setStatus] = useState<SyncStatus | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  const load = () => {
+    setFailed(false);
+    fetch('/api/whatsapp/token')
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(setStatus)
+      .catch(() => setFailed(true));
+  };
+
+  useEffect(load, []);
+
+  const makeToken = async () => {
+    if (status?.connected && !(await confirmDialog({
+      title: 'کلید اتصال تازه',
+      message: 'با ساختن کلید تازه، کلید قبلی روی سیستم دفتر دیگر کار نمی‌کند و باید کلید تازه را آن‌جا وارد کنید. ادامه می‌دهید؟',
+      confirmText: 'ساخت کلید تازه',
+    }))) return;
+    setBusy(true);
+    try {
+      const res = await fetch('/api/whatsapp/token', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.token) throw new Error(data.error);
+      setToken(data.token);
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'خطا در ساخت کلید اتصال');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(token || '');
+      toast.success('کلید کپی شد');
+    } catch {
+      toast.error('کپی نشد؛ کلید را دستی انتخاب کنید');
+    }
+  };
+
+  const seenMinutes = status?.lastSeenAt ? (Date.now() - new Date(status.lastSeenAt).getTime()) / 60000 : null;
+  const live = seenMinutes !== null && seenMinutes < 20;
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#0b172a] p-4 shadow-lg sm:p-5">
+      <div className="mb-4 flex items-start gap-2.5">
+        <MessageCircle size={17} className="mt-0.5 shrink-0 text-emerald-300" />
+        <div>
+          <h3 className="text-[13px] font-black">اتصال واتس‌اپ دفتر</h3>
+          <p className="mt-1 text-[11px] leading-5 text-white/50">
+            برنامه‌ی کوچکی روی سیستم ویندوز دفتر، هر چند دقیقه پیام‌ها، ویس‌ها و فایل‌های تازه‌ی واتس‌اپ را می‌خواند و به «صندوق واتس‌اپ» می‌فرستد. شماره‌های لیست سیاه فرستاده نمی‌شوند.
+          </p>
+        </div>
+      </div>
+
+      {failed ? (
+        <p className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-[11.5px] font-bold text-rose-300">
+          خطا در خواندن وضعیت اتصال
+          <button type="button" onClick={load} className="mr-2 underline hover:text-rose-200">تلاش دوباره</button>
+        </p>
+      ) : status === null ? (
+        <div className="flex justify-center py-6"><Loader2 className="animate-spin text-white/40" /></div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 text-[11.5px]">
+            <span className={`rounded-full border px-2.5 py-0.5 font-bold ${live ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-white/15 bg-white/5 text-white/60'}`}>
+              {!status.connected ? 'وصل نشده' : live ? 'وصل است' : status.lastSeenAt ? 'قطع است' : 'منتظر اولین اتصال'}
+            </span>
+            {status.lastSeenAt && (
+              <span className="text-white/50">
+                آخرین همگام‌سازی: {faDateTime(status.lastSeenAt)}{status.lastBatch !== null ? ` · ${status.lastBatch.toLocaleString('fa-IR')} پیام` : ''}
+              </span>
+            )}
+          </div>
+
+          {token && (
+            <div className="rounded-xl border border-gold/30 bg-gold/5 p-3">
+              <p className="mb-2 text-[11px] leading-5 text-gold">این کلید فقط همین یک بار نشان داده می‌شود. آن را در نصب برنامه روی سیستم دفتر وارد کنید.</p>
+              <div className="flex items-center gap-2">
+                <code dir="ltr" className="min-w-0 flex-1 truncate rounded-lg bg-[#07111f] px-2.5 py-2 font-mono text-[11.5px] text-white">{token}</code>
+                <button type="button" onClick={copy} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-gold/40 px-3 py-2 text-[11px] font-bold text-gold hover:bg-gold/10">
+                  <Copy size={13} /> کپی
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            disabled={busy}
+            onClick={makeToken}
+            className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-[12px] font-bold text-white/85 hover:bg-white/10 disabled:opacity-60"
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+            {status.connected ? 'ساخت کلید اتصال تازه' : 'ساخت کلید اتصال'}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -301,6 +420,8 @@ export default function SettingsScreen() {
       </div>
 
       <BlacklistSection />
+
+      <WhatsAppSection />
     </div>
   );
 }

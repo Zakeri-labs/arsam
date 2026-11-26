@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminAuth, requireSuperadmin } from '@/lib/auth-check';
 import { addToBlacklist, getBlacklist, removeFromBlacklist } from '@/lib/blacklist';
+import { purgeConversation } from '@/lib/whatsapp';
 import { phoneKey } from '@/lib/phone-key';
 
 const text = (value: unknown, max: number) => (typeof value === 'string' ? value : '').trim().slice(0, max);
@@ -33,6 +34,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'شماره معتبر نیست' }, { status: 400 });
     }
     await addToBlacklist(phone, text(body.name, 200) || null, auth.user.email);
+    // Also drop any WhatsApp conversation already stored for this number, with its media.
+    await purgeConversation(phoneKey(phone));
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error adding to blacklist:', error);
