@@ -7,11 +7,12 @@ import {
   Lock, Mail, Eye, EyeOff, LayoutDashboard, Plus, Search, 
   Trash2, Edit3, Globe, Save, LogOut, Check, X, FileText, 
   Layers, Landmark, Briefcase, Calendar, AlertTriangle, ExternalLink, Menu,
-  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare, ChevronDown, Car, ShieldCheck, Settings, BarChart3
+  DollarSign, Languages, Users, Image as ImageIcon, Phone, MessageSquare, ChevronDown, Car, ShieldCheck, Settings, BarChart3, MessageCircle
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import QMSScreen from '@/components/qms-screen';
 import CustomersScreen from '@/components/customers-screen';
+import WhatsAppScreen from '@/components/whatsapp-screen';
 import CarsScreen from '@/components/cars-screen';
 import ReportsScreen from '@/components/reports-screen';
 import AccessScreen from '@/components/access-screen';
@@ -129,7 +130,7 @@ export default function AdminPage() {
   };
 
   // Layout & Navigation State
-  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'reports' | 'access' | 'settings'>('services');
+  const [activeScreen, setActiveScreen] = useState<'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'reports' | 'access' | 'settings' | 'whatsapp'>('services');
   const [carSubTab, setCarSubTab] = useState<'calendar' | 'fleet' | 'contracts' | 'accounting'>('contracts');
   const [isCarMenuOpen, setIsCarMenuOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -139,7 +140,7 @@ export default function AdminPage() {
     try {
       const savedScreen = localStorage.getItem('admin_active_screen');
       const savedCarSubTab = localStorage.getItem('admin_car_sub_tab_v2');
-      if (savedScreen && ['services', 'requests', 'qms', 'customers', 'cars', 'reports', 'access', 'settings'].includes(savedScreen)) {
+      if (savedScreen && ['services', 'requests', 'qms', 'customers', 'cars', 'reports', 'access', 'settings', 'whatsapp'].includes(savedScreen)) {
         setActiveScreen(savedScreen as any);
       }
       if (savedCarSubTab && ['calendar', 'fleet', 'contracts', 'accounting'].includes(savedCarSubTab)) {
@@ -148,7 +149,7 @@ export default function AdminPage() {
     } catch (e) {}
   }, []);
 
-  const changeActiveScreen = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'reports' | 'access' | 'settings') => {
+  const changeActiveScreen = (screen: 'services' | 'requests' | 'qms' | 'customers' | 'cars' | 'reports' | 'access' | 'settings' | 'whatsapp') => {
     setActiveScreen(screen);
     setIsMobileMenuOpen(false);
     window.scrollTo({ top: 0 });
@@ -279,7 +280,10 @@ export default function AdminPage() {
             const canOpenSaved = savedScreen === 'access' || savedScreen === 'settings'
               ? data.user.role === 'superadmin'
               // Reports has no permission of its own: it comes with the cars section
-              : data.user.allowedScreens.includes(savedScreen === 'reports' ? 'cars' : savedScreen);
+              // the WhatsApp inbox comes with the requests or customers section
+              : savedScreen === 'whatsapp'
+                ? data.user.allowedScreens.some((s: string) => s === 'requests' || s === 'customers')
+                : data.user.allowedScreens.includes(savedScreen === 'reports' ? 'cars' : savedScreen);
             if (!savedScreen || !canOpenSaved) {
               setActiveScreen(defaultScreenFor(data.user.allowedScreens));
             }
@@ -957,6 +961,24 @@ export default function AdminPage() {
               <span className="flex items-center gap-3">
                 <Users className="h-4.5 w-4.5 shrink-0 text-amber-400" />
                 مدیریت مشتریان (CRM)
+              </span>
+            </button>
+          )}
+
+          {(isAllowed('requests') || isAllowed('customers')) && (
+            <button
+              onClick={() => {
+                changeActiveScreen('whatsapp');
+              }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
+                activeScreen === 'whatsapp'
+                  ? 'bg-gold text-[#0f1e37] shadow-lg shadow-gold/15'
+                  : 'text-white/70 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <span className="flex items-center gap-3">
+                <MessageCircle className="h-4.5 w-4.5 shrink-0 text-emerald-400" />
+                صندوق واتس‌اپ
               </span>
             </button>
           )}
@@ -2070,10 +2092,10 @@ export default function AdminPage() {
             <div className="max-w-[1650px] mx-auto w-full flex items-center justify-between">
               <div>
                 <h1 className="text-base font-extrabold text-white leading-none">
-                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : activeScreen === 'customers' ? 'مدیریت مشتریان (CRM)' : activeScreen === 'access' ? 'مدیریت دسترسی‌ها' : activeScreen === 'settings' ? 'تنظیمات' : activeScreen === 'reports' ? 'گزارشات مالی' : 'مدیریت خودروها'}
+                  {activeScreen === 'services' ? 'مدیریت خدمات' : activeScreen === 'requests' ? 'درخواست‌های ارسالی و تسک‌های ادامه‌دار' : activeScreen === 'qms' ? 'مدیریت صف نوبت‌دهی (QMS)' : activeScreen === 'customers' ? 'مدیریت مشتریان (CRM)' : activeScreen === 'whatsapp' ? 'صندوق واتس‌اپ' : activeScreen === 'access' ? 'مدیریت دسترسی‌ها' : activeScreen === 'settings' ? 'تنظیمات' : activeScreen === 'reports' ? 'گزارشات مالی' : 'مدیریت خودروها'}
                 </h1>
                 <p className="text-[10px] text-white/50 mt-1.5 font-bold">
-                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : activeScreen === 'customers' ? 'لیست پرونده‌ها، سوابق و مدارک مشتریان' : activeScreen === 'access' ? 'تعریف کاربران همکار و تعیین بخش‌های مجاز برای هر کدام' : activeScreen === 'settings' ? 'امضای شرکت روی قراردادها و لیست سیاه شماره‌ها' : activeScreen === 'reports' ? 'گزارش درآمد و هزینه به تفکیک خودرو و نوع، با خروجی اکسل' : 'تعریف ناوگان، تقویم اشغال خودروها، قراردادها و حسابداری مالی اجاره'}
+                  {activeScreen === 'services' ? 'ایجاد، ویرایش، حذف و تنظیم خدمات فعال وب‌سایت' : activeScreen === 'requests' ? 'مدیریت پرونده‌ها، سوابق پیگیری و آپلود مدارک' : activeScreen === 'qms' ? 'مدیریت پویای نوبت‌های کیوسک و حضوری' : activeScreen === 'customers' ? 'لیست پرونده‌ها، سوابق و مدارک مشتریان' : activeScreen === 'whatsapp' ? 'پیام‌ها، ویس‌ها و فایل‌های واتس‌اپ دفتر، برای هر مشتری یک پرونده' : activeScreen === 'access' ? 'تعریف کاربران همکار و تعیین بخش‌های مجاز برای هر کدام' : activeScreen === 'settings' ? 'امضای شرکت، لیست سیاه شماره‌ها و اتصال واتس‌اپ دفتر' : activeScreen === 'reports' ? 'گزارش درآمد و هزینه به تفکیک خودرو و نوع، با خروجی اکسل' : 'تعریف ناوگان، تقویم اشغال خودروها، قراردادها و حسابداری مالی اجاره'}
                 </p>
               </div>
               
@@ -2096,6 +2118,8 @@ export default function AdminPage() {
                 <QMSScreen />
               ) : activeScreen === 'customers' ? (
                 <CustomersScreen onBlacklistChange={fetchRequests} />
+              ) : activeScreen === 'whatsapp' ? (
+                <WhatsAppScreen onBlacklistChange={fetchRequests} />
               ) : activeScreen === 'access' && currentUser?.role === 'superadmin' ? (
                 <AccessScreen />
               ) : activeScreen === 'settings' && currentUser?.role === 'superadmin' ? (

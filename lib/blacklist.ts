@@ -19,15 +19,19 @@ export async function getBlacklist(): Promise<BlacklistEntry[]> {
 }
 
 /**
- * Keys of every blacklisted number. Fails open (empty set) so a missing table
- * or a database hiccup never hides the whole requests list.
+ * Keys of every blacklisted number.
+ * Default fails open (empty set) so a missing table or a database hiccup never
+ * hides the whole requests list. Pass { strict: true } where the blacklist is a
+ * privacy guard (the WhatsApp sync): there a read error must throw so the number
+ * is never surfaced, rather than silently letting everything through.
  */
 // ponytail: reads the whole table (PostgREST caps at 1000 rows); fine for a family list,
 // filter in the database if it ever grows past that.
-export async function getBlacklistKeys(): Promise<Set<string>> {
+export async function getBlacklistKeys(opts?: { strict?: boolean }): Promise<Set<string>> {
   const { data, error } = await supabase.from('phone_blacklist').select('phone_key');
   if (error) {
     console.error('Error reading phone blacklist:', error);
+    if (opts?.strict) throw error;
     return new Set();
   }
   return new Set((data || []).map(r => r.phone_key));

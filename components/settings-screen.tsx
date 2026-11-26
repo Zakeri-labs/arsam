@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { PenLine, Trash2, Upload, Loader2, Settings, Check, Ban, Undo2 } from 'lucide-react';
+import { PenLine, Trash2, Upload, Loader2, Settings, Check, Ban, Undo2, MessageCircle, Copy, KeyRound } from 'lucide-react';
 import SignaturePad from '@/components/signature-pad';
 import { confirmDialog } from '@/components/confirm-dialog';
 
@@ -90,8 +90,52 @@ function BlacklistSection({ onChange }: { onChange?: () => void }) {
 
   useEffect(load, []);
 
+  // Add a number by hand, so private numbers can be blocked before they ever reach
+  // the panel (e.g. before the office WhatsApp sync is installed).
+  const [newPhone, setNewPhone] = useState('');
+  const [newName, setNewName] = useState('');
+  const [adding, setAdding] = useState(false);
+  // local form (0..., not 09 Iran / 00 international), Persian and Arabic digits included
+  const asciiPhone = newPhone
+    .replace(/[۰-۹]/g, c => String(c.charCodeAt(0) - 0x06f0))
+    .replace(/[٠-٩]/g, c => String(c.charCodeAt(0) - 0x0660));
+  const localNumber = /^0[1-8]/.test(asciiPhone.replace(/[^\d+]/g, ''));
+
+  const add = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const phone = newPhone.trim();
+    if (!phone) return;
+    const ok = await confirmDialog({
+      title: 'افزودن به لیست سیاه',
+      message: `شماره‌ی \u2066${phone}\u2069${newName.trim() ? ` (${newName.trim()})` : ''} دیگر در درخواست‌ها، لیست مشتریان و صندوق واتس‌اپ نمی‌آید و پیام‌ها و فایل‌های واتس‌اپ ذخیره‌شده‌اش برای همیشه پاک می‌شوند (با برداشتن از لیست سیاه برنمی‌گردند).`,
+      confirmText: 'بلاک شود',
+      destructive: true,
+    });
+    if (!ok) return;
+    setAdding(true);
+    try {
+      const res = await fetch('/api/blacklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, name: newName.trim() || undefined }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error);
+      if (data.cleanupPending) toast.warning('شماره بلاک شد؛ پاک‌کردن فایل‌های واتس‌اپش کامل نشد و تا یک روز بعد خودکار انجام می‌شود.');
+      else toast.success('شماره به لیست سیاه رفت');
+      setNewPhone('');
+      setNewName('');
+      load();
+      onChange?.();
+    } catch (err: any) {
+      toast.error(err?.message || 'خطا در افزودن به لیست سیاه');
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const unblock = async (item: BlacklistEntry) => {
-    if (!(await confirmDialog({ title: 'برداشتن از لیست سیاه', message: `شماره‌ی \u2066${item.phone}\u2069 دوباره در درخواست‌ها و مشتریان نمایش داده شود؟`, confirmText: 'برداشتن از لیست' }))) return;
+    if (!(await confirmDialog({ title: 'برداشتن از لیست سیاه', message: `شماره‌ی \u2066${item.phone}\u2069 دوباره در درخواست‌ها، مشتریان و صندوق واتس‌اپ نمایش داده شود؟ پیام‌های واتس‌اپی که هنگام بلاک پاک شدند برنمی‌گردند؛ فقط پیام‌های تازه همگام می‌شوند.`, confirmText: 'برداشتن از لیست' }))) return;
     setBusyPhone(item.key);
     try {
       const res = await fetch(`/api/blacklist?key=${encodeURIComponent(item.key)}`, { method: 'DELETE' });
@@ -113,16 +157,54 @@ function BlacklistSection({ onChange }: { onChange?: () => void }) {
         <div>
           <h3 className="text-[13px] font-black">لیست سیاه شماره‌ها</h3>
           <p className="mt-1 text-[11px] leading-5 text-white/50">
-            این شماره‌ها (مثلاً خانواده و آشنایان) در درخواست‌ها و لیست مشتریان نمی‌آیند. با دکمه‌ی Blacklist کنار هر شماره اضافه می‌شوند.
+            این شماره‌ها (مثلاً خانواده و آشنایان) در درخواست‌ها، لیست مشتریان و صندوق واتس‌اپ نمی‌آیند و پیام‌ها و فایل‌های واتس‌اپ قبلی‌شان هم پاک می‌شوند. با دکمه‌ی Blacklist کنار هر شماره، یا از همین‌جا اضافه می‌شوند.
           </p>
         </div>
       </div>
 
-      {failed ? (
-        <p className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-[11.5px] font-bold text-rose-300">
-          خطا در بارگذاری لیست سیاه
-          <button type="button" onClick={load} className="mr-2 underline hover:text-rose-200">تلاش دوباره</button>
+      <form onSubmit={add} className="mb-4 grid items-start gap-2 sm:grid-cols-[1fr_1fr_auto]">
+        <p id="blacklist-phone-hint" className="text-[11px] leading-5 text-white/50 sm:col-span-3">
+          شماره را همیشه با کد کشور بنویسید (مثل <bdi dir="ltr">+968</bdi> یا <bdi dir="ltr">+964</bdi>). اگر شماره‌ی کشوری غیر از ایران و عمان را بدون کد کشور بنویسید، روی واتس‌اپ بلاک نمی‌شود.
         </p>
+        <div className="grid gap-1">
+          <input
+            value={newPhone}
+            onChange={e => setNewPhone(e.target.value)}
+            inputMode="tel"
+            dir="ltr"
+            aria-label="شماره"
+            aria-describedby={localNumber ? 'blacklist-phone-hint blacklist-phone-warn' : 'blacklist-phone-hint'}
+            placeholder="+968 9123 4567"
+            className="min-h-11 w-full rounded-xl border border-white/10 bg-[#07111f] px-3 text-left font-mono text-[12px] text-white placeholder:text-white/35 focus:border-gold/50 focus:outline-none"
+          />
+          {localNumber && (
+            <p id="blacklist-phone-warn" role="status" className="text-[11px] leading-5 text-amber-300">
+              این شماره بدون کد کشور است. اگر شماره‌ی ایران نیست، کد کشور را اضافه کنید تا روی واتس‌اپ هم بلاک شود.
+            </p>
+          )}
+        </div>
+        <input
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+          aria-label="نام (اختیاری)"
+          placeholder="نام (اختیاری)"
+          className="min-h-11 rounded-xl border border-white/10 bg-[#07111f] px-3 text-[12px] text-white placeholder:text-white/35 focus:border-gold/50 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={adding || !newPhone.trim()}
+          className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 text-[12px] font-bold text-rose-200 transition-colors hover:bg-rose-500/20 disabled:opacity-50"
+        >
+          {adding ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
+          افزودن به لیست سیاه
+        </button>
+      </form>
+
+      {failed ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-[11.5px] font-bold text-rose-300">
+          خطا در بارگذاری لیست سیاه
+          <button type="button" onClick={load} className="min-h-11 rounded-xl border border-rose-500/30 px-4 text-[12px] font-bold text-rose-200 hover:bg-rose-500/10">تلاش دوباره</button>
+        </div>
       ) : items === null ? (
         <div className="flex justify-center py-6"><Loader2 className="animate-spin text-white/40" /></div>
       ) : items.length === 0 ? (
@@ -153,6 +235,125 @@ function BlacklistSection({ onChange }: { onChange?: () => void }) {
             </li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+interface SyncStatus {
+  connected: boolean;
+  tokenCreated: string | null;
+  lastSeenAt: string | null;
+  lastBatch: number | null;
+  agentInfo: string | null;
+}
+
+const faDateTime = (iso: string) =>
+  new Date(iso).toLocaleString('fa-IR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+// Office WhatsApp agent (windows-agent/): status and its access key.
+function WhatsAppSection() {
+  const [status, setStatus] = useState<SyncStatus | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  const load = () => {
+    setFailed(false);
+    fetch('/api/whatsapp/token')
+      .then(r => (r.ok ? r.json() : Promise.reject()))
+      .then(setStatus)
+      .catch(() => setFailed(true));
+  };
+
+  useEffect(load, []);
+
+  const makeToken = async () => {
+    if (status?.connected && !(await confirmDialog({
+      title: 'کلید اتصال تازه',
+      message: 'با ساختن کلید تازه، کلید قبلی روی سیستم دفتر دیگر کار نمی‌کند و باید کلید تازه را آن‌جا وارد کنید. ادامه می‌دهید؟',
+      confirmText: 'ساخت کلید تازه',
+    }))) return;
+    setBusy(true);
+    try {
+      const res = await fetch('/api/whatsapp/token', { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.token) throw new Error(data.error);
+      setToken(data.token);
+      load();
+    } catch (err: any) {
+      toast.error(err?.message || 'خطا در ساخت کلید اتصال');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(token || '');
+      toast.success('کلید کپی شد');
+    } catch {
+      toast.error('کپی نشد؛ کلید را دستی انتخاب کنید');
+    }
+  };
+
+  const seenMinutes = status?.lastSeenAt ? (Date.now() - new Date(status.lastSeenAt).getTime()) / 60000 : null;
+  const live = seenMinutes !== null && seenMinutes < 20;
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#0b172a] p-4 shadow-lg sm:p-5">
+      <div className="mb-4 flex items-start gap-2.5">
+        <MessageCircle size={17} className="mt-0.5 shrink-0 text-emerald-300" />
+        <div>
+          <h3 className="text-[13px] font-black">اتصال واتس‌اپ دفتر</h3>
+          <p className="mt-1 text-[11px] leading-5 text-white/50">
+            برنامه‌ی کوچکی روی سیستم ویندوز دفتر، هر چند دقیقه پیام‌ها، ویس‌ها و فایل‌های تازه‌ی واتس‌اپ را می‌خواند و به «صندوق واتس‌اپ» می‌فرستد. شماره‌های لیست سیاه فرستاده نمی‌شوند.
+          </p>
+        </div>
+      </div>
+
+      {failed ? (
+        <p className="rounded-xl border border-rose-500/20 bg-rose-500/5 p-3 text-[11.5px] font-bold text-rose-300">
+          خطا در خواندن وضعیت اتصال
+          <button type="button" onClick={load} className="mr-2 underline hover:text-rose-200">تلاش دوباره</button>
+        </p>
+      ) : status === null ? (
+        <div className="flex justify-center py-6"><Loader2 className="animate-spin text-white/40" /></div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 text-[11.5px]">
+            <span className={`rounded-full border px-2.5 py-0.5 font-bold ${live ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-white/15 bg-white/5 text-white/60'}`}>
+              {!status.connected ? 'وصل نشده' : live ? 'وصل است' : status.lastSeenAt ? 'قطع است' : 'منتظر اولین اتصال'}
+            </span>
+            {status.lastSeenAt && (
+              <span className="text-white/50">
+                آخرین همگام‌سازی: {faDateTime(status.lastSeenAt)}{status.lastBatch !== null ? ` · ${status.lastBatch.toLocaleString('fa-IR')} پیام` : ''}
+              </span>
+            )}
+          </div>
+
+          {token && (
+            <div className="rounded-xl border border-gold/30 bg-gold/5 p-3">
+              <p className="mb-2 text-[11px] leading-5 text-gold">این کلید فقط همین یک بار نشان داده می‌شود. آن را در نصب برنامه روی سیستم دفتر وارد کنید.</p>
+              <div className="flex items-center gap-2">
+                <code dir="ltr" className="min-w-0 flex-1 truncate rounded-lg bg-[#07111f] px-2.5 py-2 font-mono text-[11.5px] text-white">{token}</code>
+                <button type="button" onClick={copy} className="flex shrink-0 items-center gap-1.5 rounded-lg border border-gold/40 px-3 py-2 text-[11px] font-bold text-gold hover:bg-gold/10">
+                  <Copy size={13} /> کپی
+                </button>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            disabled={busy}
+            onClick={makeToken}
+            className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-[12px] font-bold text-white/85 hover:bg-white/10 disabled:opacity-60"
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <KeyRound size={14} />}
+            {status.connected ? 'ساخت کلید اتصال تازه' : 'ساخت کلید اتصال'}
+          </button>
+        </div>
       )}
     </div>
   );
@@ -305,6 +506,8 @@ export default function SettingsScreen({ onBlacklistChange }: { onBlacklistChang
       </div>
 
       <BlacklistSection onChange={onBlacklistChange} />
+
+      <WhatsAppSection />
     </div>
   );
 }
